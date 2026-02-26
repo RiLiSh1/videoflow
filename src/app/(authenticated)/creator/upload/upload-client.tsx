@@ -567,7 +567,7 @@ export default function UploadClient({
             <Button
               type="submit"
               loading={isSubmitting}
-              disabled={!selectedProjectId || !selectedFile || isSubmitting}
+              disabled={!selectedProjectId || !videoTitle.trim() || !selectedFile || isSubmitting}
               className="w-full sm:w-auto"
             >
               {isSubmitting ? "アップロード中..." : "アップロードして提出"}
