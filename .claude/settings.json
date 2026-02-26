@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Edit(*)",
+      "Write(*)",
+      "Read(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "WebFetch(*)",
+      "WebSearch(*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/takimoto/Desktop/dev/lm-douga && git add -A && git diff --cached --quiet || git commit -m \"auto: $(date +%Y-%m-%d\\ %H:%M:%S)\""
+          }
+        ]
+      }
+    ]
+  }
+}

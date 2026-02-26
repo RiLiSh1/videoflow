@@ -43,3 +43,6 @@ supabase/.temp
 next-env.d.ts
 
 /src/generated/prisma
+
+# uploads
+/uploads
