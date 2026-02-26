@@ -189,7 +189,7 @@ export function ReviewClient({
 
   return (
     <>
-      {/* Notice Banner */}
+      {/* Notice Banners */}
       {canStartReview && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
           <p className="text-sm font-medium text-amber-800">
@@ -199,6 +199,34 @@ export function ReviewClient({
           </p>
           <p className="text-xs text-amber-600 mt-0.5">
             動画を確認して、フィードバック・承認・差し戻しを行ってください
+          </p>
+        </div>
+      )}
+
+      {isWaitingAdminApproval && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+            <p className="text-sm font-medium text-blue-800">
+              管理者の最終承認を待っています
+            </p>
+          </div>
+          <p className="text-xs text-blue-600 mt-0.5">
+            承認済みの動画は管理者に送られました。最終確認後に完了となります。
+          </p>
+        </div>
+      )}
+
+      {isAdminApproved && (
+        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <p className="text-sm font-medium text-green-800">
+              最終承認済み
+            </p>
+          </div>
+          <p className="text-xs text-green-600 mt-0.5">
+            管理者の最終承認が完了しました。この動画のレビューはすべて完了です。
           </p>
         </div>
       )}
