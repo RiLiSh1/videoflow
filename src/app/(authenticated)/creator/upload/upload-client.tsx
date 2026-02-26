@@ -335,23 +335,6 @@ export default function UploadClient({
     })),
   ];
 
-  const videoOptions = [
-    {
-      value: "",
-      label: isLoadingNewVideos
-        ? "読み込み中..."
-        : !selectedProjectId
-          ? "案件を先に選択してください"
-          : newVideos.length === 0
-            ? "未着手の動画がありません"
-            : "動画を選択",
-    },
-    ...newVideos.map((v) => ({
-      value: v.id,
-      label: `${v.title} (${v.videoCode})`,
-    })),
-  ];
-
   const tabs = [
     { id: "new" as Tab, label: "新規アップロード", count: null },
     {
