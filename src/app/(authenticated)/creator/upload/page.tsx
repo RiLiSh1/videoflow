@@ -761,7 +761,7 @@ export default function CreatorUploadPage() {
                 </Card>
               )}
               {!isLoadingDetail && selectedRevisionVideo && (() => {
-                const latestVersion = selectedRevisionVideo.versions?.[0];
+                const latestVersion = selectedRevisionVideo.latestVersion;
                 const videoUrl = latestVersion?.googleDriveUrl;
                 const feedbacks = selectedRevisionVideo.feedbacks || [];
                 const refUrls = selectedRevisionVideo.referenceUrls || [];
