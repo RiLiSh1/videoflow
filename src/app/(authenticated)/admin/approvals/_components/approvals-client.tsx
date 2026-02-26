@@ -7,9 +7,9 @@ import type { VideoStatus } from "@prisma/client";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/domain/status-badge";
-import { formatDateTime } from "@/lib/utils/format-date";
+import { formatRelative } from "@/lib/utils/format-date";
 import { Dialog } from "@/components/ui/dialog";
-import { CheckCircle, XCircle, ArrowRightCircle } from "lucide-react";
+import { CheckCircle2, RotateCcw } from "lucide-react";
 
 export interface ApprovalVideoRow {
   id: string;
@@ -26,42 +26,19 @@ interface ApprovalsClientProps {
   videos: ApprovalVideoRow[];
 }
 
-type ActionType = "approve" | "revision" | "complete";
+type ActionType = "complete" | "revision";
 
 interface PendingAction {
   video: ApprovalVideoRow;
   type: ActionType;
 }
 
-function getTargetStatus(
-  currentStatus: VideoStatus,
-  action: ActionType
-): VideoStatus | null {
-  if (action === "approve") {
-    if (currentStatus === "SUBMITTED") return "IN_REVIEW";
-    return null;
-  }
-  if (action === "revision") {
-    if (currentStatus === "SUBMITTED") return "IN_REVIEW";
-    if (currentStatus === "FINAL_REVIEW") return "REVISION_REQUESTED";
-    return null;
-  }
-  if (action === "complete") {
-    if (currentStatus === "FINAL_REVIEW") return "COMPLETED";
-    return null;
-  }
-  return null;
+function getTargetStatus(action: ActionType): VideoStatus {
+  return action === "complete" ? "COMPLETED" : "REVISION_REQUESTED";
 }
 
 function getActionLabel(action: ActionType): string {
-  switch (action) {
-    case "approve":
-      return "レビュー開始";
-    case "revision":
-      return "修正依頼";
-    case "complete":
-      return "完了にする";
-  }
+  return action === "complete" ? "最終承認" : "差し戻し";
 }
 
 export function ApprovalsClient({ videos }: ApprovalsClientProps) {
@@ -74,11 +51,7 @@ export function ApprovalsClient({ videos }: ApprovalsClientProps) {
 
   const handleAction = async () => {
     if (!pendingAction) return;
-    const targetStatus = getTargetStatus(
-      pendingAction.video.status,
-      pendingAction.type
-    );
-    if (!targetStatus) return;
+    const targetStatus = getTargetStatus(pendingAction.type);
 
     setLoading(true);
     setError("");
@@ -111,7 +84,7 @@ export function ApprovalsClient({ videos }: ApprovalsClientProps) {
       accessorKey: "videoCode",
       header: "動画コード",
       cell: ({ row }) => (
-        <span className="font-medium text-gray-900">
+        <span className="font-mono text-xs text-gray-600">
           {row.original.videoCode}
         </span>
       ),
@@ -119,6 +92,11 @@ export function ApprovalsClient({ videos }: ApprovalsClientProps) {
     {
       accessorKey: "title",
       header: "タイトル",
+      cell: ({ row }) => (
+        <span className="font-medium text-gray-900">
+          {row.original.title}
+        </span>
+      ),
     },
     {
       id: "project",
@@ -130,12 +108,18 @@ export function ApprovalsClient({ videos }: ApprovalsClientProps) {
     {
       id: "creator",
       header: "クリエイター",
-      cell: ({ row }) => row.original.creator.name,
+      cell: ({ row }) => (
+        <span className="text-gray-600">{row.original.creator.name}</span>
+      ),
     },
     {
       id: "director",
       header: "ディレクター",
-      cell: ({ row }) => row.original.director?.name || "-",
+      cell: ({ row }) => (
+        <span className="text-gray-600">
+          {row.original.director?.name || "-"}
+        </span>
+      ),
     },
     {
       accessorKey: "status",
@@ -144,8 +128,12 @@ export function ApprovalsClient({ videos }: ApprovalsClientProps) {
     },
     {
       accessorKey: "updatedAt",
-      header: "提出日時",
-      cell: ({ row }) => formatDateTime(row.original.updatedAt),
+      header: "承認日時",
+      cell: ({ row }) => (
+        <span className="text-xs text-gray-500">
+          {formatRelative(row.original.updatedAt)}
+        </span>
+      ),
     },
     {
       id: "actions",
@@ -154,43 +142,27 @@ export function ApprovalsClient({ videos }: ApprovalsClientProps) {
       cell: ({ row }) => {
         const video = row.original;
         return (
-          <div className="flex items-center gap-1">
-            {video.status === "SUBMITTED" && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  setPendingAction({ video, type: "approve" })
-                }
-                title="レビュー開始"
-              >
-                <ArrowRightCircle className="h-4 w-4 text-blue-600" />
-              </Button>
-            )}
-            {video.status === "FINAL_REVIEW" && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    setPendingAction({ video, type: "complete" })
-                  }
-                  title="完了にする"
-                >
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    setPendingAction({ video, type: "revision" })
-                  }
-                  title="修正依頼"
-                >
-                  <XCircle className="h-4 w-4 text-red-500" />
-                </Button>
-              </>
-            )}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() =>
+                setPendingAction({ video, type: "complete" })
+              }
+            >
+              <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+              承認
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() =>
+                setPendingAction({ video, type: "revision" })
+              }
+            >
+              <RotateCcw className="mr-1 h-3.5 w-3.5" />
+              差し戻し
+            </Button>
           </div>
         );
       },
@@ -200,16 +172,25 @@ export function ApprovalsClient({ videos }: ApprovalsClientProps) {
   return (
     <>
       {videos.length === 0 ? (
-        <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
+        <div className="rounded-lg border border-gray-200 bg-white py-12 text-center">
+          <CheckCircle2 className="mx-auto h-10 w-10 text-green-300 mb-2" />
           <p className="text-gray-500">承認待ちの動画はありません</p>
         </div>
       ) : (
-        <DataTable
-          data={videos}
-          columns={columns}
-          searchPlaceholder="動画コード、タイトルで検索..."
-          searchColumn="title"
-        />
+        <>
+          <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+            <p className="text-sm text-blue-800">
+              ディレクターが承認した動画が{videos.length}件あります。
+              最終確認を行い、承認または差し戻してください。
+            </p>
+          </div>
+          <DataTable
+            data={videos}
+            columns={columns}
+            searchPlaceholder="動画コード、タイトルで検索..."
+            searchColumn="title"
+          />
+        </>
       )}
 
       {pendingAction && (
@@ -219,7 +200,11 @@ export function ApprovalsClient({ videos }: ApprovalsClientProps) {
             setPendingAction(null);
             setError("");
           }}
-          title="ステータス変更の確認"
+          title={
+            pendingAction.type === "complete"
+              ? "最終承認の確認"
+              : "差し戻しの確認"
+          }
         >
           <div className="space-y-4">
             {error && (
@@ -237,7 +222,17 @@ export function ApprovalsClient({ videos }: ApprovalsClientProps) {
               </span>
               しますか？
             </p>
-            <div className="flex justify-end gap-3 pt-4">
+            {pendingAction.type === "complete" && (
+              <p className="text-xs text-gray-500">
+                承認するとクリエイターとディレクターに完了通知が送られます。
+              </p>
+            )}
+            {pendingAction.type === "revision" && (
+              <p className="text-xs text-gray-500">
+                差し戻すとクリエイターとディレクターに修正依頼の通知が送られます。
+              </p>
+            )}
+            <div className="flex justify-end gap-3 pt-2">
               <Button
                 type="button"
                 variant="secondary"
