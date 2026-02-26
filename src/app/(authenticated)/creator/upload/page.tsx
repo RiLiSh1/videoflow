@@ -380,7 +380,7 @@ export default function CreatorUploadPage() {
     },
     {
       id: "revision" as Tab,
-      label: "差し戻し修正",
+      label: "修正依頼",
       count: revisionVideos.length || null,
     },
   ];
