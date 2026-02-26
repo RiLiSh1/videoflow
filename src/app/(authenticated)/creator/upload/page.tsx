@@ -10,7 +10,7 @@ import { Select } from "@/components/ui/select";
 import { FileUpload } from "@/components/ui/file-upload";
 import { StatusBadge } from "@/components/domain/status-badge";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, MessageSquare, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, MessageSquare, AlertTriangle, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import type { VideoStatus } from "@prisma/client";
 
