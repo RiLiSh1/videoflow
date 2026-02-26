@@ -1,41 +1,127 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { FileUpload } from "@/components/ui/file-upload";
 
 interface VersionFormProps {
   videoId: string;
 }
 
+type UploadResult = {
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  filePath: string;
+  url: string;
+};
+
 export function VersionForm({ videoId }: VersionFormProps) {
   const router = useRouter();
-  const [fileName, setFileName] = useState("");
-  const [fileSize, setFileSize] = useState("");
-  const [googleDriveUrl, setGoogleDriveUrl] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<
+    "idle" | "uploading" | "success" | "error"
+  >("idle");
+  const [uploadError, setUploadError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  const handleFileSelect = useCallback((file: File) => {
+    setSelectedFile(file);
+    setUploadStatus("idle");
+    setUploadProgress(null);
+    setUploadError("");
+    setError("");
+  }, []);
+
+  const handleFileRemove = useCallback(() => {
+    setSelectedFile(null);
+    setUploadStatus("idle");
+    setUploadProgress(null);
+    setUploadError("");
+    setError("");
+  }, []);
+
+  const uploadFile = useCallback(
+    async (file: File): Promise<UploadResult | null> => {
+      setUploadStatus("uploading");
+      setUploadProgress(0);
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("videoId", videoId);
+
+      return new Promise<UploadResult | null>((resolve) => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable) {
+            setUploadProgress(Math.round((e.loaded / e.total) * 100));
+          }
+        });
+
+        xhr.addEventListener("load", () => {
+          try {
+            const result = JSON.parse(xhr.responseText);
+            if (xhr.status >= 200 && xhr.status < 300 && result.success) {
+              setUploadStatus("success");
+              resolve(result.data);
+            } else {
+              setUploadStatus("error");
+              setUploadError(result.error || "アップロードに失敗しました");
+              resolve(null);
+            }
+          } catch {
+            setUploadStatus("error");
+            setUploadError("レスポンスの解析に失敗しました");
+            resolve(null);
+          }
+        });
+
+        xhr.addEventListener("error", () => {
+          setUploadStatus("error");
+          setUploadError("ネットワークエラーが発生しました");
+          resolve(null);
+        });
+
+        xhr.open("POST", "/api/upload");
+        xhr.send(formData);
+      });
+    },
+    [videoId]
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (!fileName.trim()) {
-      setError("ファイル名を入力してください");
+    if (!selectedFile) {
+      setError("ファイルを選択してください");
       return;
     }
 
     setIsSubmitting(true);
+
     try {
+      // Step 1: Upload file
+      const fileData = await uploadFile(selectedFile);
+      if (!fileData) {
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Step 2: Register version
       const res = await fetch(`/api/videos/${videoId}/versions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fileName: fileName.trim(),
-          fileSize: fileSize ? parseInt(fileSize, 10) : 0,
-          googleDriveUrl: googleDriveUrl.trim() || undefined,
+          fileName: fileData.fileName,
+          fileSize: fileData.fileSize,
+          mimeType: fileData.mimeType,
+          googleDriveUrl: fileData.url,
         }),
       });
 
@@ -45,9 +131,10 @@ export function VersionForm({ videoId }: VersionFormProps) {
         return;
       }
 
-      setFileName("");
-      setFileSize("");
-      setGoogleDriveUrl("");
+      // Reset form
+      setSelectedFile(null);
+      setUploadStatus("idle");
+      setUploadProgress(null);
       router.refresh();
     } catch {
       setError("バージョンの登録に失敗しました");
@@ -59,37 +146,30 @@ export function VersionForm({ videoId }: VersionFormProps) {
   return (
     <Card>
       <CardHeader>
-        <h3 className="text-lg font-semibold text-gray-900">新しいバージョンを登録</h3>
+        <h3 className="text-lg font-semibold text-gray-900">
+          新しいバージョンをアップロード
+        </h3>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            id="fileName"
-            label="ファイル名"
-            placeholder="video_v1.mp4"
-            value={fileName}
-            onChange={(e) => setFileName(e.target.value)}
-            required
+          <FileUpload
+            onFileSelect={handleFileSelect}
+            onFileRemove={handleFileRemove}
+            selectedFile={selectedFile}
+            uploadProgress={uploadProgress}
+            uploadStatus={uploadStatus}
+            errorMessage={uploadError}
+            disabled={isSubmitting}
           />
-          <Input
-            id="fileSize"
-            label="ファイルサイズ（バイト）"
-            type="number"
-            placeholder="0"
-            value={fileSize}
-            onChange={(e) => setFileSize(e.target.value)}
-          />
-          <Input
-            id="googleDriveUrl"
-            label="Google Drive URL（任意）"
-            type="url"
-            placeholder="https://drive.google.com/..."
-            value={googleDriveUrl}
-            onChange={(e) => setGoogleDriveUrl(e.target.value)}
-          />
+
           {error && <p className="text-sm text-red-600">{error}</p>}
-          <Button type="submit" loading={isSubmitting}>
-            バージョンを登録
+
+          <Button
+            type="submit"
+            loading={isSubmitting}
+            disabled={!selectedFile || isSubmitting}
+          >
+            バージョンをアップロード
           </Button>
         </form>
       </CardContent>
