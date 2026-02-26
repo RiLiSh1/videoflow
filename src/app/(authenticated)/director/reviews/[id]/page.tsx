@@ -262,6 +262,21 @@ export default async function DirectorReviewDetailPage({
   );
 }
 
+/** Convert a Google Drive URL to its embeddable /preview form. Returns null for non-Drive URLs. */
+function toGoogleDriveEmbedUrl(url: string): string | null {
+  // Format: https://drive.google.com/file/d/{FILE_ID}/view...
+  const fileMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (fileMatch) {
+    return `https://drive.google.com/file/d/${fileMatch[1]}/preview`;
+  }
+  // Format: https://drive.google.com/open?id={FILE_ID}
+  const openMatch = url.match(/drive\.google\.com\/open\?id=([^&]+)/);
+  if (openMatch) {
+    return `https://drive.google.com/file/d/${openMatch[1]}/preview`;
+  }
+  return null;
+}
+
 function formatFileSize(bytes: bigint): string {
   const size = Number(bytes);
   if (size < 1024) return `${size} B`;
