@@ -28,7 +28,6 @@ export default async function DirectorReviewsPage() {
     videoCode: video.videoCode,
     title: video.title,
     status: video.status,
-    deadline: video.deadline?.toISOString() ?? null,
     updatedAt: video.updatedAt.toISOString(),
     project: video.project,
     creator: video.creator,
