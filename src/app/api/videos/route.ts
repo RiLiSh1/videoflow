@@ -21,6 +21,9 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const projectId = searchParams.get("projectId");
   const status = searchParams.get("status");
+  const fields = searchParams.get("fields"); // "minimal" = lightweight list
+  const limitParam = searchParams.get("limit");
+  const offsetParam = searchParams.get("offset");
 
   const where: Record<string, unknown> = {};
   if (projectId) where.projectId = projectId;
@@ -32,6 +35,29 @@ export async function GET(request: Request) {
     where.directorId = auth.id;
   }
 
+  const take = limitParam ? Math.min(parseInt(limitParam, 10), 100) : undefined;
+  const skip = offsetParam ? parseInt(offsetParam, 10) : undefined;
+
+  // Lightweight mode for lists (no creator join, minimal fields)
+  if (fields === "minimal") {
+    const videos = await prisma.video.findMany({
+      where,
+      select: {
+        id: true,
+        videoCode: true,
+        title: true,
+        status: true,
+        project: { select: { id: true, projectCode: true, name: true } },
+        director: { select: { id: true, name: true } },
+        _count: { select: { versions: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+      ...(take && { take }),
+      ...(skip && { skip }),
+    });
+    return NextResponse.json({ success: true, data: videos });
+  }
+
   const videos = await prisma.video.findMany({
     where,
     include: {
@@ -41,6 +67,8 @@ export async function GET(request: Request) {
       _count: { select: { versions: true, feedbacks: true } },
     },
     orderBy: { updatedAt: "desc" },
+    ...(take && { take }),
+    ...(skip && { skip }),
   });
 
   return NextResponse.json({ success: true, data: videos });
