@@ -137,6 +137,8 @@ model Video {
   @@index([creatorId])
   @@index([directorId])
   @@index([projectId])
+  @@index([creatorId, status])
+  @@index([projectId, status])
   @@map("videos")
 }
 
