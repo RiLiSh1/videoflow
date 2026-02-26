@@ -25,7 +25,7 @@ export async function PATCH(
 
   try {
     const body = await request.json();
-    let { status } = body as { status: VideoStatus };
+    const { status } = body as { status: VideoStatus };
 
     const video = await prisma.video.findUnique({
       where: { id },
