@@ -609,21 +609,23 @@ export default function CreatorUploadPage() {
             </div>
           )}
 
-          <div className="flex items-center gap-3">
-            <Button
-              type="submit"
-              loading={isSubmitting}
-              disabled={!selectedNewVideoId || !selectedFile || isSubmitting}
-            >
-              {isSubmitting ? "アップロード中..." : "アップロードして提出"}
-            </Button>
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3">
             <Button
               type="button"
               variant="secondary"
               onClick={() => router.push("/creator/videos")}
               disabled={isSubmitting}
+              className="w-full sm:w-auto"
             >
               キャンセル
+            </Button>
+            <Button
+              type="submit"
+              loading={isSubmitting}
+              disabled={!selectedNewVideoId || !selectedFile || isSubmitting}
+              className="w-full sm:w-auto"
+            >
+              {isSubmitting ? "アップロード中..." : "アップロードして提出"}
             </Button>
           </div>
         </form>
