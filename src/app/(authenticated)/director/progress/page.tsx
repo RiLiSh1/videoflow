@@ -87,7 +87,7 @@ export default async function DirectorProgressPage() {
     {
       label: "レビュー中",
       value: inReview,
-      icon: Search,
+      icon: Eye,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
     },
