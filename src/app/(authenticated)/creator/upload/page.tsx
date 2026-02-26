@@ -384,7 +384,7 @@ export default function CreatorUploadPage() {
   };
 
   // Selected revision video detail (from API)
-  const selectedRevisionVideo = selectedRevisionDetail;
+  const selectedRevisionVideo = revisionDetail;
 
   // Options
   const projectOptions = [
