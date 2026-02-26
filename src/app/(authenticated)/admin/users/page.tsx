@@ -1,9 +1,34 @@
+import { prisma } from "@/lib/db";
 import { PageContainer } from "@/components/layout/page-container";
+import { UsersClient } from "./_components/users-client";
 
-export default function AdminUsersPage() {
+async function getUsers() {
+  const users = await prisma.user.findMany({
+    select: {
+      id: true,
+      loginId: true,
+      name: true,
+      email: true,
+      role: true,
+      chatworkId: true,
+      isActive: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return users.map((u) => ({
+    ...u,
+    createdAt: u.createdAt.toISOString(),
+  }));
+}
+
+export default async function AdminUsersPage() {
+  const users = await getUsers();
+
   return (
     <PageContainer title="ユーザー管理">
-      <p className="text-gray-500">ユーザー一覧が表示されます（実装予定）</p>
+      <UsersClient users={users} />
     </PageContainer>
   );
 }

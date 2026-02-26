@@ -1,9 +1,38 @@
+import { prisma } from "@/lib/db";
 import { PageContainer } from "@/components/layout/page-container";
+import { ApprovalsClient } from "./_components/approvals-client";
 
-export default function AdminApprovalsPage() {
+async function getPendingVideos() {
+  const videos = await prisma.video.findMany({
+    where: {
+      status: { in: ["SUBMITTED", "FINAL_REVIEW"] },
+    },
+    include: {
+      project: { select: { projectCode: true, name: true } },
+      creator: { select: { name: true } },
+      director: { select: { name: true } },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  return videos.map((v) => ({
+    id: v.id,
+    videoCode: v.videoCode,
+    title: v.title,
+    status: v.status,
+    updatedAt: v.updatedAt.toISOString(),
+    project: v.project,
+    creator: v.creator,
+    director: v.director,
+  }));
+}
+
+export default async function AdminApprovalsPage() {
+  const videos = await getPendingVideos();
+
   return (
-    <PageContainer title="承認一覧">
-      <p className="text-gray-500">承認待ちの動画一覧が表示されます（実装予定）</p>
+    <PageContainer title="承認管理">
+      <ApprovalsClient videos={videos} />
     </PageContainer>
   );
 }
