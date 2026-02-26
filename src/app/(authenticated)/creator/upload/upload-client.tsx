@@ -84,13 +84,15 @@ export default function UploadClient({
   >("");
   const [videoTypeOther, setVideoTypeOther] = useState("");
 
-  // === Revision upload state ===
-  const [revisionVideos] = useState<VideoOption[]>(initialRevisionVideos);
+  // === Revision upload state (all data pre-loaded from server) ===
+  const [revisionVideos] = useState<RevisionVideoOption[]>(initialRevisionVideos);
   const [selectedRevisionVideoId, setSelectedRevisionVideoId] = useState("");
-  const [revisionDetail, setRevisionDetail] = useState<RevisionDetail | null>(
-    null
+
+  // Detail is instant: just look up from pre-fetched data, no API call
+  const revisionDetail = useMemo(
+    () => revisionVideos.find((v) => v.id === selectedRevisionVideoId)?.detail ?? null,
+    [revisionVideos, selectedRevisionVideoId]
   );
-  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
   // === Shared state ===
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
