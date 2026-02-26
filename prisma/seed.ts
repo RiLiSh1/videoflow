@@ -176,10 +176,10 @@ async function main() {
     draftVideos.push(video);
   }
 
-  // --- REVISION_REQUESTED videos (project1: 2, project2: 3) ---
+  // --- REVISION_REQUESTED videos (project1: 4, project2: 6) ---
   const revisionVideos = [];
-  for (let i = 0; i < 5; i++) {
-    const proj = i < 2 ? project1 : project2;
+  for (let i = 0; i < 10; i++) {
+    const proj = i < 4 ? project1 : project2;
     const video = await prisma.video.create({
       data: {
         videoCode: `VID-${String(videoSeq++).padStart(3, "0")}`,
