@@ -116,17 +116,17 @@ export default function CreatorUploadPage() {
       });
   }, [activeTab, revisionsFetched]);
 
-  // Fetch detail (feedbacks, referenceUrls) only when a revision video is selected
+  // Fetch lightweight detail only when a revision video is selected
   useEffect(() => {
     if (!selectedRevisionVideoId) {
-      setSelectedRevisionDetail(null);
+      setRevisionDetail(null);
       return;
     }
     setIsLoadingDetail(true);
-    fetch(`/api/videos/${selectedRevisionVideoId}`)
+    fetch(`/api/videos/${selectedRevisionVideoId}/revision-detail`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.success) setSelectedRevisionDetail(data.data);
+        if (data.success) setRevisionDetail(data.data);
       })
       .catch(() => {})
       .finally(() => setIsLoadingDetail(false));
