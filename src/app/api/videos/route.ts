@@ -118,8 +118,10 @@ export async function POST(request: Request) {
         creatorId: auth.role === "CREATOR" ? auth.id : body.creatorId || auth.id,
         directorId: directorId || null,
         deadline: deadline ? new Date(deadline) : null,
+        videoType: videoType || null,
+        videoTypeOther: videoTypeOther || null,
         referenceUrls: referenceUrls ? {
-          create: referenceUrls.map((ref: { url: string; platform?: string }, i: number) => ({
+          create: referenceUrls.map((ref: { url: string; platform?: string | null }, i: number) => ({
             url: ref.url,
             platform: ref.platform || null,
             sortOrder: i,
