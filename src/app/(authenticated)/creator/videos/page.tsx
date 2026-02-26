@@ -4,7 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { PageContainer } from "@/components/layout/page-container";
 import { Button } from "@/components/ui/button";
-import { formatDate, formatRelative } from "@/lib/utils/format-date";
+import { formatDate } from "@/lib/utils/format-date";
 import { VideosTable } from "./_components/videos-table";
 
 export default async function CreatorVideosPage() {
