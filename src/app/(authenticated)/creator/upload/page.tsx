@@ -29,12 +29,19 @@ type VideoOption = {
   project: { id: string; projectCode: string; name: string };
   director: { id: string; name: string } | null;
   referenceUrls?: { url: string; platform: string | null }[];
+  versions?: {
+    id: string;
+    versionNumber: number;
+    fileName: string;
+    googleDriveUrl: string | null;
+    createdAt: string;
+  }[];
   feedbacks?: {
     comment: string;
     videoTimestamp: number | null;
     createdAt: string;
     user: { name: string; role: string };
-    version: { versionNumber: number } | null;
+    version: { id: string; versionNumber: number } | null;
   }[];
   _count?: { versions: number };
 };
