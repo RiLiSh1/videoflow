@@ -91,58 +91,6 @@ export default async function DirectorDashboardPage() {
     recentVideos,
     projectProgress,
   } = await getDashboardData(directorId);
-    // 1. Summary counts — DB-level groupBy, no row data transferred
-    prisma.video.groupBy({
-      by: ["status"],
-      where: { directorId },
-      _count: true,
-    }),
-
-    // 2. Action required — only SUBMITTED/REVISED/IN_REVIEW, max 6
-    prisma.video.findMany({
-      where: {
-        directorId,
-        status: { in: ["SUBMITTED", "REVISED", "IN_REVIEW"] },
-      },
-      select: {
-        id: true,
-        title: true,
-        status: true,
-        updatedAt: true,
-        project: { select: { name: true } },
-        creator: { select: { name: true } },
-      },
-      orderBy: { updatedAt: "desc" },
-      take: 6,
-    }),
-
-    // 3. Recent updates — last 8, minimal fields
-    prisma.video.findMany({
-      where: { directorId },
-      select: {
-        id: true,
-        videoCode: true,
-        title: true,
-        status: true,
-        updatedAt: true,
-        creator: { select: { name: true } },
-      },
-      orderBy: { updatedAt: "desc" },
-      take: 8,
-    }),
-
-    // 4. Project progress — raw SQL for fast group-by with project info
-    prisma.$queryRaw<
-      { project_id: string; project_code: string; project_name: string; status: VideoStatus; cnt: bigint }[]
-    >`
-      SELECT v.project_id, p.project_code, p.name AS project_name, v.status, COUNT(*)::bigint AS cnt
-      FROM videos v
-      JOIN projects p ON p.id = v.project_id
-      WHERE v.director_id = ${directorId}
-      GROUP BY v.project_id, p.project_code, p.name, v.status
-      ORDER BY p.project_code
-    `,
-  ]);
 
   // Process summary counts
   const countMap: Partial<Record<VideoStatus, number>> = {};
