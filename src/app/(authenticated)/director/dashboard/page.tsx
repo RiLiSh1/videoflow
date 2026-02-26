@@ -20,108 +20,103 @@ export default async function DirectorDashboardPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const videos = await prisma.video.findMany({
-    where: { directorId: session.id },
-    include: {
-      project: { select: { id: true, projectCode: true, name: true } },
-      creator: { select: { id: true, name: true } },
-      _count: { select: { feedbacks: true } },
-    },
-    orderBy: { updatedAt: "desc" },
-  });
+  const directorId = session.id;
 
-  // Summary counts
-  const totalAssigned = videos.length;
-  const pendingReview = videos.filter(
-    (v) => v.status === "SUBMITTED" || v.status === "REVISED"
-  );
-  const inReview = videos.filter((v) => v.status === "IN_REVIEW");
-  const revisionRequested = videos.filter(
-    (v) => v.status === "REVISION_REQUESTED"
-  );
-  const completed = videos.filter(
-    (v) => v.status === "COMPLETED" || v.status === "APPROVED"
-  );
+  // All queries in parallel, each fetching only what it needs
+  const [
+    statusCounts,
+    actionVideos,
+    recentVideos,
+    projectProgress,
+  ] = await Promise.all([
+    // 1. Summary counts — DB-level groupBy, no row data transferred
+    prisma.video.groupBy({
+      by: ["status"],
+      where: { directorId },
+      _count: true,
+    }),
 
-  // Recent activity (last 10 updated)
-  const recentVideos = videos.slice(0, 8);
+    // 2. Action required — only SUBMITTED/REVISED/IN_REVIEW, max 6
+    prisma.video.findMany({
+      where: {
+        directorId,
+        status: { in: ["SUBMITTED", "REVISED", "IN_REVIEW"] },
+      },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        updatedAt: true,
+        project: { select: { name: true } },
+        creator: { select: { name: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 6,
+    }),
 
-  // Urgent: pending review items (needs action)
-  const actionRequired = [...pendingReview, ...inReview].sort(
-    (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()
+    // 3. Recent updates — last 8, minimal fields
+    prisma.video.findMany({
+      where: { directorId },
+      select: {
+        id: true,
+        videoCode: true,
+        title: true,
+        status: true,
+        updatedAt: true,
+        creator: { select: { name: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 8,
+    }),
+
+    // 4. Project progress — raw SQL for fast group-by with project info
+    prisma.$queryRaw<
+      { project_id: string; project_code: string; project_name: string; status: VideoStatus; cnt: bigint }[]
+    >`
+      SELECT v.project_id, p.project_code, p.name AS project_name, v.status, COUNT(*)::bigint AS cnt
+      FROM videos v
+      JOIN projects p ON p.id = v.project_id
+      WHERE v.director_id = ${directorId}
+      GROUP BY v.project_id, p.project_code, p.name, v.status
+      ORDER BY p.project_code
+    `,
+  ]);
+
+  // Process summary counts
+  const countMap: Partial<Record<VideoStatus, number>> = {};
+  let totalAssigned = 0;
+  for (const row of statusCounts) {
+    countMap[row.status] = row._count;
+    totalAssigned += row._count;
+  }
+  const pendingCount = (countMap["SUBMITTED"] || 0) + (countMap["REVISED"] || 0);
+  const revisionCount = countMap["REVISION_REQUESTED"] || 0;
+  const completedCount = (countMap["COMPLETED"] || 0) + (countMap["APPROVED"] || 0);
+
+  // Process project progress
+  const projectMap = new Map<string, { code: string; name: string; total: number; completed: number }>();
+  for (const row of projectProgress) {
+    const key = row.project_id;
+    if (!projectMap.has(key)) {
+      projectMap.set(key, { code: row.project_code, name: row.project_name, total: 0, completed: 0 });
+    }
+    const entry = projectMap.get(key)!;
+    const cnt = Number(row.cnt);
+    entry.total += cnt;
+    if (row.status === "COMPLETED" || row.status === "APPROVED") {
+      entry.completed += cnt;
+    }
+  }
+  const projects = Array.from(projectMap.values()).sort(
+    (a, b) => (a.total > 0 ? a.completed / a.total : 0) - (b.total > 0 ? b.completed / b.total : 0)
   );
 
   const summaryCards = [
-    {
-      label: "担当動画数",
-      value: totalAssigned,
-      icon: ClipboardList,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-      borderColor: "border-blue-200",
-    },
-    {
-      label: "レビュー待ち",
-      value: pendingReview.length,
-      icon: Clock,
-      color: "text-amber-600",
-      bgColor: "bg-amber-50",
-      borderColor: "border-amber-200",
-      urgent: pendingReview.length > 0,
-    },
-    {
-      label: "修正依頼中",
-      value: revisionRequested.length,
-      icon: AlertTriangle,
-      color: "text-red-600",
-      bgColor: "bg-red-50",
-      borderColor: "border-red-200",
-    },
-    {
-      label: "承認・完了",
-      value: completed.length,
-      icon: CheckCircle2,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-      borderColor: "border-green-200",
-    },
+    { label: "担当動画数", value: totalAssigned, icon: ClipboardList, color: "text-blue-600", bgColor: "bg-blue-50", borderColor: "border-blue-200", urgent: false },
+    { label: "レビュー待ち", value: pendingCount, icon: Clock, color: "text-amber-600", bgColor: "bg-amber-50", borderColor: "border-amber-200", urgent: pendingCount > 0 },
+    { label: "修正依頼中", value: revisionCount, icon: AlertTriangle, color: "text-red-600", bgColor: "bg-red-50", borderColor: "border-red-200", urgent: false },
+    { label: "承認・完了", value: completedCount, icon: CheckCircle2, color: "text-green-600", bgColor: "bg-green-50", borderColor: "border-green-200", urgent: false },
   ];
-
-  // Group by project for progress overview
-  const projectMap = new Map<
-    string,
-    {
-      projectCode: string;
-      name: string;
-      total: number;
-      completed: number;
-      statusCounts: Partial<Record<VideoStatus, number>>;
-    }
-  >();
-
-  for (const video of videos) {
-    const key = video.project.id;
-    if (!projectMap.has(key)) {
-      projectMap.set(key, {
-        projectCode: video.project.projectCode,
-        name: video.project.name,
-        total: 0,
-        completed: 0,
-        statusCounts: {},
-      });
-    }
-    const entry = projectMap.get(key)!;
-    entry.total++;
-    if (video.status === "COMPLETED" || video.status === "APPROVED") {
-      entry.completed++;
-    }
-    entry.statusCounts[video.status] =
-      (entry.statusCounts[video.status] || 0) + 1;
-  }
-
-  const projects = Array.from(projectMap.values()).sort(
-    (a, b) => a.completed / a.total - b.completed / b.total
-  );
 
   return (
     <PageContainer title="ダッシュボード">
@@ -152,9 +147,8 @@ export default async function DirectorDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Action Required */}
+        {/* Left: Action Required + Recent */}
         <div className="lg:col-span-2 space-y-6">
-          {/* レビュー待ち */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -163,9 +157,9 @@ export default async function DirectorDashboardPage() {
                   <h2 className="text-base font-semibold text-gray-900">
                     対応が必要な動画
                   </h2>
-                  {actionRequired.length > 0 && (
+                  {actionVideos.length > 0 && (
                     <span className="inline-flex items-center justify-center rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-white">
-                      {actionRequired.length}
+                      {actionVideos.length}
                     </span>
                   )}
                 </div>
@@ -179,7 +173,7 @@ export default async function DirectorDashboardPage() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              {actionRequired.length === 0 ? (
+              {actionVideos.length === 0 ? (
                 <div className="px-6 py-8 text-center">
                   <CheckCircle2 className="mx-auto h-10 w-10 text-green-300 mb-2" />
                   <p className="text-sm text-gray-500">
@@ -188,7 +182,7 @@ export default async function DirectorDashboardPage() {
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100">
-                  {actionRequired.slice(0, 6).map((video) => (
+                  {actionVideos.map((video) => (
                     <Link
                       key={video.id}
                       href={`/director/reviews/${video.id}`}
@@ -211,22 +205,11 @@ export default async function DirectorDashboardPage() {
                       </div>
                     </Link>
                   ))}
-                  {actionRequired.length > 6 && (
-                    <div className="px-6 py-2 text-center">
-                      <Link
-                        href="/director/reviews"
-                        className="text-xs text-primary-600 hover:underline"
-                      >
-                        他 {actionRequired.length - 6} 件を表示
-                      </Link>
-                    </div>
-                  )}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* 最近の更新 */}
           <Card>
             <CardHeader>
               <h2 className="text-base font-semibold text-gray-900">
@@ -293,22 +276,15 @@ export default async function DirectorDashboardPage() {
               ) : (
                 <div className="space-y-5">
                   {projects.map((project) => {
-                    const pct =
-                      project.total > 0
-                        ? Math.round(
-                            (project.completed / project.total) * 100
-                          )
-                        : 0;
+                    const pct = project.total > 0 ? Math.round((project.completed / project.total) * 100) : 0;
                     return (
-                      <div key={project.projectCode}>
+                      <div key={project.code}>
                         <div className="flex items-center justify-between mb-1.5">
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate">
                               {project.name}
                             </p>
-                            <p className="text-xs text-gray-400">
-                              {project.projectCode}
-                            </p>
+                            <p className="text-xs text-gray-400">{project.code}</p>
                           </div>
                           <span className="text-xs font-medium text-gray-600 flex-shrink-0 ml-2">
                             {project.completed}/{project.total} ({pct}%)
