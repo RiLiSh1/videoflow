@@ -537,24 +537,21 @@ export default function CreatorUploadPage() {
               <h2 className="text-lg font-semibold text-gray-900">
                 動画種別
               </h2>
-              <p className="text-sm text-gray-500 mt-1">
-                アップロードする動画の種別を選択してください
-              </p>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
                 {[
-                  { value: "ORIGINAL" as const, label: "オリジナル動画", desc: "新規で制作したオリジナルの動画" },
-                  { value: "REMAKE" as const, label: "リメイク動画", desc: "既存の動画をベースにリメイクした動画" },
-                  { value: "OTHER" as const, label: "その他", desc: "上記に該当しない動画" },
+                  { value: "ORIGINAL" as const, label: "オリジナル動画" },
+                  { value: "REMAKE" as const, label: "リメイク動画" },
+                  { value: "OTHER" as const, label: "その他" },
                 ].map((option) => (
                   <label
                     key={option.value}
                     className={cn(
-                      "flex items-start gap-3 rounded-lg border p-4 cursor-pointer transition-colors",
+                      "flex items-center gap-2 rounded-full border px-4 py-2 cursor-pointer transition-colors text-sm",
                       videoType === option.value
-                        ? "border-primary-500 bg-primary-50"
-                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                        ? "border-primary-500 bg-primary-50 text-primary-700 font-medium"
+                        : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
                     )}
                   >
                     <input
@@ -566,30 +563,23 @@ export default function CreatorUploadPage() {
                         setVideoType(option.value);
                         if (option.value !== "OTHER") setVideoTypeOther("");
                       }}
-                      className="mt-0.5 h-4 w-4 text-primary-600"
+                      className="sr-only"
                     />
-                    <div>
-                      <span className="text-sm font-medium text-gray-900">
-                        {option.label}
-                      </span>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {option.desc}
-                      </p>
-                    </div>
+                    {option.label}
                   </label>
                 ))}
-
-                {videoType === "OTHER" && (
-                  <div className="ml-7">
-                    <Input
-                      id="videoTypeOther"
-                      placeholder="動画種別の詳細を入力してください"
-                      value={videoTypeOther}
-                      onChange={(e) => setVideoTypeOther(e.target.value)}
-                    />
-                  </div>
-                )}
               </div>
+
+              {videoType === "OTHER" && (
+                <div className="mt-3">
+                  <Input
+                    id="videoTypeOther"
+                    placeholder="詳細を入力してください"
+                    value={videoTypeOther}
+                    onChange={(e) => setVideoTypeOther(e.target.value)}
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
 
