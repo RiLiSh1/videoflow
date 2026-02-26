@@ -1,4 +1,4 @@
-import { PrismaClient, Role, VideoStatus, ProjectStatus } from "@prisma/client";
+import { PrismaClient, Role, ProjectStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -96,80 +96,118 @@ async function main() {
   console.log("Users created");
 
   // ============================================================
-  // Project
+  // Projects
   // ============================================================
-  const project = await prisma.project.create({
+  const project1 = await prisma.project.create({
     data: {
       projectCode: "PRJ-001",
-      name: "サンプル動画案件",
-      description: "テスト用のサンプル案件です。全ステータスの動画が含まれています。",
-      deadline: new Date("2026-03-31"),
+      name: "春キャンペーン動画",
+      description: "2026年春のプロモーション用動画制作案件",
+      deadline: new Date("2026-04-30"),
       status: ProjectStatus.ACTIVE,
       createdBy: admin.id,
     },
   });
 
-  // Assign directors to project
+  const project2 = await prisma.project.create({
+    data: {
+      projectCode: "PRJ-002",
+      name: "商品紹介シリーズ",
+      description: "ECサイト向け商品紹介動画シリーズ",
+      deadline: new Date("2026-05-31"),
+      status: ProjectStatus.ACTIVE,
+      createdBy: admin.id,
+    },
+  });
+
   await prisma.projectDirector.createMany({
     data: [
-      { projectId: project.id, userId: director1.id },
-      { projectId: project.id, userId: director2.id },
+      { projectId: project1.id, userId: director1.id },
+      { projectId: project1.id, userId: director2.id },
+      { projectId: project2.id, userId: director1.id },
     ],
   });
 
-  console.log("Project created");
+  console.log("Projects created");
 
   // ============================================================
-  // Videos (one per status)
+  // Videos — 5 DRAFT + 5 REVISION_REQUESTED = 10 total
+  // All assigned to creator1 for demo
   // ============================================================
-  const statuses: VideoStatus[] = [
-    "DRAFT",
-    "SUBMITTED",
-    "IN_REVIEW",
-    "REVISION_REQUESTED",
-    "REVISED",
-    "APPROVED",
-    "FINAL_REVIEW",
-    "COMPLETED",
-  ];
-
-  const creators = [creator1, creator2, creator3];
   const directors = [director1, director2];
 
-  const videos = [];
-  for (let i = 0; i < statuses.length; i++) {
+  const draftTitles = [
+    "春セール告知動画",
+    "新商品ティザー映像",
+    "ブランドストーリー #3",
+    "Instagram リール用素材",
+    "TikTok プロモ動画",
+  ];
+
+  const revisionTitles = [
+    "商品レビュー動画 A",
+    "How-to ガイド #1",
+    "キャンペーンCM 30秒版",
+    "スタッフ紹介動画",
+    "お客様の声インタビュー",
+  ];
+
+  // --- DRAFT videos (project1: 3, project2: 2) ---
+  const draftVideos = [];
+  for (let i = 0; i < 5; i++) {
+    const proj = i < 3 ? project1 : project2;
     const video = await prisma.video.create({
       data: {
-        videoCode: `VID-${String(i + 1).padStart(3, "0")}`,
-        projectId: project.id,
-        title: `サンプル動画 ${i + 1} (${statuses[i]})`,
-        creatorId: creators[i % creators.length].id,
-        directorId: directors[i % directors.length].id,
-        status: statuses[i],
-        deadline: new Date("2026-03-15"),
+        videoCode: `${proj.projectCode}-V${String(i + 1).padStart(3, "0")}`,
+        projectId: proj.id,
+        title: draftTitles[i],
+        creatorId: creator1.id,
+        directorId: directors[i % 2].id,
+        status: "DRAFT",
+        deadline: new Date("2026-04-15"),
       },
     });
-    videos.push(video);
+    draftVideos.push(video);
   }
 
-  console.log("Videos created");
+  // --- REVISION_REQUESTED videos (project1: 2, project2: 3) ---
+  const revisionVideos = [];
+  for (let i = 0; i < 5; i++) {
+    const proj = i < 2 ? project1 : project2;
+    const vidNum = i < 2 ? i + 6 : i + 1;
+    const video = await prisma.video.create({
+      data: {
+        videoCode: `${proj.projectCode}-V${String(vidNum).padStart(3, "0")}`,
+        projectId: proj.id,
+        title: revisionTitles[i],
+        creatorId: creator1.id,
+        directorId: directors[i % 2].id,
+        status: "REVISION_REQUESTED",
+        deadline: new Date("2026-03-20"),
+      },
+    });
+    revisionVideos.push(video);
+  }
+
+  console.log("Videos created (10 total: 5 DRAFT + 5 REVISION_REQUESTED)");
 
   // ============================================================
-  // Reference URLs (for first 3 videos)
+  // Reference URLs — for revision videos
   // ============================================================
-  for (let i = 0; i < 3; i++) {
+  const platforms = ["Instagram", "TikTok", "YouTube"];
+  for (const video of revisionVideos) {
     await prisma.referenceUrl.createMany({
       data: [
         {
-          videoId: videos[i].id,
-          url: `https://www.youtube.com/watch?v=sample${i + 1}`,
-          platform: "YouTube",
+          videoId: video.id,
+          url: `https://www.instagram.com/reel/sample_${video.videoCode}`,
+          platform: "Instagram",
           sortOrder: 0,
         },
         {
-          videoId: videos[i].id,
-          url: `https://vimeo.com/sample${i + 1}`,
-          platform: "Vimeo",
+          videoId: video.id,
+          url: `https://www.tiktok.com/@sample/video/${video.videoCode}`,
+          platform: "TikTok",
           sortOrder: 1,
         },
       ],
@@ -179,40 +217,69 @@ async function main() {
   console.log("Reference URLs created");
 
   // ============================================================
-  // Versions (for submitted+ videos)
+  // Versions — v1 for each revision video
   // ============================================================
-  for (let i = 1; i < videos.length; i++) {
-    await prisma.version.create({
+  const versions = [];
+  for (let i = 0; i < revisionVideos.length; i++) {
+    const v = await prisma.version.create({
       data: {
-        videoId: videos[i].id,
+        videoId: revisionVideos[i].id,
         versionNumber: 1,
-        fileName: `video_${i + 1}_v1.mp4`,
-        fileSize: BigInt(1024 * 1024 * (50 + i * 10)),
+        fileName: `${revisionVideos[i].videoCode}_v1.mp4`,
+        fileSize: BigInt(1024 * 1024 * (40 + i * 15)),
         mimeType: "video/mp4",
-        googleDriveFileId: `gdrive_file_${i + 1}_v1`,
-        googleDriveUrl: `https://drive.google.com/file/d/sample${i + 1}/view`,
-        uploadedBy: creators[i % creators.length].id,
+        googleDriveUrl: `https://drive.google.com/file/d/sample_${i + 1}/view`,
+        uploadedBy: creator1.id,
       },
     });
+    versions.push(v);
+  }
 
-    // Add v2 for revised/approved+ videos
-    if (i >= 4) {
-      await prisma.version.create({
+  console.log("Versions created");
+
+  // ============================================================
+  // Feedbacks — revision videos have director feedback
+  // ============================================================
+  const feedbackComments = [
+    [
+      { comment: "冒頭の5秒が長すぎるので、3秒以内にまとめてください。ロゴのアニメーションはもう少しスムーズに。", ts: 5 },
+      { comment: "BGMの音量が大きすぎます。ナレーションが聞き取りにくいので調整をお願いします。", ts: 30 },
+    ],
+    [
+      { comment: "テロップのフォントサイズが小さいです。スマホ表示を考慮して大きめにしてください。", ts: 12 },
+      { comment: "エンディングのCTAボタンのデザインを変更してください。ブランドカラーに合わせてください。", ts: 58 },
+      { comment: "全体的にテンポが遅いです。カット間のトランジションを短くしてください。", ts: null },
+    ],
+    [
+      { comment: "商品のクローズアップが足りません。0:15〜0:20あたりで商品を大きく映してください。", ts: 15 },
+    ],
+    [
+      { comment: "ナレーションのトーンがブランドイメージと合っていません。もう少し明るい雰囲気でお願いします。", ts: null },
+      { comment: "最後のロゴ表示が短すぎます。2秒以上表示してください。", ts: 45 },
+    ],
+    [
+      { comment: "インタビュー部分の字幕にタイポがあります。「製品」→「商品」に統一してください。", ts: 22 },
+      { comment: "カラーグレーディングが暗すぎます。全体的に明るく調整してください。", ts: null },
+      { comment: "BGMの選曲を変更してください。もう少し落ち着いた雰囲気のものを。", ts: 8 },
+    ],
+  ];
+
+  for (let i = 0; i < revisionVideos.length; i++) {
+    for (const fb of feedbackComments[i]) {
+      await prisma.feedback.create({
         data: {
-          videoId: videos[i].id,
-          versionNumber: 2,
-          fileName: `video_${i + 1}_v2.mp4`,
-          fileSize: BigInt(1024 * 1024 * (55 + i * 10)),
-          mimeType: "video/mp4",
-          googleDriveFileId: `gdrive_file_${i + 1}_v2`,
-          googleDriveUrl: `https://drive.google.com/file/d/sample${i + 1}_v2/view`,
-          uploadedBy: creators[i % creators.length].id,
+          versionId: versions[i].id,
+          videoId: revisionVideos[i].id,
+          userId: directors[i % 2].id,
+          comment: fb.comment,
+          videoTimestamp: fb.ts,
+          actionType: "REVISION_REQUESTED",
         },
       });
     }
   }
 
-  console.log("Versions created");
+  console.log("Feedbacks created");
 
   // ============================================================
   // Google Drive Settings
@@ -228,6 +295,11 @@ async function main() {
 
   console.log("Google Drive settings created");
   console.log("Seeding completed!");
+  console.log("");
+  console.log("=== ログイン情報 ===");
+  console.log("管理者:       admin / admin123");
+  console.log("ディレクター: director1 / director123");
+  console.log("クリエイター: creator1 / creator123");
 }
 
 main()
