@@ -10,7 +10,6 @@ import type { VideoStatus } from "@prisma/client";
 import {
   ClipboardList,
   Clock,
-  Search,
   CheckCircle2,
   AlertTriangle,
   ArrowRight,
