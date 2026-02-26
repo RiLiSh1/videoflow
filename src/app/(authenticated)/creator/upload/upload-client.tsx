@@ -46,6 +46,10 @@ type RevisionDetail = {
   referenceUrls: { url: string; platform: string | null }[];
 };
 
+type RevisionVideoOption = VideoOption & {
+  detail: RevisionDetail;
+};
+
 type UploadResult = {
   fileName: string;
   fileSize: number;
@@ -56,7 +60,7 @@ type UploadResult = {
 
 type Props = {
   initialProjects: ProjectOption[];
-  initialRevisionVideos: VideoOption[];
+  initialRevisionVideos: RevisionVideoOption[];
 };
 
 export default function UploadClient({
