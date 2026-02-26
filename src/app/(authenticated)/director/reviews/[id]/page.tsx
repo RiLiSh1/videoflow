@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { PageContainer } from "@/components/layout/page-container";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/domain/status-badge";
-import { formatDate, formatDateTime } from "@/lib/utils/format-date";
+import { formatDate } from "@/lib/utils/format-date";
 import { ReviewClient } from "./_components/review-client";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 
