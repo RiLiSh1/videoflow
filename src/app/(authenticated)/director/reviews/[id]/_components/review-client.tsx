@@ -235,34 +235,18 @@ export function ReviewClient({
 
   return (
     <>
-      {/* Status Actions - Start Review */}
+      {/* Notice Banner */}
       {canStartReview && (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardContent>
-            <div className="flex items-center justify-between py-2">
-              <div>
-                <p className="text-sm font-medium text-amber-800">
-                  {currentStatus === "SUBMITTED"
-                    ? "新しい動画が提出されました"
-                    : "修正版が提出されました"}
-                </p>
-                <p className="text-xs text-amber-600 mt-0.5">
-                  レビューを開始してください
-                </p>
-              </div>
-              <Button
-                variant="primary"
-                size="sm"
-                loading={statusLoading === "IN_REVIEW"}
-                onClick={() =>
-                  handleStatusChange("IN_REVIEW", "レビューを開始")
-                }
-              >
-                レビュー開始
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm font-medium text-amber-800">
+            {currentStatus === "SUBMITTED"
+              ? "新しい動画が提出されました"
+              : "修正版が提出されました"}
+          </p>
+          <p className="text-xs text-amber-600 mt-0.5">
+            動画を確認して、フィードバック・承認・差し戻しを行ってください
+          </p>
+        </div>
       )}
 
       {/* Feedback Form */}
