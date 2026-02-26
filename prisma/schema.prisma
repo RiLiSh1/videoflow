@@ -1,0 +1,223 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// Enums
+// ============================================================
+
+enum Role {
+  CREATOR
+  DIRECTOR
+  ADMIN
+}
+
+enum VideoStatus {
+  DRAFT
+  SUBMITTED
+  IN_REVIEW
+  REVISION_REQUESTED
+  REVISED
+  APPROVED
+  FINAL_REVIEW
+  COMPLETED
+
+  @@map("video_status")
+}
+
+enum ProjectStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+
+  @@map("project_status")
+}
+
+// ============================================================
+// Models
+// ============================================================
+
+model User {
+  id           String   @id @default(cuid())
+  loginId      String   @unique @map("login_id")
+  passwordHash String   @map("password_hash")
+  name         String
+  email        String?
+  role         Role     @default(CREATOR)
+  chatworkId   String?  @map("chatwork_id")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  createdProjects   Project[]          @relation("ProjectCreatedBy")
+  directorProjects  ProjectDirector[]
+  createdVideos     Video[]            @relation("VideoCreator")
+  directedVideos    Video[]            @relation("VideoDirector")
+  versions          Version[]
+  feedbacks         Feedback[]
+  triggeredNotifications Notification[] @relation("NotificationTriggeredBy")
+  targetNotifications    Notification[] @relation("NotificationTarget")
+
+  @@map("users")
+}
+
+model Project {
+  id                  String        @id @default(cuid())
+  projectCode         String        @unique @map("project_code")
+  name                String
+  description         String?
+  googleDriveFolderId String?       @map("google_drive_folder_id")
+  deadline            DateTime?
+  status              ProjectStatus @default(ACTIVE)
+  createdBy           String        @map("created_by")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  creator    User              @relation("ProjectCreatedBy", fields: [createdBy], references: [id])
+  directors  ProjectDirector[]
+  videos     Video[]
+
+  @@index([status])
+  @@index([createdBy])
+  @@map("projects")
+}
+
+model ProjectDirector {
+  projectId  String   @map("project_id")
+  userId     String   @map("user_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, userId])
+  @@map("project_directors")
+}
+
+model Video {
+  id                  String      @id @default(cuid())
+  videoCode           String      @unique @map("video_code")
+  projectId           String      @map("project_id")
+  title               String
+  creatorId           String      @map("creator_id")
+  directorId          String?     @map("director_id")
+  status              VideoStatus @default(DRAFT)
+  googleDriveFolderId String?     @map("google_drive_folder_id")
+  deadline            DateTime?
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator       User           @relation("VideoCreator", fields: [creatorId], references: [id])
+  director      User?          @relation("VideoDirector", fields: [directorId], references: [id])
+  referenceUrls ReferenceUrl[]
+  versions      Version[]
+  feedbacks     Feedback[]
+  notifications Notification[]
+
+  @@index([status])
+  @@index([creatorId])
+  @@index([directorId])
+  @@index([projectId])
+  @@map("videos")
+}
+
+model ReferenceUrl {
+  id        String   @id @default(cuid())
+  videoId   String   @map("video_id")
+  url       String
+  platform  String?
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+  @@map("reference_urls")
+}
+
+model Version {
+  id               String   @id @default(cuid())
+  videoId          String   @map("video_id")
+  versionNumber    Int      @map("version_number")
+  fileName         String   @map("file_name")
+  fileSize         BigInt   @map("file_size")
+  mimeType         String?  @map("mime_type")
+  googleDriveFileId String? @map("google_drive_file_id")
+  googleDriveUrl   String?  @map("google_drive_url")
+  uploadedBy       String   @map("uploaded_by")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Relations
+  video     Video      @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  uploader  User       @relation(fields: [uploadedBy], references: [id])
+  feedbacks Feedback[]
+
+  @@unique([videoId, versionNumber])
+  @@index([videoId])
+  @@map("versions")
+}
+
+model Feedback {
+  id             String   @id @default(cuid())
+  versionId      String   @map("version_id")
+  videoId        String   @map("video_id")
+  userId         String   @map("user_id")
+  comment        String
+  videoTimestamp  Float?   @map("video_timestamp")
+  actionType     String?  @map("action_type")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  version Version @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  video   Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([versionId])
+  @@index([videoId])
+  @@index([userId])
+  @@map("feedbacks")
+}
+
+model GoogleDriveSetting {
+  id                String   @id @default(cuid())
+  name              String
+  driveId           String?  @map("drive_id")
+  rootFolderId      String?  @map("root_folder_id")
+  serviceAccountKey String?  @map("service_account_key") @db.Text
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("google_drive_settings")
+}
+
+model Notification {
+  id           String   @id @default(cuid())
+  type         String
+  videoId      String?  @map("video_id")
+  triggeredBy  String   @map("triggered_by")
+  targetUserId String   @map("target_user_id")
+  message      String
+  chatworkSent Boolean  @default(false) @map("chatwork_sent")
+  isRead       Boolean  @default(false) @map("is_read")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  video      Video? @relation(fields: [videoId], references: [id], onDelete: SetNull)
+  triggerer  User   @relation("NotificationTriggeredBy", fields: [triggeredBy], references: [id])
+  targetUser User   @relation("NotificationTarget", fields: [targetUserId], references: [id])
+
+  @@index([targetUserId, isRead])
+  @@index([videoId])
+  @@map("notifications")
+}
