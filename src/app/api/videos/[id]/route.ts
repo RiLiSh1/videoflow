@@ -59,12 +59,16 @@ export async function PUT(
 
   try {
     const body = await request.json();
-    const { title, directorId, deadline } = body;
+    const { title, directorId, deadline, videoType, videoTypeOther } = body;
 
     const updateData: Record<string, unknown> = {};
     if (title !== undefined) updateData.title = title;
     if (directorId !== undefined) updateData.directorId = directorId || null;
     if (deadline !== undefined) updateData.deadline = deadline ? new Date(deadline) : null;
+    if (videoType !== undefined) {
+      updateData.videoType = videoType;
+      updateData.videoTypeOther = videoType === "OTHER" ? (videoTypeOther || null) : null;
+    }
 
     const video = await prisma.video.update({
       where: { id },
