@@ -136,6 +136,53 @@ export function ReviewClient({
     }
   };
 
+  // Approve or reject with auto-transition through IN_REVIEW if needed
+  const handleApproveOrReject = async (
+    targetStatus: "APPROVED" | "REVISION_REQUESTED",
+    label: string
+  ) => {
+    setStatusLoading(targetStatus);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      // If current status is SUBMITTED or REVISED, first transition to IN_REVIEW
+      if (["SUBMITTED", "REVISED"].includes(currentStatus)) {
+        const midRes = await fetch(`/api/videos/${videoId}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "IN_REVIEW" }),
+        });
+        const midResult = await midRes.json();
+        if (!midResult.success) {
+          setError(midResult.error || "ステータスの更新に失敗しました");
+          return;
+        }
+      }
+
+      // Now perform the actual approve/reject
+      const res = await fetch(`/api/videos/${videoId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: targetStatus }),
+      });
+      const result = await res.json();
+
+      if (!result.success) {
+        setError(result.error || "ステータスの更新に失敗しました");
+        return;
+      }
+
+      setSuccessMessage(`${label}しました`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+      router.refresh();
+    } catch {
+      setError("ステータスの更新に失敗しました");
+    } finally {
+      setStatusLoading(null);
+    }
+  };
+
   const handleStatusChange = async (
     targetStatus: VideoStatus,
     label: string
