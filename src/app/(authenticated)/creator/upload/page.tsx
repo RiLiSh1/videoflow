@@ -93,16 +93,37 @@ export default function CreatorUploadPage() {
       .finally(() => setIsLoadingProjects(false));
   }, []);
 
-  // Fetch revision videos (REVISION_REQUESTED status)
+  // Fetch revision videos only when tab is active (lazy)
   useEffect(() => {
+    if (activeTab !== "revision" || revisionsFetched) return;
+    setIsLoadingRevisions(true);
     fetch("/api/videos?status=REVISION_REQUESTED")
       .then((res) => res.json())
       .then((data) => {
         if (data.success) setRevisionVideos(data.data);
       })
       .catch(() => {})
-      .finally(() => setIsLoadingRevisions(false));
-  }, []);
+      .finally(() => {
+        setIsLoadingRevisions(false);
+        setRevisionsFetched(true);
+      });
+  }, [activeTab, revisionsFetched]);
+
+  // Fetch detail (feedbacks, referenceUrls) only when a revision video is selected
+  useEffect(() => {
+    if (!selectedRevisionVideoId) {
+      setSelectedRevisionDetail(null);
+      return;
+    }
+    setIsLoadingDetail(true);
+    fetch(`/api/videos/${selectedRevisionVideoId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setSelectedRevisionDetail(data.data);
+      })
+      .catch(() => {})
+      .finally(() => setIsLoadingDetail(false));
+  }, [selectedRevisionVideoId]);
 
   // Fetch new videos when project changes
   useEffect(() => {
