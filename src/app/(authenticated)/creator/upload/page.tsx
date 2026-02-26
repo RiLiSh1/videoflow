@@ -582,55 +582,69 @@ export default function CreatorUploadPage() {
             </Card>
           ) : (
             <>
-              {/* 差し戻し動画一覧から選択 */}
+              {/* 修正依頼一覧 */}
               <Card>
                 <CardHeader>
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    修正する動画を選択
-                  </h2>
-                  <p className="text-sm text-gray-500 mt-1">
-                    ディレクターから差し戻しされた動画です
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900">
+                        修正依頼一覧
+                      </h2>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {revisionVideos.length}件の修正依頼があります
+                      </p>
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
+                <CardContent className="p-0">
+                  {/* テーブルヘッダー */}
+                  <div className="grid grid-cols-[1fr_120px_100px_60px] gap-2 px-4 py-2 border-b border-gray-100 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <span>動画</span>
+                    <span>案件</span>
+                    <span>担当DIR</span>
+                    <span className="text-center">Ver</span>
+                  </div>
+                  {/* リスト（スクロール可能） */}
+                  <div className="max-h-[400px] overflow-y-auto divide-y divide-gray-100">
                     {revisionVideos.map((video) => (
                       <label
                         key={video.id}
                         className={cn(
-                          "flex items-center gap-4 rounded-lg border p-4 cursor-pointer transition-colors",
+                          "grid grid-cols-[1fr_120px_100px_60px] gap-2 items-center px-4 py-3 cursor-pointer transition-colors",
                           selectedRevisionVideoId === video.id
-                            ? "border-primary-500 bg-primary-50"
-                            : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                            ? "bg-primary-50 border-l-[3px] border-l-primary-500"
+                            : "hover:bg-gray-50 border-l-[3px] border-l-transparent"
                         )}
                       >
-                        <input
-                          type="radio"
-                          name="revisionVideo"
-                          value={video.id}
-                          checked={selectedRevisionVideoId === video.id}
-                          onChange={(e) =>
-                            setSelectedRevisionVideoId(e.target.value)
-                          }
-                          className="h-4 w-4 text-primary-600"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-gray-900 truncate">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <input
+                            type="radio"
+                            name="revisionVideo"
+                            value={video.id}
+                            checked={selectedRevisionVideoId === video.id}
+                            onChange={(e) =>
+                              setSelectedRevisionVideoId(e.target.value)
+                            }
+                            className="h-4 w-4 flex-shrink-0 text-primary-600"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
                               {video.title}
-                            </span>
-                            <StatusBadge status={video.status} />
+                            </p>
+                            <p className="text-xs text-gray-400 truncate">
+                              {video.videoCode}
+                            </p>
                           </div>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            {video.videoCode} / {video.project.name} (
-                            {video.project.projectCode})
-                            {video.director && ` / ${video.director.name}`}
-                          </p>
                         </div>
-                        <div className="flex items-center gap-1 text-xs text-gray-400">
-                          <MessageSquare className="h-3.5 w-3.5" />
-                          <span>v{(video._count?.versions || 0)}</span>
-                        </div>
+                        <span className="text-xs text-gray-600 truncate">
+                          {video.project.name}
+                        </span>
+                        <span className="text-xs text-gray-600 truncate">
+                          {video.director?.name || "-"}
+                        </span>
+                        <span className="text-xs text-gray-500 text-center">
+                          v{video._count?.versions || 0}
+                        </span>
                       </label>
                     ))}
                   </div>
