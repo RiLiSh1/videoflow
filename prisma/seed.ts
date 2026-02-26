@@ -194,7 +194,7 @@ async function main() {
     revisionVideos.push(video);
   }
 
-  console.log("Videos created (10 total: 5 DRAFT + 5 REVISION_REQUESTED)");
+  console.log("Videos created (15 total: 5 DRAFT + 10 REVISION_REQUESTED)");
 
   // ============================================================
   // Reference URLs — for revision videos
