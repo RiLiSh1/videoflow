@@ -391,6 +391,13 @@ export default function UploadClient({
                   value={selectedProjectId}
                   onChange={(e) => setSelectedProjectId(e.target.value)}
                 />
+                <Input
+                  id="videoTitle"
+                  label="動画タイトル"
+                  placeholder="動画のタイトルを入力"
+                  value={videoTitle}
+                  onChange={(e) => setVideoTitle(e.target.value)}
+                />
               </div>
             </CardContent>
           </Card>
