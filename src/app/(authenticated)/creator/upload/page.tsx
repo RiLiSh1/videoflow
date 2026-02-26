@@ -668,8 +668,8 @@ export default function CreatorUploadPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  {/* テーブルヘッダー */}
-                  <div className="grid grid-cols-[1fr_120px_100px_60px] gap-2 px-4 py-2 border-b border-gray-100 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {/* テーブルヘッダー（PC） */}
+                  <div className="hidden sm:grid grid-cols-[1fr_120px_100px_60px] gap-2 px-4 py-2 border-b border-gray-100 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <span>動画</span>
                     <span>案件</span>
                     <span>担当DIR</span>
@@ -681,13 +681,13 @@ export default function CreatorUploadPage() {
                       <label
                         key={video.id}
                         className={cn(
-                          "grid grid-cols-[1fr_120px_100px_60px] gap-2 items-center px-4 py-3 cursor-pointer transition-colors",
+                          "flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors sm:grid sm:grid-cols-[1fr_120px_100px_60px] sm:gap-2",
                           selectedRevisionVideoId === video.id
                             ? "bg-primary-50 border-l-[3px] border-l-primary-500"
                             : "hover:bg-gray-50 border-l-[3px] border-l-transparent"
                         )}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
                           <input
                             type="radio"
                             name="revisionVideo"
@@ -704,16 +704,17 @@ export default function CreatorUploadPage() {
                             </p>
                             <p className="text-xs text-gray-400 truncate">
                               {video.videoCode}
+                              <span className="sm:hidden"> / {video.project.name}</span>
                             </p>
                           </div>
                         </div>
-                        <span className="text-xs text-gray-600 truncate">
+                        <span className="hidden sm:block text-xs text-gray-600 truncate">
                           {video.project.name}
                         </span>
-                        <span className="text-xs text-gray-600 truncate">
+                        <span className="hidden sm:block text-xs text-gray-600 truncate">
                           {video.director?.name || "-"}
                         </span>
-                        <span className="text-xs text-gray-500 text-center">
+                        <span className="flex-shrink-0 text-xs text-gray-400 sm:text-gray-500 sm:text-center">
                           v{video._count?.versions || 0}
                         </span>
                       </label>
