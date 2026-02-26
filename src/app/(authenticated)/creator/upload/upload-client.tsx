@@ -104,22 +104,6 @@ export default function UploadClient({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // Fetch lightweight detail only when a revision video is selected
-  useEffect(() => {
-    if (!selectedRevisionVideoId) {
-      setRevisionDetail(null);
-      return;
-    }
-    setIsLoadingDetail(true);
-    fetch(`/api/videos/${selectedRevisionVideoId}/revision-detail`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) setRevisionDetail(data.data);
-      })
-      .catch(() => {})
-      .finally(() => setIsLoadingDetail(false));
-  }, [selectedRevisionVideoId]);
-
   // Fetch new videos when project changes
   useEffect(() => {
     if (!selectedProjectId) {
