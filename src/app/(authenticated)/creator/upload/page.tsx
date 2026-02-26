@@ -28,22 +28,22 @@ type VideoOption = {
   status: VideoStatus;
   project: { id: string; projectCode: string; name: string };
   director: { id: string; name: string } | null;
-  referenceUrls?: { url: string; platform: string | null }[];
-  versions?: {
-    id: string;
+  _count?: { versions: number };
+};
+
+type RevisionDetail = {
+  latestVersion: {
     versionNumber: number;
     fileName: string;
     googleDriveUrl: string | null;
-    createdAt: string;
-  }[];
-  feedbacks?: {
+  } | null;
+  feedbacks: {
     comment: string;
     videoTimestamp: number | null;
-    createdAt: string;
     user: { name: string; role: string };
-    version: { id: string; versionNumber: number } | null;
+    version: { versionNumber: number } | null;
   }[];
-  _count?: { versions: number };
+  referenceUrls: { url: string; platform: string | null }[];
 };
 
 type UploadResult = {
