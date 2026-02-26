@@ -746,7 +746,14 @@ export default function CreatorUploadPage() {
               </Card>
 
               {/* フィードバック表示 */}
-              {selectedRevisionVideo && (
+              {isLoadingDetail && selectedRevisionVideoId && (
+                <Card>
+                  <CardContent>
+                    <p className="text-sm text-gray-500 py-4">修正依頼内容を読み込み中...</p>
+                  </CardContent>
+                </Card>
+              )}
+              {!isLoadingDetail && selectedRevisionVideo && (
                 <Card>
                   <CardHeader>
                     <div className="flex items-center gap-2">
