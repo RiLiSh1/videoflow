@@ -376,10 +376,8 @@ export default function CreatorUploadPage() {
     }
   };
 
-  // Selected revision video detail
-  const selectedRevisionVideo = revisionVideos.find(
-    (v) => v.id === selectedRevisionVideoId
-  );
+  // Selected revision video detail (from API)
+  const selectedRevisionVideo = selectedRevisionDetail;
 
   // Options
   const projectOptions = [
