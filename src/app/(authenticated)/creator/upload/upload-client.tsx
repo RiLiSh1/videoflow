@@ -102,27 +102,6 @@ export default function UploadClient({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // Fetch new videos when project changes
-  useEffect(() => {
-    if (!selectedProjectId) {
-      setNewVideos([]);
-      setSelectedNewVideoId("");
-      return;
-    }
-    setIsLoadingNewVideos(true);
-    setSelectedNewVideoId("");
-
-    fetch(
-      `/api/videos?projectId=${selectedProjectId}&status=DRAFT&fields=minimal`
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) setNewVideos(data.data);
-      })
-      .catch(() => {})
-      .finally(() => setIsLoadingNewVideos(false));
-  }, [selectedProjectId]);
-
   // Reset file when switching tabs
   useEffect(() => {
     setSelectedFile(null);
