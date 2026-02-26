@@ -167,16 +167,6 @@ export function ReviewClient({
     }
   };
 
-  // Group feedbacks by version
-  const groupedFeedbacks = feedbacks.reduce<Record<number, FeedbackItem[]>>(
-    (acc, fb) => {
-      const vn = fb.version.versionNumber;
-      if (!acc[vn]) acc[vn] = [];
-      acc[vn].push(fb);
-      return acc;
-    },
-    {}
-  );
   const VISIBLE_FEEDBACKS = 5;
   const totalFeedbackCount = feedbacks.length;
   const visibleFeedbacks = showAllFeedbacks
