@@ -573,7 +573,7 @@ export default function CreatorUploadPage() {
             <Card>
               <CardContent>
                 <div className="py-8 text-center">
-                  <p className="text-gray-500">差し戻しされた動画はありません</p>
+                  <p className="text-gray-500">修正依頼はありません</p>
                   <p className="text-sm text-gray-400 mt-1">
                     ディレクターからの修正依頼があるとここに表示されます
                   </p>
