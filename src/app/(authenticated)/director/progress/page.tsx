@@ -9,7 +9,7 @@ import type { VideoStatus } from "@prisma/client";
 import {
   ClipboardList,
   Clock,
-  Search,
+  Eye,
   CheckCircle2,
 } from "lucide-react";
 
