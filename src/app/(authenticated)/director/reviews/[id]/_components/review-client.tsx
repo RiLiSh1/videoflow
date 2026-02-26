@@ -57,15 +57,6 @@ function formatTimestamp(seconds: number): string {
   return `${mins}:${String(secs).padStart(2, "0")}`;
 }
 
-function getTimestampFromPlayer(): string {
-  if (typeof document === "undefined") return "";
-  const video = document.getElementById(
-    "review-video-player"
-  ) as HTMLVideoElement | null;
-  if (!video || isNaN(video.currentTime)) return "";
-  return video.currentTime.toFixed(1);
-}
-
 export function ReviewClient({
   videoId,
   currentStatus,
