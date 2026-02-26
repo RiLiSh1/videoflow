@@ -66,8 +66,11 @@ export default function CreatorUploadPage() {
 
   // === Revision upload state ===
   const [revisionVideos, setRevisionVideos] = useState<VideoOption[]>([]);
-  const [isLoadingRevisions, setIsLoadingRevisions] = useState(true);
+  const [isLoadingRevisions, setIsLoadingRevisions] = useState(false);
+  const [revisionsFetched, setRevisionsFetched] = useState(false);
   const [selectedRevisionVideoId, setSelectedRevisionVideoId] = useState("");
+  const [selectedRevisionDetail, setSelectedRevisionDetail] = useState<VideoOption | null>(null);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
   // === Shared state ===
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
