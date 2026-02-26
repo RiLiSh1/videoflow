@@ -457,7 +457,7 @@ export default function UploadClient({
                     参考動画URL
                   </h2>
                   <p className="text-sm text-gray-500 mt-1">
-                    参考にする動画のURLを入力（最低1つ必須）
+                    参考にする動画のURLを入力（任意）
                   </p>
                 </div>
                 <Button
