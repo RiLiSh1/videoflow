@@ -96,15 +96,6 @@ export default async function DirectorReviewDetailPage({
                   <dt className="text-sm font-medium text-gray-500">クリエイター</dt>
                   <dd className="mt-1 text-sm text-gray-900">{video.creator.name}</dd>
                 </div>
-                {video.deadline && (
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">納期</dt>
-                    <dd className="mt-1 text-sm text-gray-900 flex items-center gap-1">
-                      <Clock className="h-4 w-4 text-gray-400" />
-                      {formatDate(video.deadline)}
-                    </dd>
-                  </div>
-                )}
                 <div>
                   <dt className="text-sm font-medium text-gray-500">更新日時</dt>
                   <dd className="mt-1 text-sm text-gray-900">{formatDateTime(video.updatedAt)}</dd>
