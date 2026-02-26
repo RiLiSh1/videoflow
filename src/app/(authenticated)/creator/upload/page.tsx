@@ -662,7 +662,7 @@ export default function CreatorUploadPage() {
 
       {/* ==================== 差し戻し修正 ==================== */}
       {activeTab === "revision" && (
-        <form onSubmit={handleRevisionSubmit} className="space-y-6 max-w-3xl">
+        <form onSubmit={handleRevisionSubmit} className="space-y-6 max-w-5xl">
           {isLoadingRevisions ? (
             <Card>
               <CardContent>
