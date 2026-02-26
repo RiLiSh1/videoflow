@@ -174,7 +174,7 @@ async function main() {
   const revisionVideos = [];
   for (let i = 0; i < 5; i++) {
     const proj = i < 2 ? project1 : project2;
-    const vidNum = i < 2 ? i + 6 : i + 1;
+    const vidNum = i < 2 ? i + 4 : i + 3;
     const video = await prisma.video.create({
       data: {
         videoCode: `${proj.projectCode}-V${String(vidNum).padStart(3, "0")}`,
