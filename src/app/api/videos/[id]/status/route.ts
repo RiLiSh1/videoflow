@@ -25,7 +25,7 @@ export async function PATCH(
 
   try {
     const body = await request.json();
-    const { status } = body as { status: VideoStatus };
+    let { status } = body as { status: VideoStatus };
 
     const video = await prisma.video.findUnique({
       where: { id },
@@ -39,10 +39,56 @@ export async function PATCH(
       );
     }
 
+    // Director approving → auto-transition to FINAL_REVIEW
+    // (APPROVED is an intermediate state, skip it and go straight to FINAL_REVIEW)
+    if (
+      auth.role === "DIRECTOR" &&
+      status === "APPROVED" &&
+      video.status === "IN_REVIEW"
+    ) {
+      // First validate IN_REVIEW → APPROVED is valid (it is)
+      // Then we'll auto-chain APPROVED → FINAL_REVIEW
+      const updated = await prisma.video.update({
+        where: { id },
+        data: { status: "FINAL_REVIEW" },
+        include: {
+          project: { select: { id: true, projectCode: true, name: true } },
+          creator: { select: { id: true, name: true } },
+          director: { select: { id: true, name: true } },
+        },
+      });
+
+      // Notify ALL admins for final review
+      const admins = await prisma.user.findMany({
+        where: { role: "ADMIN", isActive: true },
+        select: { id: true },
+      });
+
+      const notifications = admins
+        .filter((a) => a.id !== auth.id)
+        .map((admin) => ({
+          type: "VIDEO_FINAL_REVIEW",
+          videoId: id,
+          triggeredBy: auth.id,
+          targetUserId: admin.id,
+          message: `「${updated.title}」がディレクターに承認されました。最終確認をお願いします`,
+        }));
+
+      if (notifications.length > 0) {
+        await prisma.notification.createMany({ data: notifications });
+      }
+
+      return NextResponse.json({ success: true, data: updated });
+    }
+
+    // Standard validation
     const allowedStatuses = VALID_TRANSITIONS[video.status];
     if (!allowedStatuses.includes(status)) {
       return NextResponse.json(
-        { success: false, error: `「${video.status}」から「${status}」への遷移はできません` },
+        {
+          success: false,
+          error: `「${video.status}」から「${status}」への遷移はできません`,
+        },
         { status: 400 }
       );
     }
@@ -62,6 +108,13 @@ export async function PATCH(
           { status: 403 }
         );
       }
+    } else if (auth.role === "ADMIN") {
+      if (!["COMPLETED", "REVISION_REQUESTED", "IN_REVIEW"].includes(status)) {
+        return NextResponse.json(
+          { success: false, error: "この操作の権限がありません" },
+          { status: 403 }
+        );
+      }
     }
 
     const updated = await prisma.video.update({
@@ -74,31 +127,72 @@ export async function PATCH(
       },
     });
 
-    // Create notification
-    let targetUserId: string | null = null;
-    let message = "";
+    // Create notifications
+    const notifications: {
+      type: string;
+      videoId: string;
+      triggeredBy: string;
+      targetUserId: string;
+      message: string;
+    }[] = [];
 
     if (status === "SUBMITTED" && updated.directorId) {
-      targetUserId = updated.directorId;
-      message = `「${updated.title}」が提出されました`;
+      // Creator submitted → notify director
+      notifications.push({
+        type: "VIDEO_SUBMITTED",
+        videoId: id,
+        triggeredBy: auth.id,
+        targetUserId: updated.directorId,
+        message: `「${updated.title}」が提出されました`,
+      });
     } else if (status === "REVISION_REQUESTED") {
-      targetUserId = updated.creator.id;
-      message = `「${updated.title}」に修正依頼があります`;
-    } else if (status === "APPROVED" || status === "COMPLETED") {
-      targetUserId = updated.creator.id;
-      message = `「${updated.title}」が${status === "APPROVED" ? "承認" : "完了"}されました`;
-    }
-
-    if (targetUserId && targetUserId !== auth.id) {
-      await prisma.notification.create({
-        data: {
-          type: `VIDEO_${status}`,
+      // Revision requested → notify creator + director (if admin is requesting)
+      notifications.push({
+        type: "VIDEO_REVISION_REQUESTED",
+        videoId: id,
+        triggeredBy: auth.id,
+        targetUserId: updated.creator.id,
+        message: `「${updated.title}」に修正依頼があります`,
+      });
+      if (
+        auth.role === "ADMIN" &&
+        updated.directorId &&
+        updated.directorId !== auth.id
+      ) {
+        notifications.push({
+          type: "VIDEO_REVISION_REQUESTED",
           videoId: id,
           triggeredBy: auth.id,
-          targetUserId,
-          message,
-        },
+          targetUserId: updated.directorId,
+          message: `「${updated.title}」が管理者から差し戻されました`,
+        });
+      }
+    } else if (status === "COMPLETED") {
+      // Admin approved (COMPLETED) → notify director + creator
+      if (updated.directorId && updated.directorId !== auth.id) {
+        notifications.push({
+          type: "VIDEO_COMPLETED",
+          videoId: id,
+          triggeredBy: auth.id,
+          targetUserId: updated.directorId,
+          message: `「${updated.title}」が最終承認されました`,
+        });
+      }
+      notifications.push({
+        type: "VIDEO_COMPLETED",
+        videoId: id,
+        triggeredBy: auth.id,
+        targetUserId: updated.creator.id,
+        message: `「${updated.title}」が最終承認されました`,
       });
+    }
+
+    // Filter out self-notifications and create
+    const validNotifications = notifications.filter(
+      (n) => n.targetUserId !== auth.id
+    );
+    if (validNotifications.length > 0) {
+      await prisma.notification.createMany({ data: validNotifications });
     }
 
     return NextResponse.json({ success: true, data: updated });
