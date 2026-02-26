@@ -16,7 +16,6 @@ interface VideoRow {
   videoCode: string;
   title: string;
   status: VideoStatus;
-  deadline: string | null;
   updatedAt: string;
   project: {
     id: string;
