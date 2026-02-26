@@ -9,6 +9,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
+  const fields = searchParams.get("fields"); // "minimal" = id/name/code only
 
   const where: Record<string, unknown> = {};
   if (status) where.status = status;
@@ -17,6 +18,16 @@ export async function GET(request: Request) {
     where.directors = { some: { userId: auth.id } };
   } else if (auth.role === "CREATOR") {
     where.videos = { some: { creatorId: auth.id } };
+  }
+
+  // Lightweight mode for select dropdowns
+  if (fields === "minimal") {
+    const projects = await prisma.project.findMany({
+      where,
+      select: { id: true, projectCode: true, name: true },
+      orderBy: { createdAt: "desc" },
+    });
+    return NextResponse.json({ success: true, data: projects });
   }
 
   const projects = await prisma.project.findMany({
