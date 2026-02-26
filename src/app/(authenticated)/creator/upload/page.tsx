@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { FileUpload } from "@/components/ui/file-upload";
-import { StatusBadge } from "@/components/domain/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
