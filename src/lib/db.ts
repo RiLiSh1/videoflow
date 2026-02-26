@@ -2,7 +2,6 @@ import { PrismaClient } from "@prisma/client";
 import { neonConfig } from "@neondatabase/serverless";
 import { PrismaNeon } from "@prisma/adapter-neon";
 
-// Use HTTP fetch for serverless (no TCP cold start)
 neonConfig.fetchConnectionCache = true;
 
 const globalForPrisma = globalThis as unknown as {
@@ -10,8 +9,16 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-  const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL! });
-  return new PrismaClient({ adapter });
+  const url = process.env.DATABASE_URL ?? "";
+
+  // Use Neon HTTP driver in production for zero cold-start
+  if (url.includes("neon.tech")) {
+    const adapter = new PrismaNeon({ connectionString: url });
+    return new PrismaClient({ adapter });
+  }
+
+  // Local dev: standard TCP connection
+  return new PrismaClient();
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
