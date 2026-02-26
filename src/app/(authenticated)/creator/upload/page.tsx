@@ -74,7 +74,6 @@ export default function CreatorUploadPage() {
   // === Revision upload state ===
   const [revisionVideos, setRevisionVideos] = useState<VideoOption[]>([]);
   const [isLoadingRevisions, setIsLoadingRevisions] = useState(false);
-  const [, setRevisionsFetched] = useState(false);
   const [selectedRevisionVideoId, setSelectedRevisionVideoId] = useState("");
   const [revisionDetail, setRevisionDetail] = useState<RevisionDetail | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
