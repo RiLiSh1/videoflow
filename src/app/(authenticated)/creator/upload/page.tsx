@@ -752,104 +752,152 @@ export default function CreatorUploadPage() {
                 </CardContent>
               </Card>
 
-              {/* フィードバック表示 */}
+              {/* 提出動画 & 修正依頼 */}
               {isLoadingDetail && selectedRevisionVideoId && (
                 <Card>
                   <CardContent>
-                    <p className="text-sm text-gray-500 py-4">修正依頼内容を読み込み中...</p>
+                    <p className="text-sm text-gray-500 py-4">読み込み中...</p>
                   </CardContent>
                 </Card>
               )}
-              {!isLoadingDetail && selectedRevisionVideo && (
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5 text-amber-500" />
-                      <h2 className="text-lg font-semibold text-gray-900">
-                        修正依頼内容
-                      </h2>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {selectedRevisionVideo.feedbacks &&
-                    selectedRevisionVideo.feedbacks.length > 0 ? (
-                      <div className="space-y-3">
-                        {selectedRevisionVideo.feedbacks
-                          .slice(0, 5)
-                          .map((fb, i) => (
-                            <div
-                              key={i}
-                              className="rounded-md bg-amber-50 border border-amber-100 p-3"
-                            >
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-sm font-medium text-gray-900">
-                                  {fb.user.name}
-                                </span>
-                                <Badge
-                                  className={
-                                    fb.user.role === "DIRECTOR"
-                                      ? "bg-blue-100 text-blue-800"
-                                      : "bg-red-100 text-red-800"
-                                  }
-                                >
-                                  {fb.user.role === "DIRECTOR"
-                                    ? "ディレクター"
-                                    : "管理者"}
-                                </Badge>
-                                {fb.videoTimestamp !== null && (
-                                  <span className="text-xs text-gray-500">
-                                    {Math.floor(fb.videoTimestamp / 60)}:
-                                    {String(
-                                      Math.floor(fb.videoTimestamp % 60)
-                                    ).padStart(2, "0")}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                                {fb.comment}
-                              </p>
-                            </div>
-                          ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500">
-                        フィードバックの詳細は動画詳細ページで確認できます
-                      </p>
-                    )}
+              {!isLoadingDetail && selectedRevisionVideo && (() => {
+                const latestVersion = selectedRevisionVideo.versions?.[0];
+                const videoUrl = latestVersion?.googleDriveUrl;
+                const feedbacks = selectedRevisionVideo.feedbacks || [];
+                const refUrls = selectedRevisionVideo.referenceUrls || [];
 
-                    {/* 参考URL（引き継ぎ表示） */}
-                    {selectedRevisionVideo.referenceUrls &&
-                      selectedRevisionVideo.referenceUrls.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-gray-200">
-                          <h3 className="text-sm font-medium text-gray-700 mb-2">
-                            参考URL（前回入力済み）
-                          </h3>
-                          <ul className="space-y-1">
-                            {selectedRevisionVideo.referenceUrls.map(
-                              (ref, i) => (
-                                <li key={i}>
-                                  <a
-                                    href={ref.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-primary-600 hover:underline break-all"
-                                  >
-                                    {ref.url}
-                                  </a>
-                                  {ref.platform && (
-                                    <span className="ml-1 text-xs text-gray-500">
-                                      ({ref.platform})
-                                    </span>
-                                  )}
-                                </li>
-                              )
+                return (
+                  <>
+                    {/* 動画プレーヤー + コメント 並列レイアウト */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {/* 左: 提出済み動画 */}
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Play className="h-4 w-4 text-primary-500" />
+                              <h3 className="text-sm font-semibold text-gray-900">
+                                提出済み動画
+                              </h3>
+                            </div>
+                            {latestVersion && (
+                              <span className="text-xs text-gray-500">
+                                v{latestVersion.versionNumber} / {latestVersion.fileName}
+                              </span>
                             )}
-                          </ul>
-                        </div>
-                      )}
-                  </CardContent>
-                </Card>
-              )}
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          {videoUrl ? (
+                            <div className="rounded-lg overflow-hidden bg-black aspect-video">
+                              <video
+                                src={videoUrl}
+                                controls
+                                className="w-full h-full"
+                                preload="metadata"
+                              >
+                                お使いのブラウザは動画の再生に対応していません。
+                              </video>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center rounded-lg bg-gray-100 aspect-video">
+                              <p className="text-sm text-gray-400">動画ファイルが見つかりません</p>
+                            </div>
+                          )}
+
+                          {/* 参考URL */}
+                          {refUrls.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-gray-100">
+                              <h4 className="text-xs font-medium text-gray-500 mb-1.5">参考URL</h4>
+                              <ul className="space-y-1">
+                                {refUrls.map((ref, i) => (
+                                  <li key={i} className="flex items-center gap-1.5">
+                                    {ref.platform && (
+                                      <span className="text-[10px] font-medium text-gray-400 bg-gray-100 rounded px-1.5 py-0.5">
+                                        {ref.platform}
+                                      </span>
+                                    )}
+                                    <a
+                                      href={ref.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-xs text-primary-600 hover:underline truncate"
+                                    >
+                                      {ref.url}
+                                    </a>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* 右: 修正依頼コメント */}
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4 text-amber-500" />
+                            <h3 className="text-sm font-semibold text-gray-900">
+                              修正依頼コメント
+                            </h3>
+                            <span className="text-xs text-gray-400">
+                              {feedbacks.length}件
+                            </span>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          {feedbacks.length > 0 ? (
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+                              {feedbacks.map((fb, i) => (
+                                <div
+                                  key={i}
+                                  className="rounded-md bg-amber-50 border border-amber-100 p-3"
+                                >
+                                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                    <span className="text-xs font-medium text-gray-900">
+                                      {fb.user.name}
+                                    </span>
+                                    <Badge
+                                      className={cn(
+                                        "text-[10px] px-1.5 py-0",
+                                        fb.user.role === "DIRECTOR"
+                                          ? "bg-blue-100 text-blue-700"
+                                          : "bg-red-100 text-red-700"
+                                      )}
+                                    >
+                                      {fb.user.role === "DIRECTOR" ? "DIR" : "管理者"}
+                                    </Badge>
+                                    {fb.version && (
+                                      <span className="text-[10px] text-gray-400">
+                                        v{fb.version.versionNumber}
+                                      </span>
+                                    )}
+                                    {fb.videoTimestamp !== null && (
+                                      <span className="inline-flex items-center gap-0.5 text-[10px] text-primary-600 bg-primary-50 rounded px-1.5 py-0.5">
+                                        <Clock className="h-2.5 w-2.5" />
+                                        {Math.floor(fb.videoTimestamp / 60)}:
+                                        {String(Math.floor(fb.videoTimestamp % 60)).padStart(2, "0")}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                                    {fb.comment}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500 py-4">
+                              コメントはありません
+                            </p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </>
+                );
+              })()}
 
               {/* ファイルアップロード */}
               <Card>
