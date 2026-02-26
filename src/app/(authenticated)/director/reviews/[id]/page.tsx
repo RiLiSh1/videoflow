@@ -9,7 +9,7 @@ import { formatDate, formatDateTime } from "@/lib/utils/format-date";
 import { FeedbackForm } from "./_components/feedback-form";
 import { StatusActions } from "./_components/status-actions";
 import { FeedbackHistory } from "./_components/feedback-history";
-import { ArrowLeft, ExternalLink, FileVideo, Clock } from "lucide-react";
+import { ArrowLeft, ExternalLink, FileVideo } from "lucide-react";
 
 export default async function DirectorReviewDetailPage({
   params,
