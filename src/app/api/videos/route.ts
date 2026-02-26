@@ -92,7 +92,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { projectId, title, directorId, deadline, referenceUrls } = parsed.data;
+    const { projectId, title, directorId, deadline, videoType, videoTypeOther, referenceUrls } = parsed.data;
 
     // Generate video code
     const videoCount = await prisma.video.count({ where: { projectId } });
