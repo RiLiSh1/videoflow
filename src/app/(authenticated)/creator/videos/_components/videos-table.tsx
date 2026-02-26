@@ -11,10 +11,9 @@ type VideoRow = {
   videoCode: string;
   title: string;
   projectName: string;
-  directorName: string;
   status: VideoStatus;
-  deadline: string;
-  updatedAt: string;
+  createdAt: string;
+  completedAt: string;
   versionsCount: number;
   feedbacksCount: number;
 };
@@ -49,21 +48,17 @@ const columns: ColumnDef<VideoRow, unknown>[] = [
     header: "案件",
   },
   {
-    accessorKey: "directorName",
-    header: "ディレクター",
-  },
-  {
     accessorKey: "status",
     header: "ステータス",
     cell: ({ row }) => <StatusBadge status={row.original.status} />,
   },
   {
-    accessorKey: "deadline",
-    header: "締切日",
+    accessorKey: "createdAt",
+    header: "初稿日",
   },
   {
-    accessorKey: "updatedAt",
-    header: "最終更新",
+    accessorKey: "completedAt",
+    header: "完了日",
   },
 ];
 
