@@ -528,6 +528,68 @@ export default function CreatorUploadPage() {
             </CardContent>
           </Card>
 
+          {/* 動画種別 */}
+          <Card>
+            <CardHeader>
+              <h2 className="text-lg font-semibold text-gray-900">
+                動画種別
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                アップロードする動画の種別を選択してください
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {[
+                  { value: "ORIGINAL" as const, label: "オリジナル動画", desc: "新規で制作したオリジナルの動画" },
+                  { value: "REMAKE" as const, label: "リメイク動画", desc: "既存の動画をベースにリメイクした動画" },
+                  { value: "OTHER" as const, label: "その他", desc: "上記に該当しない動画" },
+                ].map((option) => (
+                  <label
+                    key={option.value}
+                    className={cn(
+                      "flex items-start gap-3 rounded-lg border p-4 cursor-pointer transition-colors",
+                      videoType === option.value
+                        ? "border-primary-500 bg-primary-50"
+                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="videoType"
+                      value={option.value}
+                      checked={videoType === option.value}
+                      onChange={() => {
+                        setVideoType(option.value);
+                        if (option.value !== "OTHER") setVideoTypeOther("");
+                      }}
+                      className="mt-0.5 h-4 w-4 text-primary-600"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-gray-900">
+                        {option.label}
+                      </span>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {option.desc}
+                      </p>
+                    </div>
+                  </label>
+                ))}
+
+                {videoType === "OTHER" && (
+                  <div className="ml-7">
+                    <Input
+                      id="videoTypeOther"
+                      placeholder="動画種別の詳細を入力してください"
+                      value={videoTypeOther}
+                      onChange={(e) => setVideoTypeOther(e.target.value)}
+                    />
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* ファイルアップロード */}
           <Card>
             <CardHeader>
