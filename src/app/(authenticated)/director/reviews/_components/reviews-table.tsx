@@ -85,20 +85,6 @@ const columns: ColumnDef<VideoRow, unknown>[] = [
     cell: ({ row }) => <StatusBadge status={row.original.status} />,
   },
   {
-    accessorKey: "deadline",
-    header: "納期",
-    cell: ({ row }) => {
-      if (!row.original.deadline) return <span className="text-gray-400">-</span>;
-      const deadlineDate = new Date(row.original.deadline);
-      const isOverdue = deadlineDate < new Date();
-      return (
-        <span className={cn("text-sm", isOverdue ? "text-red-600 font-medium" : "text-gray-700")}>
-          {formatDate(row.original.deadline)}
-        </span>
-      );
-    },
-  },
-  {
     accessorKey: "updatedAt",
     header: "更新日時",
     cell: ({ row }) => (
