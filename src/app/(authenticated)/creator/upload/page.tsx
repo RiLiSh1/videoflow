@@ -463,7 +463,7 @@ export default function CreatorUploadPage() {
           {/* 参考URL */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">
                     参考動画URL
@@ -477,16 +477,17 @@ export default function CreatorUploadPage() {
                   variant="secondary"
                   size="sm"
                   onClick={addReferenceUrl}
+                  className="flex-shrink-0"
                 >
                   <Plus className="mr-1 h-4 w-4" />
-                  URL追加
+                  <span className="hidden sm:inline">URL</span>追加
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {referenceUrls.map((ref, index) => (
-                  <div key={index} className="flex items-start gap-3">
+                  <div key={index} className="space-y-2 sm:space-y-0 sm:flex sm:items-start sm:gap-3">
                     <div className="flex-1">
                       <Input
                         id={`refUrl-${index}`}
@@ -497,31 +498,33 @@ export default function CreatorUploadPage() {
                         }
                       />
                     </div>
-                    <div className="w-32">
-                      <Select
-                        id={`refPlatform-${index}`}
-                        options={[
-                          { value: "", label: "種別" },
-                          { value: "instagram", label: "Instagram" },
-                          { value: "tiktok", label: "TikTok" },
-                          { value: "other", label: "その他" },
-                        ]}
-                        value={ref.platform}
-                        onChange={(e) =>
-                          updateReferenceUrl(index, "platform", e.target.value)
-                        }
-                      />
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1 sm:flex-none sm:w-32">
+                        <Select
+                          id={`refPlatform-${index}`}
+                          options={[
+                            { value: "", label: "種別" },
+                            { value: "instagram", label: "Instagram" },
+                            { value: "tiktok", label: "TikTok" },
+                            { value: "other", label: "その他" },
+                          ]}
+                          value={ref.platform}
+                          onChange={(e) =>
+                            updateReferenceUrl(index, "platform", e.target.value)
+                          }
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeReferenceUrl(index)}
+                        disabled={referenceUrls.length <= 1}
+                        className="mt-0.5 flex-shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50 disabled:text-gray-300"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeReferenceUrl(index)}
-                      disabled={referenceUrls.length <= 1}
-                      className="mt-0.5 text-red-500 hover:text-red-700 hover:bg-red-50 disabled:text-gray-300"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   </div>
                 ))}
               </div>
