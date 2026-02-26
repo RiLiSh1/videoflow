@@ -7,7 +7,7 @@ export const VIDEO_STATUS_LABELS: Record<VideoStatus, string> = {
   REVISION_REQUESTED: "修正依頼",
   REVISED: "修正済み",
   APPROVED: "承認済み",
-  FINAL_REVIEW: "最終確認",
+  FINAL_REVIEW: "最終確認中",
   COMPLETED: "完了",
 };
 
