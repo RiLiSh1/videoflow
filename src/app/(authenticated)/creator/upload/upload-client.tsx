@@ -72,10 +72,8 @@ export default function UploadClient({
 
   // === New upload state ===
   const [projects] = useState<ProjectOption[]>(initialProjects);
-  const [newVideos, setNewVideos] = useState<VideoOption[]>([]);
-  const [isLoadingNewVideos, setIsLoadingNewVideos] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState("");
-  const [selectedNewVideoId, setSelectedNewVideoId] = useState("");
+  const [videoTitle, setVideoTitle] = useState("");
   const [referenceUrls, setReferenceUrls] = useState<
     { url: string; platform: string }[]
   >([{ url: "", platform: "" }]);
