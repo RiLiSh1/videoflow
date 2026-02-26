@@ -98,7 +98,6 @@ export default function CreatorUploadPage() {
       .then(([projData, revData]) => {
         if (projData.success) setProjects(projData.data);
         if (revData.success) setRevisionVideos(revData.data);
-        setRevisionsFetched(true);
       })
       .catch(() => {})
       .finally(() => {
