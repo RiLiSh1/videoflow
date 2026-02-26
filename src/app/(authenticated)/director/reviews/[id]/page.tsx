@@ -107,15 +107,23 @@ export default async function DirectorReviewDetailPage({
             <div className="bg-black">
               {latestVersion?.googleDriveUrl ? (
                 <div className="aspect-video">
-                  <video
-                    src={latestVersion.googleDriveUrl}
-                    controls
-                    className="w-full h-full"
-                    preload="metadata"
-                    id="review-video-player"
-                  >
-                    お使いのブラウザは動画の再生に対応していません。
-                  </video>
+                  {toGoogleDriveEmbedUrl(latestVersion.googleDriveUrl) ? (
+                    <iframe
+                      src={toGoogleDriveEmbedUrl(latestVersion.googleDriveUrl)!}
+                      className="w-full h-full"
+                      allow="autoplay; encrypted-media"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <video
+                      src={latestVersion.googleDriveUrl}
+                      controls
+                      className="w-full h-full"
+                      preload="metadata"
+                    >
+                      お使いのブラウザは動画の再生に対応していません。
+                    </video>
+                  )}
                 </div>
               ) : (
                 <div className="aspect-video flex items-center justify-center">
