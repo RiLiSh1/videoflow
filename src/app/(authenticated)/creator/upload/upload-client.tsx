@@ -711,16 +711,8 @@ export default function UploadClient({
                 </CardContent>
               </Card>
 
-              {/* 提出動画 & 修正依頼 */}
-              {isLoadingDetail && selectedRevisionVideoId && (
-                <Card>
-                  <CardContent>
-                    <p className="text-sm text-gray-500 py-4">読み込み中...</p>
-                  </CardContent>
-                </Card>
-              )}
-              {!isLoadingDetail &&
-                revisionDetail &&
+              {/* 提出動画 & 修正依頼（データはSSRで取得済み、即座に表示） */}
+              {revisionDetail &&
                 (() => {
                   const latestVersion = revisionDetail.latestVersion;
                   const videoUrl = latestVersion?.googleDriveUrl;
