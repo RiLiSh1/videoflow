@@ -81,11 +81,11 @@ export function ReviewClient({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showAllFeedbacks, setShowAllFeedbacks] = useState(false);
 
-  const isReviewable = ["SUBMITTED", "IN_REVIEW", "REVISED"].includes(
-    currentStatus
-  );
+  const isCompleted = ["COMPLETED"].includes(currentStatus);
+  const canWriteFeedback = !isCompleted && !!latestVersion;
   const canApproveReject = ["IN_REVIEW"].includes(currentStatus);
   const canStartReview = ["SUBMITTED", "REVISED"].includes(currentStatus);
+  const showActions = ["SUBMITTED", "IN_REVIEW", "REVISED", "REVISION_REQUESTED"].includes(currentStatus);
 
   const grabTimestamp = useCallback(() => {
     const ts = getTimestampFromPlayer();
