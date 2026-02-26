@@ -223,26 +223,15 @@ export function ReviewClient({
                 <label className="block text-xs font-medium text-gray-500 mb-1">
                   タイムスタンプ（秒）
                 </label>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    value={timestamp}
-                    onChange={(e) => setTimestamp(e.target.value)}
-                    placeholder="例: 30.5"
-                    className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={grabTimestamp}
-                    className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
-                    title="動画の現在位置を取得"
-                  >
-                    <Clock className="h-3.5 w-3.5" />
-                    現在位置
-                  </button>
-                </div>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={timestamp}
+                  onChange={(e) => setTimestamp(e.target.value)}
+                  placeholder="例: 1:30 の箇所なら 90"
+                  className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
               </div>
 
               {/* Comment */}
