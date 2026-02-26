@@ -7,7 +7,7 @@ import type { VideoStatus } from "@prisma/client";
 import { DataTable } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/domain/status-badge";
 import { Button } from "@/components/ui/button";
-import { formatDate, formatRelative } from "@/lib/utils/format-date";
+import { formatRelative } from "@/lib/utils/format-date";
 import { cn } from "@/lib/utils/cn";
 import { Eye } from "lucide-react";
 
