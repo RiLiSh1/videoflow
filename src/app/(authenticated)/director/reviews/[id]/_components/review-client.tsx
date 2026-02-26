@@ -219,7 +219,7 @@ export function ReviewClient({
       )}
 
       {/* Feedback Form */}
-      {latestVersion && isReviewable && (
+      {canWriteFeedback && (
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
