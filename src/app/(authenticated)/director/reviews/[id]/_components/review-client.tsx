@@ -78,13 +78,6 @@ export function ReviewClient({
   const canStartReview = ["SUBMITTED", "REVISED"].includes(currentStatus);
   const showActions = ["SUBMITTED", "IN_REVIEW", "REVISED", "REVISION_REQUESTED"].includes(currentStatus);
 
-  const grabTimestamp = useCallback(() => {
-    const ts = getTimestampFromPlayer();
-    if (ts) {
-      setTimestamp(ts);
-    }
-  }, []);
-
   const handleSendFeedback = async () => {
     if (!comment.trim() || !latestVersion) return;
     setIsSubmitting(true);
