@@ -100,11 +100,11 @@ export default function CreatorUploadPage() {
       .finally(() => setIsLoadingProjects(false));
   }, []);
 
-  // Fetch revision videos only when tab is active (lazy)
+  // Fetch revision videos only when tab is active (lazy, minimal fields)
   useEffect(() => {
     if (activeTab !== "revision" || revisionsFetched) return;
     setIsLoadingRevisions(true);
-    fetch("/api/videos?status=REVISION_REQUESTED")
+    fetch("/api/videos?status=REVISION_REQUESTED&fields=minimal&limit=50")
       .then((res) => res.json())
       .then((data) => {
         if (data.success) setRevisionVideos(data.data);
