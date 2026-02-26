@@ -71,11 +71,13 @@ export function ReviewClient({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showAllFeedbacks, setShowAllFeedbacks] = useState(false);
 
-  const isCompleted = ["COMPLETED"].includes(currentStatus);
-  const canWriteFeedback = !isCompleted && !!latestVersion;
+  const isFinished = ["COMPLETED", "FINAL_REVIEW"].includes(currentStatus);
+  const canWriteFeedback = !isFinished && !!latestVersion;
   const canApproveReject = ["IN_REVIEW"].includes(currentStatus);
   const canStartReview = ["SUBMITTED", "REVISED"].includes(currentStatus);
   const showActions = ["SUBMITTED", "IN_REVIEW", "REVISED", "REVISION_REQUESTED"].includes(currentStatus);
+  const isWaitingAdminApproval = currentStatus === "FINAL_REVIEW";
+  const isAdminApproved = currentStatus === "COMPLETED";
 
   const handleSendFeedback = async () => {
     if (!comment.trim() || !latestVersion) return;
