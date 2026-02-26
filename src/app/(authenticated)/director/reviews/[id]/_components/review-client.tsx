@@ -183,37 +183,6 @@ export function ReviewClient({
     }
   };
 
-  const handleStatusChange = async (
-    targetStatus: VideoStatus,
-    label: string
-  ) => {
-    setStatusLoading(targetStatus);
-    setError(null);
-    setSuccessMessage(null);
-
-    try {
-      const res = await fetch(`/api/videos/${videoId}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: targetStatus }),
-      });
-      const result = await res.json();
-
-      if (!result.success) {
-        setError(result.error || "ステータスの更新に失敗しました");
-        return;
-      }
-
-      setSuccessMessage(`${label}しました`);
-      setTimeout(() => setSuccessMessage(null), 3000);
-      router.refresh();
-    } catch {
-      setError("ステータスの更新に失敗しました");
-    } finally {
-      setStatusLoading(null);
-    }
-  };
-
   const VISIBLE_FEEDBACKS = 5;
   const totalFeedbackCount = feedbacks.length;
   const visibleFeedbacks = showAllFeedbacks
