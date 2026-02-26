@@ -142,7 +142,7 @@ export default function CreatorUploadPage() {
     setIsLoadingNewVideos(true);
     setSelectedNewVideoId("");
 
-    fetch(`/api/videos?projectId=${selectedProjectId}&status=DRAFT`)
+    fetch(`/api/videos?projectId=${selectedProjectId}&status=DRAFT&fields=minimal`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) setNewVideos(data.data);
