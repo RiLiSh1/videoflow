@@ -200,7 +200,6 @@ export default function UploadClient({
     setSubmitError("");
 
     if (!selectedProjectId) return setSubmitError("案件を選択してください");
-    if (!videoTitle.trim()) return setSubmitError("動画タイトルを入力してください");
     const validUrls = referenceUrls.filter((r) => r.url.trim());
     for (const ref of validUrls) {
       try {
