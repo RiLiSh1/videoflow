@@ -5,7 +5,7 @@ import { ApprovalsClient } from "./_components/approvals-client";
 async function getPendingVideos() {
   const videos = await prisma.video.findMany({
     where: {
-      status: { in: ["SUBMITTED", "FINAL_REVIEW"] },
+      status: "FINAL_REVIEW",
     },
     include: {
       project: { select: { projectCode: true, name: true } },
