@@ -8,9 +8,12 @@ const createVideoSchema = z.object({
   title: z.string().min(1, "タイトルを入力してください").max(200),
   directorId: z.string().optional(),
   deadline: z.string().optional(),
+  videoType: z.enum(["ORIGINAL", "REMAKE", "OTHER"]).optional(),
+  videoTypeOther: z.string().nullable().optional(),
   referenceUrls: z.array(z.object({
     url: z.string().url(),
-    platform: z.string().optional(),
+    platform: z.string().nullable().optional(),
+    sortOrder: z.number().optional(),
   })).optional(),
 });
 
