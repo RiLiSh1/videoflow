@@ -294,7 +294,7 @@ export function ReviewClient({
       )}
 
       {/* Approve / Reject Actions */}
-      {canApproveReject && (
+      {showActions && (
         <Card className="border-primary-200">
           <CardContent>
             <div className="py-2 space-y-3">
@@ -305,9 +305,8 @@ export function ReviewClient({
                 <Button
                   variant="danger"
                   loading={statusLoading === "REVISION_REQUESTED"}
-                  onClick={() =>
-                    handleStatusChange("REVISION_REQUESTED", "差し戻し")
-                  }
+                  disabled={currentStatus === "REVISION_REQUESTED"}
+                  onClick={() => handleApproveOrReject("REVISION_REQUESTED", "差し戻し")}
                 >
                   <RotateCcw className="mr-1.5 h-4 w-4" />
                   差し戻し
@@ -315,15 +314,22 @@ export function ReviewClient({
                 <Button
                   variant="primary"
                   loading={statusLoading === "APPROVED"}
-                  onClick={() => handleStatusChange("APPROVED", "承認")}
+                  onClick={() => handleApproveOrReject("APPROVED", "承認")}
                 >
                   <CheckCircle2 className="mr-1.5 h-4 w-4" />
                   承認
                 </Button>
               </div>
-              <p className="text-xs text-gray-400">
-                差し戻す場合は先にフィードバックを送信してください
-              </p>
+              {currentStatus === "REVISION_REQUESTED" && (
+                <p className="text-xs text-amber-600">
+                  現在差し戻し中です。修正版を待っています。
+                </p>
+              )}
+              {(canStartReview || canApproveReject) && (
+                <p className="text-xs text-gray-400">
+                  差し戻す場合は先にフィードバックを送信してください
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
