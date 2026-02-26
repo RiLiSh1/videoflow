@@ -422,10 +422,10 @@ export default function UploadClient({
           <Card>
             <CardHeader>
               <h2 className="text-lg font-semibold text-gray-900">
-                対象の動画を選択
+                案件を選択
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                管理者が登録した未着手の動画から選択してください
+                アップロード先の案件を選択してください
               </p>
             </CardHeader>
             <CardContent>
