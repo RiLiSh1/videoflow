@@ -61,6 +61,8 @@ export default function CreatorUploadPage() {
   const [referenceUrls, setReferenceUrls] = useState<
     { url: string; platform: string }[]
   >([{ url: "", platform: "" }]);
+  const [videoType, setVideoType] = useState<"ORIGINAL" | "REMAKE" | "OTHER" | "">("");
+  const [videoTypeOther, setVideoTypeOther] = useState("");
 
   // === Revision upload state ===
   const [revisionVideos, setRevisionVideos] = useState<VideoOption[]>([]);
