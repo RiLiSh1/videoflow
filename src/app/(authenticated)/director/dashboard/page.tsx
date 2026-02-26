@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { PageContainer } from "@/components/layout/page-container";
@@ -16,19 +17,80 @@ import {
   PlayCircle,
 } from "lucide-react";
 
+// Cache dashboard data per director for 30 seconds
+const getDashboardData = unstable_cache(
+  async (directorId: string) => {
+    const [statusCounts, actionVideos, recentVideos, projectProgress] =
+      await Promise.all([
+        prisma.video.groupBy({
+          by: ["status"],
+          where: { directorId },
+          _count: true,
+        }),
+        prisma.video.findMany({
+          where: {
+            directorId,
+            status: { in: ["SUBMITTED", "REVISED", "IN_REVIEW"] },
+          },
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            updatedAt: true,
+            project: { select: { name: true } },
+            creator: { select: { name: true } },
+          },
+          orderBy: { updatedAt: "desc" },
+          take: 6,
+        }),
+        prisma.video.findMany({
+          where: { directorId },
+          select: {
+            id: true,
+            videoCode: true,
+            title: true,
+            status: true,
+            updatedAt: true,
+            creator: { select: { name: true } },
+          },
+          orderBy: { updatedAt: "desc" },
+          take: 8,
+        }),
+        prisma.$queryRaw<
+          {
+            project_id: string;
+            project_code: string;
+            project_name: string;
+            status: VideoStatus;
+            cnt: bigint;
+          }[]
+        >`
+        SELECT v.project_id, p.project_code, p.name AS project_name, v.status, COUNT(*)::bigint AS cnt
+        FROM videos v
+        JOIN projects p ON p.id = v.project_id
+        WHERE v.director_id = ${directorId}
+        GROUP BY v.project_id, p.project_code, p.name, v.status
+        ORDER BY p.project_code
+      `,
+      ]);
+    return { statusCounts, actionVideos, recentVideos, projectProgress };
+  },
+  ["director-dashboard"],
+  { revalidate: 30, tags: ["director-dashboard"] }
+);
+
 export default async function DirectorDashboardPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
   const directorId = session.id;
 
-  // All queries in parallel, each fetching only what it needs
-  const [
+  const {
     statusCounts,
     actionVideos,
     recentVideos,
     projectProgress,
-  ] = await Promise.all([
+  } = await getDashboardData(directorId);
     // 1. Summary counts — DB-level groupBy, no row data transferred
     prisma.video.groupBy({
       by: ["status"],
