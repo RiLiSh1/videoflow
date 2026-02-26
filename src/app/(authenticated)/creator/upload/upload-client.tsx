@@ -201,7 +201,7 @@ export default function UploadClient({
     setSubmitError("");
 
     if (!selectedProjectId) return setSubmitError("案件を選択してください");
-    if (!selectedNewVideoId) return setSubmitError("動画を選択してください");
+    if (!videoTitle.trim()) return setSubmitError("動画タイトルを入力してください");
     const validUrls = referenceUrls.filter((r) => r.url.trim());
     for (const ref of validUrls) {
       try {
@@ -217,62 +217,56 @@ export default function UploadClient({
 
     setIsSubmitting(true);
     try {
-      // Save video type
-      await fetch(`/api/videos/${selectedNewVideoId}`, {
-        method: "PUT",
+      // Create video
+      const createRes = await fetch("/api/videos", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          projectId: selectedProjectId,
+          title: videoTitle.trim(),
           videoType,
           videoTypeOther: videoType === "OTHER" ? videoTypeOther.trim() : null,
+          referenceUrls: validUrls.length > 0
+            ? validUrls.map((r, i) => ({
+                url: r.url.trim(),
+                platform: r.platform.trim() || null,
+                sortOrder: i,
+              }))
+            : undefined,
         }),
       });
-
-      const fileData = await uploadFile(selectedFile, selectedNewVideoId);
-      if (!fileData) return setIsSubmitting(false);
-
-      // Save reference URLs
-      const urlRes = await fetch(
-        `/api/videos/${selectedNewVideoId}/reference-urls`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            urls: validUrls.map((r, i) => ({
-              url: r.url.trim(),
-              platform: r.platform.trim() || null,
-              sortOrder: i,
-            })),
-          }),
-        }
-      );
-      if (!(await urlRes.json()).success)
+      const createData = await createRes.json();
+      if (!createData.success)
         return (
-          setSubmitError("参考URLの保存に失敗しました"),
+          setSubmitError(createData.error || "動画の作成に失敗しました"),
           setIsSubmitting(false)
         );
 
+      const videoId = createData.data.id;
+
+      // Upload file
+      const fileData = await uploadFile(selectedFile, videoId);
+      if (!fileData) return setIsSubmitting(false);
+
       // Create version v1
-      const vRes = await fetch(
-        `/api/videos/${selectedNewVideoId}/versions`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fileName: fileData.fileName,
-            fileSize: fileData.fileSize,
-            mimeType: fileData.mimeType,
-            googleDriveUrl: fileData.url,
-          }),
-        }
-      );
+      const vRes = await fetch(`/api/videos/${videoId}/versions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: fileData.fileName,
+          fileSize: fileData.fileSize,
+          mimeType: fileData.mimeType,
+          googleDriveUrl: fileData.url,
+        }),
+      });
       if (!(await vRes.json()).success)
         return (
           setSubmitError("バージョンの登録に失敗しました"),
           setIsSubmitting(false)
         );
 
-      // Update status
-      await fetch(`/api/videos/${selectedNewVideoId}/status`, {
+      // Update status → 提出済み
+      await fetch(`/api/videos/${videoId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "SUBMITTED" }),
