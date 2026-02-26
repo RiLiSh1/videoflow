@@ -215,13 +215,14 @@ export default function UploadClient({
 
     setIsSubmitting(true);
     try {
-      // Create video
+      // Create video (title = filename without extension)
+      const autoTitle = selectedFile.name.replace(/\.[^/.]+$/, "");
       const createRes = await fetch("/api/videos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           projectId: selectedProjectId,
-          title: videoTitle.trim(),
+          title: autoTitle,
           videoType,
           videoTypeOther: videoType === "OTHER" ? videoTypeOther.trim() : null,
           referenceUrls: validUrls.length > 0
