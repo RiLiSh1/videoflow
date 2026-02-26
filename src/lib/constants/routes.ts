@@ -13,8 +13,8 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
   ],
   DIRECTOR: [
     { label: "ダッシュボード", href: "/director/dashboard", icon: "LayoutDashboard" },
-    { label: "レビュー一覧", href: "/director/reviews", icon: "CheckSquare" },
     { label: "進捗管理", href: "/director/progress", icon: "BarChart3" },
+    { label: "レビュー一覧", href: "/director/reviews", icon: "CheckSquare" },
   ],
   ADMIN: [
     { label: "ダッシュボード", href: "/admin/dashboard", icon: "LayoutDashboard" },
