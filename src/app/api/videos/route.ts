@@ -32,8 +32,6 @@ export async function GET(request: Request) {
     where.directorId = auth.id;
   }
 
-  const includeDetails = status === "REVISION_REQUESTED";
-
   const videos = await prisma.video.findMany({
     where,
     include: {
@@ -41,23 +39,6 @@ export async function GET(request: Request) {
       creator: { select: { id: true, name: true } },
       director: { select: { id: true, name: true } },
       _count: { select: { versions: true, feedbacks: true } },
-      ...(includeDetails && {
-        referenceUrls: {
-          select: { url: true, platform: true },
-          orderBy: { sortOrder: "asc" as const },
-        },
-        feedbacks: {
-          select: {
-            comment: true,
-            videoTimestamp: true,
-            createdAt: true,
-            user: { select: { name: true, role: true } },
-            version: { select: { versionNumber: true } },
-          },
-          orderBy: { createdAt: "desc" as const },
-          take: 10,
-        },
-      }),
     },
     orderBy: { updatedAt: "desc" },
   });
