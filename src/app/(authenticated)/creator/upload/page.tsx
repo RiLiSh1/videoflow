@@ -228,10 +228,23 @@ export default function CreatorUploadPage() {
         return setSubmitError(`無効なURL: ${ref.url}`);
       }
     }
+    if (!videoType) return setSubmitError("動画種別を選択してください");
+    if (videoType === "OTHER" && !videoTypeOther.trim())
+      return setSubmitError("動画種別の詳細を入力してください");
     if (!selectedFile) return setSubmitError("動画ファイルを選択してください");
 
     setIsSubmitting(true);
     try {
+      // Save video type
+      await fetch(`/api/videos/${selectedNewVideoId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          videoType,
+          videoTypeOther: videoType === "OTHER" ? videoTypeOther.trim() : null,
+        }),
+      });
+
       const fileData = await uploadFile(selectedFile, selectedNewVideoId);
       if (!fileData) return setIsSubmitting(false);
 
