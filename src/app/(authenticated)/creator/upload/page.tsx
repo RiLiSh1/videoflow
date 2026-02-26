@@ -89,32 +89,24 @@ export default function CreatorUploadPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // Fetch projects (minimal: no JOINs, id/name/code only)
+  // Fetch projects + revision videos in parallel on mount (instant tab switch)
   useEffect(() => {
-    fetch("/api/projects?fields=minimal")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) setProjects(data.data);
-      })
-      .catch(() => {})
-      .finally(() => setIsLoadingProjects(false));
-  }, []);
-
-  // Fetch revision videos only when tab is active (lazy, minimal fields)
-  useEffect(() => {
-    if (activeTab !== "revision" || revisionsFetched) return;
     setIsLoadingRevisions(true);
-    fetch("/api/videos?status=REVISION_REQUESTED&fields=minimal&limit=50")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) setRevisionVideos(data.data);
+    Promise.all([
+      fetch("/api/projects?fields=minimal").then((r) => r.json()),
+      fetch("/api/videos?status=REVISION_REQUESTED&fields=minimal&limit=50").then((r) => r.json()),
+    ])
+      .then(([projData, revData]) => {
+        if (projData.success) setProjects(projData.data);
+        if (revData.success) setRevisionVideos(revData.data);
+        setRevisionsFetched(true);
       })
       .catch(() => {})
       .finally(() => {
+        setIsLoadingProjects(false);
         setIsLoadingRevisions(false);
-        setRevisionsFetched(true);
       });
-  }, [activeTab, revisionsFetched]);
+  }, []);
 
   // Fetch lightweight detail only when a revision video is selected
   useEffect(() => {
