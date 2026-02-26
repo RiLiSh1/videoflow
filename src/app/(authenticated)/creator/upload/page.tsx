@@ -89,9 +89,9 @@ export default function CreatorUploadPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // Fetch projects
+  // Fetch projects (minimal: no JOINs, id/name/code only)
   useEffect(() => {
-    fetch("/api/projects")
+    fetch("/api/projects?fields=minimal")
       .then((res) => res.json())
       .then((data) => {
         if (data.success) setProjects(data.data);
