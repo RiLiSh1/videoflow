@@ -153,12 +153,13 @@ async function main() {
   ];
 
   // --- DRAFT videos (project1: 3, project2: 2) ---
+  let videoSeq = 1;
   const draftVideos = [];
   for (let i = 0; i < 5; i++) {
     const proj = i < 3 ? project1 : project2;
     const video = await prisma.video.create({
       data: {
-        videoCode: `${proj.projectCode}-V${String(i + 1).padStart(3, "0")}`,
+        videoCode: `VID-${String(videoSeq++).padStart(3, "0")}`,
         projectId: proj.id,
         title: draftTitles[i],
         creatorId: creator1.id,
@@ -174,10 +175,9 @@ async function main() {
   const revisionVideos = [];
   for (let i = 0; i < 5; i++) {
     const proj = i < 2 ? project1 : project2;
-    const vidNum = i < 2 ? i + 4 : i + 3;
     const video = await prisma.video.create({
       data: {
-        videoCode: `${proj.projectCode}-V${String(vidNum).padStart(3, "0")}`,
+        videoCode: `VID-${String(videoSeq++).padStart(3, "0")}`,
         projectId: proj.id,
         title: revisionTitles[i],
         creatorId: creator1.id,
