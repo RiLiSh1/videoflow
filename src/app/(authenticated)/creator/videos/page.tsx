@@ -15,8 +15,6 @@ export default async function CreatorVideosPage() {
     where: { creatorId: session.id },
     include: {
       project: { select: { id: true, projectCode: true, name: true } },
-      creator: { select: { id: true, name: true } },
-      director: { select: { id: true, name: true } },
       _count: { select: { versions: true, feedbacks: true } },
     },
     orderBy: { updatedAt: "desc" },
@@ -27,10 +25,9 @@ export default async function CreatorVideosPage() {
     videoCode: video.videoCode,
     title: video.title,
     projectName: video.project.name,
-    directorName: video.director?.name ?? "未割当",
     status: video.status,
-    deadline: video.deadline ? formatDate(video.deadline) : "-",
-    updatedAt: formatRelative(video.updatedAt),
+    createdAt: formatDate(video.createdAt),
+    completedAt: video.status === "COMPLETED" ? formatDate(video.updatedAt) : "-",
     versionsCount: video._count.versions,
     feedbacksCount: video._count.feedbacks,
   }));
