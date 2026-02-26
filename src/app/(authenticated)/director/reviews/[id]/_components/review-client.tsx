@@ -177,10 +177,6 @@ export function ReviewClient({
     },
     {}
   );
-  const sortedVersionNumbers = Object.keys(groupedFeedbacks)
-    .map(Number)
-    .sort((a, b) => b - a);
-
   const VISIBLE_FEEDBACKS = 5;
   const totalFeedbackCount = feedbacks.length;
   const visibleFeedbacks = showAllFeedbacks
