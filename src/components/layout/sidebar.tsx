@@ -12,6 +12,7 @@ import {
   FolderKanban,
   Users,
   HardDrive,
+  Palette,
 } from "lucide-react";
 import type { Role } from "@prisma/client";
 import { NAV_ITEMS } from "@/lib/constants/routes";
