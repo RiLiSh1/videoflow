@@ -62,7 +62,7 @@ export async function GET(
     companyAddress: companySettings?.address,
     companyTel: companySettings?.tel,
     companyInvoiceNumber: companySettings?.invoiceNumber,
-    lineItems: notification.lineItemsJson as LineItem[],
+    lineItems: notification.lineItemsJson as unknown as LineItem[],
     subtotal: notification.subtotal,
     withholdingTax: notification.withholdingTax,
     netAmount: notification.netAmount,
