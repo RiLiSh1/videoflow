@@ -90,13 +90,13 @@ export async function extractTelopFromVideo(
       if (Array.isArray(parsed)) {
         telops = parsed
           .filter(
-            (item: unknown) =>
+            (item: unknown): item is Record<string, unknown> =>
               typeof item === "object" &&
               item !== null &&
               "timestamp" in item &&
               "text" in item
           )
-          .map((item: { timestamp: string; text: string }) => ({
+          .map((item) => ({
             timestamp: String(item.timestamp),
             text: String(item.text),
           }));
