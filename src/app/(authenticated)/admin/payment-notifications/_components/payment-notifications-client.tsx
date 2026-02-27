@@ -1,88 +1,179 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import type { ColumnDef } from "@tanstack/react-table";
-import type { EntityType } from "@prisma/client";
-import { DataTable } from "@/components/ui/data-table";
+import { useState, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import type { EntityType, CompensationType } from "@prisma/client";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
-import { Download, Plus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Download,
+  Plus,
+  Banknote,
+  Users,
+  Megaphone,
+  Receipt,
+} from "lucide-react";
 import { GenerateDialog } from "./generate-dialog";
+import { ENTITY_TYPE_LABELS } from "@/lib/constants/entity-type";
 
-type CreatorOption = {
-  id: string;
-  name: string;
-  entityType: EntityType | null;
-  hasCompensation: boolean;
-};
+// ---------- Types ----------
 
-type NotificationRow = {
-  id: string;
+type MonthData = {
   year: number;
   month: number;
+  videoCount: number;
   subtotal: number;
   withholdingTax: number;
   netAmount: number;
-  creator: { id: string; name: string };
-  generator: { id: string; name: string };
-  createdAt: string;
+  notificationId: string | null;
+};
+
+type UserPaymentRow = {
+  userId: string;
+  userName: string;
+  role: "CREATOR" | "DIRECTOR";
+  entityType: EntityType;
+  hasCompensation: boolean;
+  compensationType: CompensationType | null;
+  perVideoRate: number | null;
+  customAmount: number | null;
+  isFixedMonthly: boolean;
+  months: MonthData[];
 };
 
 interface PaymentNotificationsClientProps {
-  creators: CreatorOption[];
+  userPayments: UserPaymentRow[];
+  availableYears: number[];
 }
+
+// ---------- Helpers ----------
 
 function formatYen(amount: number): string {
   return `¥${amount.toLocaleString()}`;
 }
 
-const currentYear = new Date().getFullYear();
-const yearOptions = Array.from({ length: 3 }, (_, i) => ({
-  value: String(currentYear - i),
-  label: `${currentYear - i}年`,
-}));
+function compensationLabel(row: UserPaymentRow): string {
+  if (!row.hasCompensation) return "未設定";
+  if (row.compensationType === "PER_VIDEO") {
+    return `¥${(row.perVideoRate || 0).toLocaleString()}/本`;
+  }
+  if (row.isFixedMonthly) {
+    return `¥${(row.customAmount || 0).toLocaleString()}/月`;
+  }
+  return `¥${(row.customAmount || 0).toLocaleString()}`;
+}
 
-const monthOptions = Array.from({ length: 12 }, (_, i) => ({
-  value: String(i + 1),
-  label: `${i + 1}月`,
-}));
+// ---------- Component ----------
 
 export function PaymentNotificationsClient({
-  creators,
+  userPayments,
+  availableYears,
 }: PaymentNotificationsClientProps) {
+  const router = useRouter();
   const now = new Date();
-  const [year, setYear] = useState(String(now.getFullYear()));
-  const [month, setMonth] = useState(String(now.getMonth() + 1));
-  const [notifications, setNotifications] = useState<NotificationRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(String(now.getFullYear()));
+  const [selectedMonth, setSelectedMonth] = useState(
+    String(now.getMonth() + 1)
+  );
+  const [isAllPeriod, setIsAllPeriod] = useState(false);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
 
-  const fetchNotifications = useCallback(async () => {
-    setLoading(true);
+  const yearOptions = availableYears.map((y) => ({
+    value: String(y),
+    label: `${y}年`,
+  }));
+
+  const monthOptions = Array.from({ length: 12 }, (_, i) => ({
+    value: String(i + 1),
+    label: `${i + 1}月`,
+  }));
+
+  // Split by role
+  const creators = useMemo(
+    () => userPayments.filter((u) => u.role === "CREATOR"),
+    [userPayments]
+  );
+  const directors = useMemo(
+    () => userPayments.filter((u) => u.role === "DIRECTOR"),
+    [userPayments]
+  );
+
+  // Filter + aggregate data based on period selection
+  const getFilteredData = useCallback(
+    (users: UserPaymentRow[]) => {
+      if (isAllPeriod) {
+        // Aggregate all months per user
+        return users.map((u) => {
+          const totalVideoCount = u.months.reduce(
+            (sum, m) => sum + m.videoCount,
+            0
+          );
+          const totalSubtotal = u.months.reduce(
+            (sum, m) => sum + m.subtotal,
+            0
+          );
+          const totalWithholding = u.months.reduce(
+            (sum, m) => sum + m.withholdingTax,
+            0
+          );
+          const totalNet = u.months.reduce((sum, m) => sum + m.netAmount, 0);
+          return {
+            ...u,
+            videoCount: totalVideoCount,
+            subtotal: totalSubtotal,
+            withholdingTax: totalWithholding,
+            netAmount: totalNet,
+            notificationId: null as string | null, // no single notification for all-period
+          };
+        });
+      }
+      // Filter to specific year/month
+      const year = Number(selectedYear);
+      const month = Number(selectedMonth);
+      return users.map((u) => {
+        const md = u.months.find((m) => m.year === year && m.month === month);
+        return {
+          ...u,
+          videoCount: md?.videoCount || 0,
+          subtotal: md?.subtotal || 0,
+          withholdingTax: md?.withholdingTax || 0,
+          netAmount: md?.netAmount || 0,
+          notificationId: md?.notificationId || null,
+        };
+      });
+    },
+    [isAllPeriod, selectedYear, selectedMonth]
+  );
+
+  const creatorData = useMemo(
+    () => getFilteredData(creators),
+    [getFilteredData, creators]
+  );
+  const directorData = useMemo(
+    () => getFilteredData(directors),
+    [getFilteredData, directors]
+  );
+
+  // Summary calculations
+  const allData = useMemo(
+    () => [...creatorData, ...directorData],
+    [creatorData, directorData]
+  );
+  const totalPayment = allData.reduce((s, d) => s + d.netAmount, 0);
+  const totalWithholding = allData.reduce((s, d) => s + d.withholdingTax, 0);
+  const creatorCount = creators.length;
+  const directorCount = directors.length;
+
+  // PDF download
+  const handleDownloadPdf = async (notificationId: string) => {
+    setDownloading(notificationId);
     try {
       const res = await fetch(
-        `/api/payment-notifications?year=${year}&month=${month}`
+        `/api/payment-notifications/${notificationId}/pdf`
       );
-      const json = await res.json();
-      if (json.success) {
-        setNotifications(json.data);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  }, [year, month]);
-
-  useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
-
-  const handleDownloadPdf = async (id: string) => {
-    setDownloading(id);
-    try {
-      const res = await fetch(`/api/payment-notifications/${id}/pdf`);
       if (!res.ok) throw new Error();
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -102,93 +193,124 @@ export function PaymentNotificationsClient({
     }
   };
 
-  const columns: ColumnDef<NotificationRow, unknown>[] = [
-    {
-      accessorKey: "creator.name",
-      header: "クリエイター",
-      cell: ({ row }) => (
-        <span className="font-medium text-gray-900">
-          {row.original.creator.name}
-        </span>
-      ),
-    },
-    {
-      id: "period",
-      header: "対象期間",
-      cell: ({ row }) => (
-        <span className="text-gray-600">
-          {row.original.year}年{row.original.month}月
-        </span>
-      ),
-    },
-    {
-      accessorKey: "subtotal",
-      header: "小計",
-      cell: ({ row }) => (
-        <span className="text-gray-700">{formatYen(row.original.subtotal)}</span>
-      ),
-    },
-    {
-      accessorKey: "withholdingTax",
-      header: "源泉徴収税",
-      cell: ({ row }) =>
-        row.original.withholdingTax > 0 ? (
-          <span className="text-red-600">
-            ▲{formatYen(row.original.withholdingTax)}
-          </span>
-        ) : (
-          <span className="text-gray-300">-</span>
-        ),
-    },
-    {
-      accessorKey: "netAmount",
-      header: "支払金額",
-      cell: ({ row }) => (
-        <span className="font-semibold text-gray-900">
-          {formatYen(row.original.netAmount)}
-        </span>
-      ),
-    },
-    {
-      id: "actions",
-      header: "",
-      enableSorting: false,
-      cell: ({ row }) => (
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => handleDownloadPdf(row.original.id)}
-          loading={downloading === row.original.id}
-        >
-          <Download className="mr-1.5 h-3.5 w-3.5" />
-          PDF
-        </Button>
-      ),
-    },
-  ];
+  // Users for generate dialog (both roles with compensation)
+  const usersForGenerate = useMemo(
+    () =>
+      userPayments
+        .filter((u) => u.hasCompensation)
+        .map((u) => ({
+          id: u.userId,
+          name: u.userName,
+          role: u.role,
+          entityType: u.entityType,
+          hasCompensation: true,
+        })),
+    [userPayments]
+  );
 
   return (
     <>
+      {/* Summary Cards */}
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <Card>
+          <CardContent>
+            <div className="flex items-center gap-3 py-2">
+              <div className="rounded-lg bg-blue-50 p-2.5">
+                <Banknote className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500">合計支払額</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {formatYen(totalPayment)}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <div className="flex items-center gap-3 py-2">
+              <div className="rounded-lg bg-green-50 p-2.5">
+                <Users className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500">
+                  クリエイター数
+                </p>
+                <p className="text-xl font-bold text-gray-900">
+                  {creatorCount}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <div className="flex items-center gap-3 py-2">
+              <div className="rounded-lg bg-purple-50 p-2.5">
+                <Megaphone className="h-5 w-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500">
+                  ディレクター数
+                </p>
+                <p className="text-xl font-bold text-gray-900">
+                  {directorCount}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <div className="flex items-center gap-3 py-2">
+              <div className="rounded-lg bg-red-50 p-2.5">
+                <Receipt className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500">
+                  源泉徴収合計
+                </p>
+                <p className="text-xl font-bold text-gray-900">
+                  {formatYen(totalWithholding)}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Filters */}
-      <div className="mb-4 flex items-end gap-4">
-        <div className="w-32">
-          <Select
-            id="year"
-            label="年"
-            options={yearOptions}
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
-          />
-        </div>
-        <div className="w-24">
-          <Select
-            id="month"
-            label="月"
-            options={monthOptions}
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-          />
-        </div>
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        {!isAllPeriod && (
+          <>
+            <div className="w-32">
+              <Select
+                id="year"
+                label="年"
+                options={yearOptions}
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+              />
+            </div>
+            <div className="w-24">
+              <Select
+                id="month"
+                label="月"
+                options={monthOptions}
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+              />
+            </div>
+          </>
+        )}
+        <Button
+          variant={isAllPeriod ? "primary" : "secondary"}
+          size="sm"
+          onClick={() => setIsAllPeriod(!isAllPeriod)}
+        >
+          全期間
+        </Button>
         <div className="flex-1" />
         <Button onClick={() => setGenerateOpen(true)}>
           <Plus className="mr-1.5 h-4 w-4" />
@@ -196,35 +318,236 @@ export function PaymentNotificationsClient({
         </Button>
       </div>
 
-      {/* Table */}
-      {loading ? (
-        <div className="py-8 text-center text-gray-500">読み込み中...</div>
-      ) : notifications.length === 0 ? (
-        <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
-          <p className="text-gray-500">
-            {year}年{month}月の支払通知書はまだ生成されていません。
-          </p>
-        </div>
-      ) : (
-        <DataTable
-          data={notifications}
-          columns={columns}
-          searchPlaceholder="クリエイター名で検索..."
-          searchColumn="creator.name"
+      {/* Creator Table */}
+      <div className="space-y-6">
+        <PaymentTable
+          title="クリエイター支払一覧"
+          data={creatorData}
+          isAllPeriod={isAllPeriod}
+          downloading={downloading}
+          onDownload={handleDownloadPdf}
+          emptyMessage="クリエイターが登録されていません"
         />
-      )}
+
+        <PaymentTable
+          title="ディレクター支払一覧"
+          data={directorData}
+          isAllPeriod={isAllPeriod}
+          downloading={downloading}
+          onDownload={handleDownloadPdf}
+          emptyMessage="ディレクターが登録されていません"
+        />
+      </div>
 
       <GenerateDialog
         open={generateOpen}
         onClose={() => setGenerateOpen(false)}
         onSuccess={() => {
           setGenerateOpen(false);
-          fetchNotifications();
+          router.refresh();
         }}
-        creators={creators}
-        defaultYear={year}
-        defaultMonth={month}
+        users={usersForGenerate}
+        defaultYear={selectedYear}
+        defaultMonth={selectedMonth}
       />
     </>
+  );
+}
+
+// ---------- Payment Table Sub-component ----------
+
+type FilteredRow = {
+  userId: string;
+  userName: string;
+  role: "CREATOR" | "DIRECTOR";
+  entityType: EntityType;
+  hasCompensation: boolean;
+  compensationType: CompensationType | null;
+  perVideoRate: number | null;
+  customAmount: number | null;
+  isFixedMonthly: boolean;
+  videoCount: number;
+  subtotal: number;
+  withholdingTax: number;
+  netAmount: number;
+  notificationId: string | null;
+};
+
+function PaymentTable({
+  title,
+  data,
+  isAllPeriod,
+  downloading,
+  onDownload,
+  emptyMessage,
+}: {
+  title: string;
+  data: FilteredRow[];
+  isAllPeriod: boolean;
+  downloading: string | null;
+  onDownload: (id: string) => void;
+  emptyMessage: string;
+}) {
+  const totals = useMemo(() => {
+    return data.reduce(
+      (acc, d) => ({
+        videoCount: acc.videoCount + d.videoCount,
+        subtotal: acc.subtotal + d.subtotal,
+        withholdingTax: acc.withholdingTax + d.withholdingTax,
+        netAmount: acc.netAmount + d.netAmount,
+      }),
+      { videoCount: 0, subtotal: 0, withholdingTax: 0, netAmount: 0 }
+    );
+  }, [data]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold text-gray-900">{title}</h2>
+          <span className="text-xs text-gray-400">{data.length}名</span>
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50">
+                <th className="px-4 py-3 text-left font-medium text-gray-500">
+                  名前
+                </th>
+                <th className="px-4 py-3 text-center font-medium text-gray-500">
+                  区分
+                </th>
+                <th className="px-4 py-3 text-center font-medium text-gray-500">
+                  動画数
+                </th>
+                <th className="px-4 py-3 text-center font-medium text-gray-500">
+                  単価・設定
+                </th>
+                <th className="px-4 py-3 text-right font-medium text-gray-500">
+                  小計
+                </th>
+                <th className="px-4 py-3 text-right font-medium text-gray-500">
+                  源泉徴収
+                </th>
+                <th className="px-4 py-3 text-right font-medium text-gray-500">
+                  支払額
+                </th>
+                {!isAllPeriod && (
+                  <th className="px-4 py-3 text-center font-medium text-gray-500">
+                    PDF
+                  </th>
+                )}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {data.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={isAllPeriod ? 7 : 8}
+                    className="px-4 py-8 text-center text-gray-400"
+                  >
+                    {emptyMessage}
+                  </td>
+                </tr>
+              ) : (
+                <>
+                  {data.map((row) => (
+                    <tr key={row.userId} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        {row.userName}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <Badge
+                          className={
+                            row.entityType === "CORPORATION"
+                              ? "bg-teal-100 text-teal-800"
+                              : "bg-orange-100 text-orange-800"
+                          }
+                        >
+                          {ENTITY_TYPE_LABELS[row.entityType]}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-center text-gray-700">
+                        {row.videoCount}
+                      </td>
+                      <td className="px-4 py-3 text-center text-gray-600 text-xs">
+                        {row.hasCompensation ? (
+                          compensationLabel(row)
+                        ) : (
+                          <span className="text-gray-300">未設定</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-700">
+                        {formatYen(row.subtotal)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {row.withholdingTax > 0 ? (
+                          <span className="text-red-600">
+                            ▲{formatYen(row.withholdingTax)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right font-semibold text-gray-900">
+                        {formatYen(row.netAmount)}
+                      </td>
+                      {!isAllPeriod && (
+                        <td className="px-4 py-3 text-center">
+                          {row.notificationId ? (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() =>
+                                onDownload(row.notificationId!)
+                              }
+                              loading={downloading === row.notificationId}
+                            >
+                              <Download className="mr-1 h-3.5 w-3.5" />
+                              PDF
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-gray-300">
+                              未生成
+                            </span>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                  {/* Totals row */}
+                  <tr className="border-t-2 border-gray-200 bg-gray-50 font-semibold">
+                    <td className="px-4 py-3 text-gray-700">合計</td>
+                    <td className="px-4 py-3" />
+                    <td className="px-4 py-3 text-center text-gray-700">
+                      {totals.videoCount}
+                    </td>
+                    <td className="px-4 py-3" />
+                    <td className="px-4 py-3 text-right text-gray-700">
+                      {formatYen(totals.subtotal)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {totals.withholdingTax > 0 ? (
+                        <span className="text-red-600">
+                          ▲{formatYen(totals.withholdingTax)}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300">-</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-900">
+                      {formatYen(totals.netAmount)}
+                    </td>
+                    {!isAllPeriod && <td className="px-4 py-3" />}
+                  </tr>
+                </>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
