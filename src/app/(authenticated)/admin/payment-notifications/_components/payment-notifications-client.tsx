@@ -87,6 +87,7 @@ export function PaymentNotificationsClient({
   const [approvingRow, setApprovingRow] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkApproving, setBulkApproving] = useState(false);
+  const [approvingInvoice, setApprovingInvoice] = useState<string | null>(null);
 
   const yearOptions = availableYears.map((y) => ({
     value: String(y),
