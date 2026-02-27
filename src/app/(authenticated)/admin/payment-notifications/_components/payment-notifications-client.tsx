@@ -908,6 +908,25 @@ function PaymentTable({
                             )}
                           </td>
                         )}
+                        {/* 請求書 */}
+                        {!isAllPeriod && (
+                          <td className="px-2 py-3 text-center">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <InvoiceStatusBadge status={row.invoiceStatus} />
+                              {row.invoiceId && (row.invoiceStatus === "MATCHED" || row.invoiceStatus === "MISMATCHED") && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => onApproveInvoice(row.invoiceId!)}
+                                  loading={approvingInvoice === row.invoiceId}
+                                  title="請求書を承認"
+                                >
+                                  <FileCheck className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
