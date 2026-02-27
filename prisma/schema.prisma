@@ -336,3 +336,27 @@ model CompanySettings {
 
   @@map("company_settings")
 }
+
+model CreatorInvoice {
+  id                     String                    @id @default(cuid())
+  paymentNotificationId  String                    @unique @map("payment_notification_id")
+  uploadedBy             String                    @map("uploaded_by")
+  filePath               String                    @map("file_path")
+  fileName               String                    @map("file_name")
+  fileSize               Int                       @map("file_size")
+  extractedSubtotal      Int?                      @map("extracted_subtotal")
+  extractedWithholding   Int?                      @map("extracted_withholding")
+  extractedNetAmount     Int?                      @map("extracted_net_amount")
+  verificationStatus     InvoiceVerificationStatus @default(PENDING)
+  verifiedAt             DateTime?                 @map("verified_at")
+  approvedBy             String?                   @map("approved_by")
+  approvedAt             DateTime?                 @map("approved_at")
+  createdAt              DateTime                  @default(now()) @map("created_at")
+  updatedAt              DateTime                  @updatedAt @map("updated_at")
+
+  paymentNotification PaymentNotification @relation(fields: [paymentNotificationId], references: [id], onDelete: Cascade)
+  uploader            User                @relation("InvoiceUploader", fields: [uploadedBy], references: [id])
+  approver            User?               @relation("InvoiceApprover", fields: [approvedBy], references: [id])
+
+  @@map("creator_invoices")
+}
