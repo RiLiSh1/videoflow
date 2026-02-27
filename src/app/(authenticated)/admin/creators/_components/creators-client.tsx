@@ -170,14 +170,24 @@ export function CreatorsClient({ creators }: CreatorsClientProps) {
       header: "",
       enableSorting: false,
       cell: ({ row }) => (
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => setEditCreator(row.original)}
-        >
-          <Coins className="mr-1.5 h-3.5 w-3.5" />
-          報酬設定
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setProfileCreator(row.original)}
+          >
+            <UserCog className="mr-1.5 h-3.5 w-3.5" />
+            事業者情報
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setEditCreator(row.original)}
+          >
+            <Coins className="mr-1.5 h-3.5 w-3.5" />
+            報酬設定
+          </Button>
+        </div>
       ),
     },
   ];
