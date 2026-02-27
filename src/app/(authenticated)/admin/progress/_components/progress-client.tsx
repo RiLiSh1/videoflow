@@ -4,9 +4,8 @@ import { DataTable } from "@/components/ui/data-table";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/domain/status-badge";
 import {
+  VIDEO_STATUS_LABELS,
   VIDEO_STATUS_ORDER,
-  WORKFLOW_PHASES,
-  getPhaseIndex,
 } from "@/lib/constants/video-status";
 import type { VideoStatus } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -92,52 +91,225 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   UserCheck,
 };
 
-// ---------- Phase Stepper ----------
+// ---------- 5-Checkpoint Pipeline ----------
+//
+// The pipeline represents the video workflow as 5 checkpoints:
+//   1. 初稿提出   (Creator submits)
+//   2. 確認・修正  (Review/revision cycle)
+//   3. ディレクター承認 (Director approves)
+//   4. 管理者承認  (Admin approves)
+//   5. 完了       (Done)
+//
+// Each checkpoint is: green (passed), red (active/attention), gray (not reached)
 
-function PhaseStepper({ status }: { status: VideoStatus }) {
-  const currentPhase = getPhaseIndex(status);
-  const isRevision = status === "REVISION_REQUESTED";
+type CheckpointColor = "green" | "red" | "gray";
+
+const PIPELINE_CHECKPOINTS = [
+  { label: "初稿提出", role: "クリエイター" },
+  { label: "確認・修正", role: "クリエイター" },
+  { label: "ディレクター承認", role: "ディレクター" },
+  { label: "管理者承認", role: "管理者" },
+  { label: "完了", role: "" },
+] as const;
+
+function getCheckpointColors(status: VideoStatus): CheckpointColor[] {
+  switch (status) {
+    case "DRAFT":
+      return ["red", "gray", "gray", "gray", "gray"];
+    case "SUBMITTED":
+      return ["green", "red", "gray", "gray", "gray"];
+    case "IN_REVIEW":
+      return ["green", "green", "red", "gray", "gray"];
+    case "REVISION_REQUESTED":
+      return ["green", "red", "red", "gray", "gray"];
+    case "REVISED":
+      return ["green", "green", "red", "gray", "gray"];
+    case "APPROVED":
+      return ["green", "green", "green", "gray", "gray"];
+    case "FINAL_REVIEW":
+      return ["green", "green", "green", "red", "gray"];
+    case "COMPLETED":
+      return ["green", "green", "green", "green", "green"];
+  }
+}
+
+const COLOR_CLASSES: Record<CheckpointColor, { bar: string; dot: string }> = {
+  green: { bar: "bg-green-500", dot: "bg-green-500 border-green-500" },
+  red: { bar: "bg-red-400 animate-pulse", dot: "bg-red-400 border-red-400 animate-pulse" },
+  gray: { bar: "bg-gray-200", dot: "bg-white border-gray-300" },
+};
+
+// ---------- Compact Pipeline (for table cells) ----------
+
+function PipelineCompact({ status }: { status: VideoStatus }) {
+  const colors = getCheckpointColors(status);
 
   return (
-    <div className="space-y-1.5">
+    <div className="min-w-[150px] space-y-1">
       <StatusBadge status={status} />
+      {/* 5 segment bar */}
       <div className="flex gap-0.5">
-        {WORKFLOW_PHASES.map((phase, i) => {
-          const isCurrent = i === currentPhase;
-          const isPast = i < currentPhase;
-          const isFuture = i > currentPhase;
+        {colors.map((color, i) => (
+          <div key={i} className="group relative flex-1">
+            <div
+              className={`h-1.5 rounded-full ${COLOR_CLASSES[color].bar} transition-all`}
+            />
+            <div className="pointer-events-none absolute -top-7 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-1.5 py-0.5 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
+              {PIPELINE_CHECKPOINTS[i].label}
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* Endpoints */}
+      <div className="flex justify-between text-[10px] text-gray-400">
+        <span>初稿</span>
+        <span>完了</span>
+      </div>
+    </div>
+  );
+}
 
-          let segmentColor: string;
-          if (isPast) {
-            segmentColor = "bg-green-400";
-          } else if (isCurrent && isRevision) {
-            segmentColor = "bg-red-400 animate-pulse";
-          } else if (isCurrent) {
-            segmentColor = phase.color;
-          } else {
-            segmentColor = "bg-gray-200";
-          }
+// ---------- Full Pipeline (for overview / large display) ----------
+
+function PipelineFull({ status }: { status: VideoStatus }) {
+  const colors = getCheckpointColors(status);
+
+  return (
+    <div className="flex items-start">
+      {PIPELINE_CHECKPOINTS.map((cp, i) => {
+        const color = colors[i];
+        const isLast = i === PIPELINE_CHECKPOINTS.length - 1;
+        return (
+          <div key={cp.label} className="flex flex-1 items-start">
+            <div className="flex flex-col items-center flex-1">
+              {/* Role label */}
+              <span className="mb-1 text-[10px] font-medium text-gray-400">
+                {cp.role || "\u00A0"}
+              </span>
+              {/* Dot + connector */}
+              <div className="flex w-full items-center">
+                {i > 0 && (
+                  <div
+                    className={`h-0.5 flex-1 ${COLOR_CLASSES[colors[i - 1]].bar === "bg-green-500" && COLOR_CLASSES[color].bar !== "bg-gray-200" ? "bg-green-500" : "bg-gray-200"}`}
+                  />
+                )}
+                <div
+                  className={`h-4 w-4 flex-shrink-0 rounded-full border-2 ${COLOR_CLASSES[color].dot} transition-all`}
+                />
+                {!isLast && (
+                  <div
+                    className={`h-0.5 flex-1 ${color === "green" ? "bg-green-500" : "bg-gray-200"}`}
+                  />
+                )}
+              </div>
+              {/* Label */}
+              <span
+                className={`mt-1 text-center text-[11px] font-medium ${
+                  color === "green"
+                    ? "text-green-700"
+                    : color === "red"
+                      ? "text-red-600 font-bold"
+                      : "text-gray-400"
+                }`}
+              >
+                {cp.label}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------- Workflow Overview ----------
+
+function WorkflowOverview({ videos }: { videos: VideoRow[] }) {
+  const total = videos.length;
+  if (total === 0) {
+    return (
+      <p className="text-center text-sm text-gray-400">動画がありません</p>
+    );
+  }
+
+  // Count how many videos are at each checkpoint as their "active" step
+  const checkpointCounts = PIPELINE_CHECKPOINTS.map((_, cpIndex) => {
+    return videos.filter((v) => {
+      const colors = getCheckpointColors(v.status);
+      // Find which checkpoint is RED (active)
+      const activeIndex = colors.indexOf("red");
+      // If no red (all green = completed), assign to last checkpoint
+      return activeIndex === -1 ? cpIndex === 4 : activeIndex === cpIndex;
+    }).length;
+  });
+
+  const completedCount = videos.filter((v) => v.status === "COMPLETED").length;
+
+  return (
+    <div className="space-y-6">
+      {/* Large pipeline with counts */}
+      <div className="flex items-start">
+        {PIPELINE_CHECKPOINTS.map((cp, i) => {
+          const count = checkpointCounts[i];
+          const isLast = i === PIPELINE_CHECKPOINTS.length - 1;
+          const hasVideos = count > 0;
 
           return (
-            <div
-              key={phase.label}
-              className="group relative flex-1"
-            >
-              <div
-                className={`h-1.5 rounded-full ${segmentColor} transition-all`}
-              />
-              {/* Tooltip on hover */}
-              <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-1.5 py-0.5 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
-                {phase.label}
-                {isCurrent && !isFuture ? " ←" : ""}
+            <div key={cp.label} className="flex flex-1 items-start">
+              <div className="flex flex-col items-center flex-1">
+                {/* Role */}
+                <span className="mb-1 text-[10px] font-medium text-gray-400">
+                  {cp.role || "\u00A0"}
+                </span>
+                {/* Connector + Circle */}
+                <div className="flex w-full items-center">
+                  {i > 0 && <div className="h-0.5 flex-1 bg-gray-200" />}
+                  <div
+                    className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold transition-all ${
+                      hasVideos && isLast
+                        ? "bg-green-500 text-white"
+                        : hasVideos
+                          ? "bg-red-100 text-red-700 ring-2 ring-red-300"
+                          : "bg-gray-100 text-gray-400"
+                    }`}
+                  >
+                    {count}
+                  </div>
+                  {!isLast && <div className="h-0.5 flex-1 bg-gray-200" />}
+                </div>
+                {/* Label */}
+                <span
+                  className={`mt-1.5 text-center text-xs font-medium ${
+                    hasVideos && isLast
+                      ? "text-green-700"
+                      : hasVideos
+                        ? "text-red-600"
+                        : "text-gray-400"
+                  }`}
+                >
+                  {cp.label}
+                </span>
               </div>
             </div>
           );
         })}
       </div>
-      <div className="flex justify-between text-[10px] text-gray-400">
-        <span>作成</span>
-        <span>完了</span>
+
+      {/* Progress bar: completed vs total */}
+      <div>
+        <div className="mb-1 flex justify-between text-xs text-gray-500">
+          <span>全体進捗</span>
+          <span className="font-medium">
+            {completedCount}/{total} 完了 (
+            {Math.round((completedCount / total) * 100)}%)
+          </span>
+        </div>
+        <div className="flex h-3 w-full overflow-hidden rounded-full bg-gray-100">
+          <div
+            className="rounded-full bg-green-500 transition-all"
+            style={{ width: `${(completedCount / total) * 100}%` }}
+          />
+        </div>
       </div>
     </div>
   );
@@ -190,14 +362,10 @@ const videoColumns: ColumnDef<VideoRow, unknown>[] = [
   },
   {
     accessorKey: "status",
-    header: "ステータス",
+    header: "進捗",
     cell: ({ getValue }) => {
       const status = getValue<VideoStatus>();
-      return (
-        <div className="min-w-[140px]">
-          <PhaseStepper status={status} />
-        </div>
-      );
+      return <PipelineCompact status={status} />;
     },
     sortingFn: (rowA, rowB) => {
       const a = VIDEO_STATUS_ORDER.indexOf(rowA.getValue<VideoStatus>("status"));
@@ -235,9 +403,9 @@ function StatCell({
   );
 }
 
-// ---------- Project Phase Bar ----------
+// ---------- Project Pipeline Summary ----------
 
-function ProjectPhaseBar({
+function ProjectPipelineSummary({
   statusCounts,
   totalVideos,
 }: {
@@ -246,52 +414,54 @@ function ProjectPhaseBar({
 }) {
   if (totalVideos === 0) return null;
 
-  const phaseCounts = WORKFLOW_PHASES.map((phase) => ({
-    label: phase.label,
-    color: phase.color,
-    count: phase.statuses.reduce(
-      (sum, s) => sum + (statusCounts[s] || 0),
-      0
-    ),
-  }));
+  // Build a virtual list of videos by status to compute checkpoint counts
+  const checkpointCounts = PIPELINE_CHECKPOINTS.map((_, cpIndex) => {
+    let count = 0;
+    for (const [status, cnt] of Object.entries(statusCounts)) {
+      if (!cnt) continue;
+      const colors = getCheckpointColors(status as VideoStatus);
+      const activeIndex = colors.indexOf("red");
+      if (activeIndex === -1 ? cpIndex === 4 : activeIndex === cpIndex) {
+        count += cnt;
+      }
+    }
+    return count;
+  });
 
   return (
-    <div className="space-y-1.5">
-      {/* Stacked bar */}
-      <div className="flex h-3 w-full overflow-hidden rounded-full bg-gray-100">
-        {phaseCounts.map(
-          (phase) =>
-            phase.count > 0 && (
+    <div className="space-y-2">
+      {/* Mini pipeline */}
+      <div className="flex items-center gap-0.5">
+        {PIPELINE_CHECKPOINTS.map((cp, i) => {
+          const count = checkpointCounts[i];
+          const isLast = i === PIPELINE_CHECKPOINTS.length - 1;
+          return (
+            <div key={cp.label} className="group relative flex-1">
               <div
-                key={phase.label}
-                className={`${phase.color} transition-all`}
-                style={{
-                  width: `${(phase.count / totalVideos) * 100}%`,
-                }}
-                title={`${phase.label}: ${phase.count}件`}
-              />
-            )
-        )}
-      </div>
-      {/* Legend */}
-      <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-        {phaseCounts.map(
-          (phase) =>
-            phase.count > 0 && (
-              <div
-                key={phase.label}
-                className="flex items-center gap-1 text-[11px] text-gray-500"
+                className={`flex h-6 items-center justify-center rounded text-[10px] font-bold transition-all ${
+                  count > 0 && isLast
+                    ? "bg-green-500 text-white"
+                    : count > 0
+                      ? "bg-red-100 text-red-700"
+                      : "bg-gray-100 text-gray-400"
+                }`}
               >
-                <span
-                  className={`inline-block h-2 w-2 rounded-full ${phase.color}`}
-                />
-                {phase.label}
-                <span className="font-medium text-gray-700">
-                  {phase.count}
-                </span>
+                {count > 0 ? count : ""}
               </div>
-            )
-        )}
+              <div className="pointer-events-none absolute -top-6 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-1.5 py-0.5 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
+                {cp.label}: {count}件
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {/* Labels */}
+      <div className="flex gap-0.5 text-[10px] text-gray-400">
+        <span className="flex-1 text-center">初稿</span>
+        <span className="flex-1 text-center">確認</span>
+        <span className="flex-1 text-center">Dir</span>
+        <span className="flex-1 text-center">管理</span>
+        <span className="flex-1 text-center">完了</span>
       </div>
     </div>
   );
@@ -337,11 +507,11 @@ export function ProgressClient({
         })}
       </div>
 
-      {/* Workflow Overview - Phase distribution across all videos */}
+      {/* Workflow Pipeline Overview */}
       <Card className="mb-6">
         <CardHeader>
           <h2 className="text-base font-semibold text-gray-900">
-            全体ワークフロー分布
+            ワークフローパイプライン
           </h2>
         </CardHeader>
         <CardContent>
@@ -617,8 +787,8 @@ export function ProgressClient({
                           {project.pct}%)
                         </span>
                       </div>
-                      {/* Phase-based stacked bar */}
-                      <ProjectPhaseBar
+                      {/* Pipeline summary for this project */}
+                      <ProjectPipelineSummary
                         statusCounts={project.statusCounts}
                         totalVideos={project.totalVideos}
                       />
@@ -631,64 +801,5 @@ export function ProgressClient({
         </div>
       </div>
     </>
-  );
-}
-
-// ---------- Workflow Overview ----------
-
-function WorkflowOverview({ videos }: { videos: VideoRow[] }) {
-  const total = videos.length;
-  if (total === 0) {
-    return (
-      <p className="text-center text-sm text-gray-400">動画がありません</p>
-    );
-  }
-
-  const phaseCounts = WORKFLOW_PHASES.map((phase) => {
-    const count = videos.filter((v) =>
-      (phase.statuses as readonly VideoStatus[]).includes(v.status)
-    ).length;
-    return { ...phase, count };
-  });
-
-  return (
-    <div className="space-y-4">
-      {/* Large pipeline visualization */}
-      <div className="flex items-center gap-1">
-        {phaseCounts.map((phase, i) => {
-          return (
-            <div key={phase.label} className="flex items-center flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <div
-                  className={`relative flex h-10 items-center justify-center rounded-lg ${phase.color} text-white transition-all`}
-                  style={{ opacity: phase.count > 0 ? 1 : 0.3 }}
-                >
-                  <span className="text-sm font-bold">{phase.count}</span>
-                </div>
-                <p className="mt-1 text-center text-xs font-medium text-gray-600">
-                  {phase.label}
-                </p>
-              </div>
-              {i < phaseCounts.length - 1 && (
-                <div className="mx-0.5 text-gray-300 flex-shrink-0">→</div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      {/* Percentage bar */}
-      <div className="flex h-2 w-full overflow-hidden rounded-full bg-gray-100">
-        {phaseCounts.map(
-          (phase) =>
-            phase.count > 0 && (
-              <div
-                key={phase.label}
-                className={`${phase.color} transition-all`}
-                style={{ width: `${(phase.count / total) * 100}%` }}
-              />
-            )
-        )}
-      </div>
-    </div>
   );
 }
