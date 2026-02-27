@@ -144,6 +144,8 @@ const getPaymentData = unstable_cache(
         withholdingTax: number;
         netAmount: number;
         notificationId: string | null;
+        invoiceStatus: string | null;
+        invoiceId: string | null;
       }[];
     };
 
