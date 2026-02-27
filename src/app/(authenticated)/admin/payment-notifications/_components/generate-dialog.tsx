@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ENTITY_TYPE_LABELS } from "@/lib/constants/entity-type";
 
-type CreatorOption = {
+type UserOption = {
   id: string;
   name: string;
+  role: "CREATOR" | "DIRECTOR";
   entityType: EntityType | null;
   hasCompensation: boolean;
 };
@@ -19,10 +20,15 @@ interface GenerateDialogProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  creators: CreatorOption[];
+  users: UserOption[];
   defaultYear: string;
   defaultMonth: string;
 }
+
+const ROLE_LABELS: Record<string, string> = {
+  CREATOR: "クリエイター",
+  DIRECTOR: "ディレクター",
+};
 
 const currentYear = new Date().getFullYear();
 const yearOptions = [
@@ -45,33 +51,33 @@ export function GenerateDialog({
   open,
   onClose,
   onSuccess,
-  creators,
+  users,
   defaultYear,
   defaultMonth,
 }: GenerateDialogProps) {
   const [year, setYear] = useState(defaultYear);
   const [month, setMonth] = useState(defaultMonth);
-  const [selectedCreatorId, setSelectedCreatorId] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState("");
   const [generating, setGenerating] = useState(false);
   const [generatingAll, setGeneratingAll] = useState(false);
   const [error, setError] = useState("");
   const [results, setResults] = useState<
-    { name: string; success: boolean; error?: string }[]
+    { name: string; role: string; success: boolean; error?: string }[]
   >([]);
 
-  const creatorsWithCompensation = creators.filter((c) => c.hasCompensation);
+  const usersWithCompensation = users.filter((u) => u.hasCompensation);
 
-  const creatorOptions = [
+  const userOptions = [
     { value: "", label: "選択してください" },
-    ...creatorsWithCompensation.map((c) => ({
-      value: c.id,
-      label: `${c.name}${c.entityType ? ` (${ENTITY_TYPE_LABELS[c.entityType]})` : ""}`,
+    ...usersWithCompensation.map((u) => ({
+      value: u.id,
+      label: `${u.name} (${ROLE_LABELS[u.role]})${u.entityType ? ` [${ENTITY_TYPE_LABELS[u.entityType]}]` : ""}`,
     })),
   ];
 
   const handleGenerate = async () => {
-    if (!selectedCreatorId || !year || !month) {
-      setError("クリエイター、年、月を選択してください");
+    if (!selectedUserId || !year || !month) {
+      setError("ユーザー、年、月を選択してください");
       return;
     }
 
@@ -82,7 +88,7 @@ export function GenerateDialog({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          creatorId: selectedCreatorId,
+          userId: selectedUserId,
           year: Number(year),
           month: Number(month),
         }),
@@ -110,28 +116,35 @@ export function GenerateDialog({
     setResults([]);
     setGeneratingAll(true);
 
-    const newResults: { name: string; success: boolean; error?: string }[] = [];
+    const newResults: {
+      name: string;
+      role: string;
+      success: boolean;
+      error?: string;
+    }[] = [];
 
-    for (const creator of creatorsWithCompensation) {
+    for (const user of usersWithCompensation) {
       try {
         const res = await fetch("/api/payment-notifications/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            creatorId: creator.id,
+            userId: user.id,
             year: Number(year),
             month: Number(month),
           }),
         });
         const json = await res.json();
         newResults.push({
-          name: creator.name,
+          name: user.name,
+          role: ROLE_LABELS[user.role],
           success: json.success,
           error: json.error,
         });
       } catch {
         newResults.push({
-          name: creator.name,
+          name: user.name,
+          role: ROLE_LABELS[user.role],
           success: false,
           error: "通信エラー",
         });
@@ -145,7 +158,7 @@ export function GenerateDialog({
   const handleClose = () => {
     setError("");
     setResults([]);
-    setSelectedCreatorId("");
+    setSelectedUserId("");
     onClose();
   };
 
@@ -186,16 +199,16 @@ export function GenerateDialog({
         </div>
 
         <Select
-          id="gen-creator"
-          label="クリエイター"
-          options={creatorOptions}
-          value={selectedCreatorId}
-          onChange={(e) => setSelectedCreatorId(e.target.value)}
+          id="gen-user"
+          label="対象ユーザー"
+          options={userOptions}
+          value={selectedUserId}
+          onChange={(e) => setSelectedUserId(e.target.value)}
         />
 
-        {creatorsWithCompensation.length === 0 && (
+        {usersWithCompensation.length === 0 && (
           <div className="rounded-md bg-yellow-50 p-3 text-sm text-yellow-700">
-            報酬設定がされているクリエイターがいません。先にクリエイター管理で報酬設定を行ってください。
+            報酬設定がされているユーザーがいません。先にユーザー管理で報酬設定を行ってください。
           </div>
         )}
 
@@ -211,7 +224,10 @@ export function GenerateDialog({
                   key={i}
                   className="flex items-center justify-between text-sm"
                 >
-                  <span className="text-gray-700">{r.name}</span>
+                  <span className="text-gray-700">
+                    {r.name}{" "}
+                    <span className="text-xs text-gray-400">({r.role})</span>
+                  </span>
                   {r.success ? (
                     <Badge className="bg-green-100 text-green-800">成功</Badge>
                   ) : (
@@ -234,7 +250,7 @@ export function GenerateDialog({
               generating ||
               !year ||
               !month ||
-              creatorsWithCompensation.length === 0
+              usersWithCompensation.length === 0
             }
           >
             全員一括生成
@@ -248,7 +264,7 @@ export function GenerateDialog({
               loading={generating}
               disabled={
                 generatingAll ||
-                !selectedCreatorId ||
+                !selectedUserId ||
                 !year ||
                 !month
               }
