@@ -163,8 +163,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, data: notification });
   } catch (error) {
     console.error("Generate payment notification error:", error);
+    const message =
+      error instanceof Error ? error.message : "支払通知書の生成に失敗しました";
     return NextResponse.json(
-      { success: false, error: "支払通知書の生成に失敗しました" },
+      { success: false, error: `支払通知書の生成に失敗しました: ${message}` },
       { status: 500 }
     );
   }
