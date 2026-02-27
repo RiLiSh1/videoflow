@@ -317,6 +317,7 @@ model PaymentNotification {
 
   creator   User @relation("PaymentNotificationCreator", fields: [creatorId], references: [id])
   generator User @relation("PaymentNotificationGenerator", fields: [generatedBy], references: [id])
+  invoice   CreatorInvoice?
 
   @@unique([creatorId, year, month])
   @@map("payment_notifications")
