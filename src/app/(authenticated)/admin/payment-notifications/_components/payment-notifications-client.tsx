@@ -54,8 +54,12 @@ function formatYen(amount: number): string {
   return `¥${amount.toLocaleString()}`;
 }
 
-function compensationLabel(row: UserPaymentRow): string {
-  if (!row.hasCompensation) return "未設定";
+function compensationLabel(row: {
+  compensationType: CompensationType | null;
+  perVideoRate: number | null;
+  customAmount: number | null;
+  isFixedMonthly: boolean;
+}): string {
   if (row.compensationType === "PER_VIDEO") {
     return `¥${(row.perVideoRate || 0).toLocaleString()}/本`;
   }
