@@ -61,6 +61,15 @@ enum EntityType {
   @@map("entity_type")
 }
 
+enum InvoiceVerificationStatus {
+  PENDING
+  MATCHED
+  MISMATCHED
+  APPROVED
+
+  @@map("invoice_verification_status")
+}
+
 // ============================================================
 // Models
 // ============================================================
