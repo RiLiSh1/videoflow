@@ -720,6 +720,11 @@ function PaymentTable({
                     状態
                   </th>
                 )}
+                {!isAllPeriod && (
+                  <th className="px-2 py-3 text-center font-medium text-gray-500">
+                    請求書
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
