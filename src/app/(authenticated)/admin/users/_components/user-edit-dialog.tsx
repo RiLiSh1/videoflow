@@ -154,6 +154,13 @@ export function UserEditDialog({
         />
 
         <Input
+          id="edit-chatworkRoomId"
+          label="Chatwork ルームID"
+          error={errors.chatworkRoomId?.message}
+          {...register("chatworkRoomId")}
+        />
+
+        <Input
           id="edit-password"
           label="新しいパスワード（変更する場合のみ）"
           type="password"
