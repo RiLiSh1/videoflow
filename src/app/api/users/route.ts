@@ -16,6 +16,7 @@ export async function GET() {
       email: true,
       role: true,
       chatworkId: true,
+      chatworkRoomId: true,
       isActive: true,
       createdAt: true,
     },
