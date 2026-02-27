@@ -28,6 +28,10 @@ export type CreatorRow = {
     customNote: string | null;
     isFixedMonthly: boolean;
   } | null;
+  profile: {
+    entityType: EntityType;
+    businessName: string | null;
+  } | null;
 };
 
 interface CreatorsClientProps {
