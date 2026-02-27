@@ -795,7 +795,7 @@ function PaymentTable({
                       )}
                     </td>
                     <td className="px-2 py-3 text-right text-gray-700">
-                      {formatYen(totals.grossSubtotal)}
+                      {formatYen(totals.subtotalWithTax)}
                     </td>
                     <td className="px-2 py-3 text-right">
                       {totals.withholdingTax > 0 ? (
@@ -806,11 +806,8 @@ function PaymentTable({
                         <span className="text-gray-300">-</span>
                       )}
                     </td>
-                    <td className="px-2 py-3 text-right text-gray-700">
-                      {formatYen(totals.paymentExTax)}
-                    </td>
                     <td className="px-2 py-3 text-right text-gray-900">
-                      {formatYen(totals.paymentInTax)}
+                      {formatYen(totals.transferAmount)}
                     </td>
                     {!isAllPeriod && <td className="px-2 py-3" />}
                   </tr>
