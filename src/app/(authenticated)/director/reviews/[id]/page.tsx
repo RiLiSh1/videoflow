@@ -7,6 +7,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/domain/status-badge";
 import { formatDate } from "@/lib/utils/format-date";
 import { ReviewClient } from "./_components/review-client";
+import { TelopSection } from "@/components/domain/telop-section";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 
 export default async function DirectorReviewDetailPage({
