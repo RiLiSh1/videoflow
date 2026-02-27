@@ -83,6 +83,7 @@ function NotificationCard({ notification }: { notification: NotificationData }) 
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   const handleUpload = async (file: File) => {
     setUploading(true);
@@ -105,6 +106,37 @@ function NotificationCard({ notification }: { notification: NotificationData }) 
       alert("アップロードに失敗しました");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch(`/api/invoices/${notification.id}/generate`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => null);
+        alert(json?.error || "請求書の生成に失敗しました");
+        return;
+      }
+      // Download the PDF
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const disposition = res.headers.get("Content-Disposition");
+      const match = disposition?.match(/filename\*=UTF-8''(.+)/);
+      a.download = match ? decodeURIComponent(match[1]) : "請求書.pdf";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      router.refresh();
+    } catch {
+      alert("請求書の生成に失敗しました");
+    } finally {
+      setGenerating(false);
     }
   };
 
