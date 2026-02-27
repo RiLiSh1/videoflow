@@ -111,6 +111,23 @@ export function CreatorsClient({ creators }: CreatorsClientProps) {
       ),
     },
     {
+      id: "entityType",
+      header: "区分",
+      cell: ({ row }) => {
+        const profile = row.original.profile;
+        if (!profile) return <span className="text-gray-300">未設定</span>;
+        return profile.entityType === "INDIVIDUAL" ? (
+          <Badge className="bg-orange-100 text-orange-800">
+            {ENTITY_TYPE_LABELS[profile.entityType]}
+          </Badge>
+        ) : (
+          <Badge className="bg-teal-100 text-teal-800">
+            {ENTITY_TYPE_LABELS[profile.entityType]}
+          </Badge>
+        );
+      },
+    },
+    {
       accessorKey: "videoCount",
       header: "動画数",
       cell: ({ row }) => (
