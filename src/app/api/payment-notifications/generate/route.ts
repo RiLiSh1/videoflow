@@ -9,18 +9,20 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { creatorId, year, month } = body;
+    // Support both userId (new) and creatorId (backward compat)
+    const userId = body.userId || body.creatorId;
+    const { year, month } = body;
 
-    if (!creatorId || !year || !month) {
+    if (!userId || !year || !month) {
       return NextResponse.json(
-        { success: false, error: "クリエイターID、年、月は必須です" },
+        { success: false, error: "ユーザーID、年、月は必須です" },
         { status: 400 }
       );
     }
 
-    // Get creator with profile and compensation
-    const creator = await prisma.user.findUnique({
-      where: { id: creatorId },
+    // Get user with profile and compensation
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
       select: {
         id: true,
         name: true,
@@ -30,22 +32,22 @@ export async function POST(request: Request) {
       },
     });
 
-    if (!creator || creator.role !== "CREATOR") {
+    if (!user || !["CREATOR", "DIRECTOR"].includes(user.role)) {
       return NextResponse.json(
-        { success: false, error: "クリエイターが見つかりません" },
+        { success: false, error: "対象ユーザーが見つかりません" },
         { status: 404 }
       );
     }
 
-    if (!creator.compensation) {
+    if (!user.compensation) {
       return NextResponse.json(
         { success: false, error: "報酬設定がされていません" },
         { status: 400 }
       );
     }
 
-    const entityType = creator.profile?.entityType || "INDIVIDUAL";
-    const compensation = creator.compensation;
+    const entityType = user.profile?.entityType || "INDIVIDUAL";
+    const compensation = user.compensation;
 
     // Date range for the target month
     const startDate = new Date(year, month - 1, 1);
@@ -82,10 +84,15 @@ export async function POST(request: Request) {
       });
     } else {
       // PER_VIDEO: find completed videos for this month
-      // Based on Version 1's createdAt falling in the target month
+      // CREATOR → creatorId, DIRECTOR → directorId
+      const videoWhere =
+        user.role === "DIRECTOR"
+          ? { directorId: userId }
+          : { creatorId: userId };
+
       const videos = await prisma.video.findMany({
         where: {
-          creatorId,
+          ...videoWhere,
           status: "COMPLETED",
           versions: {
             some: {
@@ -121,17 +128,17 @@ export async function POST(request: Request) {
     const withholdingTax = calculateWithholdingTax(subtotal, entityType);
     const netAmount = subtotal - withholdingTax;
 
-    // Upsert payment notification
+    // Upsert payment notification (creatorId field stores the user id)
     const notification = await prisma.paymentNotification.upsert({
       where: {
         creatorId_year_month: {
-          creatorId,
+          creatorId: userId,
           year: Number(year),
           month: Number(month),
         },
       },
       create: {
-        creatorId,
+        creatorId: userId,
         year: Number(year),
         month: Number(month),
         subtotal,
@@ -148,7 +155,7 @@ export async function POST(request: Request) {
         generatedBy: auth.id,
       },
       include: {
-        creator: { select: { id: true, name: true } },
+        creator: { select: { id: true, name: true, role: true } },
         generator: { select: { id: true, name: true } },
       },
     });
