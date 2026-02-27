@@ -10,6 +10,7 @@ import { formatDate, formatDateTime } from "@/lib/utils/format-date";
 import { VersionForm } from "./_components/version-form";
 import { StatusAction } from "./_components/status-action";
 import { FeedbackSection } from "./_components/feedback-section";
+import { TelopSection } from "@/components/domain/telop-section";
 
 export default async function CreatorVideoDetailPage({
   params,
