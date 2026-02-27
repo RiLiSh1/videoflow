@@ -14,7 +14,7 @@ export async function PUT(
 
   try {
     const body = await request.json();
-    const { name, email, role, chatworkId, isActive, password } = body;
+    const { name, email, role, chatworkId, chatworkRoomId, isActive, password } = body;
 
     const updateData: Record<string, unknown> = {};
     if (name !== undefined) updateData.name = name;
