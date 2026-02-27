@@ -62,6 +62,12 @@ const getPaymentData = unstable_cache(
         subtotal: true,
         withholdingTax: true,
         netAmount: true,
+        invoice: {
+          select: {
+            id: true,
+            verificationStatus: true,
+          },
+        },
       },
     });
 
