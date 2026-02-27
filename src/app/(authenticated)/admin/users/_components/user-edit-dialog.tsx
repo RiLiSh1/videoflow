@@ -22,6 +22,7 @@ const updateUserSchema = z.object({
     .or(z.literal("")),
   role: z.enum(["CREATOR", "DIRECTOR", "ADMIN"]),
   chatworkId: z.string().optional(),
+  chatworkRoomId: z.string().optional(),
   password: z
     .string()
     .min(6, "パスワードは6文字以上で入力してください")
