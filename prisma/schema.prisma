@@ -242,3 +242,19 @@ model Notification {
   @@index([videoId])
   @@map("notifications")
 }
+
+model CreatorCompensation {
+  id             String           @id @default(cuid())
+  userId         String           @unique @map("user_id")
+  type           CompensationType @default(PER_VIDEO)
+  perVideoRate   Int?             @map("per_video_rate")
+  customAmount   Int?             @map("custom_amount")
+  customNote     String?          @map("custom_note")
+  isFixedMonthly Boolean          @default(false) @map("is_fixed_monthly")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("creator_compensations")
+}
