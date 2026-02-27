@@ -41,7 +41,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { loginId, password, name, email, role, chatworkId } = parsed.data;
+    const { loginId, password, name, email, role, chatworkId, chatworkRoomId } = parsed.data;
 
     const existing = await prisma.user.findUnique({ where: { loginId } });
     if (existing) {
