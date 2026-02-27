@@ -184,7 +184,25 @@ function NotificationCard({ notification }: { notification: NotificationData }) 
           <p className="mb-2 text-xs font-medium text-gray-500">請求書</p>
 
           {!inv ? (
-            <>
+            <div className="space-y-2">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleGenerate}
+                loading={generating}
+                className="w-full"
+              >
+                <FilePlus2 className="mr-1.5 h-4 w-4" />
+                請求書を作成
+              </Button>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-white px-2 text-gray-400">または</span>
+                </div>
+              </div>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -200,9 +218,9 @@ function NotificationCard({ notification }: { notification: NotificationData }) 
                 className="w-full"
               >
                 <Upload className="mr-1.5 h-4 w-4" />
-                請求書をアップロード
+                PDFをアップロード
               </Button>
-            </>
+            </div>
           ) : inv.verificationStatus === "APPROVED" ? (
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm text-gray-500">
