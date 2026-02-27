@@ -3,10 +3,7 @@
 import { DataTable } from "@/components/ui/data-table";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/domain/status-badge";
-import {
-  VIDEO_STATUS_LABELS,
-  VIDEO_STATUS_ORDER,
-} from "@/lib/constants/video-status";
+import { VIDEO_STATUS_ORDER } from "@/lib/constants/video-status";
 import type { VideoStatus } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
