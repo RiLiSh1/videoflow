@@ -79,6 +79,8 @@ const getPaymentData = unstable_cache(
         subtotal: number;
         withholdingTax: number;
         netAmount: number;
+        invoiceStatus: string | null;
+        invoiceId: string | null;
       }
     >();
     for (const n of existingNotifications) {
@@ -87,6 +89,8 @@ const getPaymentData = unstable_cache(
         subtotal: n.subtotal,
         withholdingTax: n.withholdingTax,
         netAmount: n.netAmount,
+        invoiceStatus: n.invoice?.verificationStatus ?? null,
+        invoiceId: n.invoice?.id ?? null,
       });
     }
 
