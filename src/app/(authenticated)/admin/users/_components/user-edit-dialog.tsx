@@ -77,6 +77,7 @@ export function UserEditDialog({
         email: data.email,
         role: data.role,
         chatworkId: data.chatworkId,
+        chatworkRoomId: data.chatworkRoomId,
       };
       if (data.password) {
         payload.password = data.password;
