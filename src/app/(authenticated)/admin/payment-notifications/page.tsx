@@ -1,33 +1,233 @@
 import { prisma } from "@/lib/db";
+import { unstable_cache } from "next/cache";
 import { PageContainer } from "@/components/layout/page-container";
+import { calculateWithholdingTax } from "@/lib/utils/withholding-tax";
 import { PaymentNotificationsClient } from "./_components/payment-notifications-client";
+import type { EntityType, CompensationType } from "@prisma/client";
 
-async function getCreators() {
-  const creators = await prisma.user.findMany({
-    where: { role: "CREATOR", isActive: true },
-    select: {
-      id: true,
-      name: true,
-      profile: { select: { entityType: true } },
-      compensation: { select: { type: true } },
-    },
-    orderBy: { name: "asc" },
-  });
+const getPaymentData = unstable_cache(
+  async () => {
+    // 1. All CREATOR/DIRECTOR users with compensation + profile
+    const users = await prisma.user.findMany({
+      where: {
+        role: { in: ["CREATOR", "DIRECTOR"] },
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        compensation: {
+          select: {
+            type: true,
+            perVideoRate: true,
+            customAmount: true,
+            customNote: true,
+            isFixedMonthly: true,
+          },
+        },
+        profile: {
+          select: { entityType: true },
+        },
+      },
+      orderBy: { name: "asc" },
+    });
 
-  return creators.map((c) => ({
-    id: c.id,
-    name: c.name,
-    entityType: c.profile?.entityType || null,
-    hasCompensation: !!c.compensation,
-  }));
-}
+    // 2. All COMPLETED videos with version 1 createdAt
+    const videos = await prisma.video.findMany({
+      where: { status: "COMPLETED" },
+      select: {
+        id: true,
+        creatorId: true,
+        directorId: true,
+        versions: {
+          where: { versionNumber: 1 },
+          select: { createdAt: true },
+          take: 1,
+        },
+      },
+    });
+
+    // 3. Existing payment notifications (for generated status)
+    const existingNotifications = await prisma.paymentNotification.findMany({
+      select: {
+        id: true,
+        creatorId: true,
+        year: true,
+        month: true,
+        subtotal: true,
+        withholdingTax: true,
+        netAmount: true,
+      },
+    });
+
+    // Build notification lookup: `${userId}-${year}-${month}` → notification
+    const notificationMap = new Map<
+      string,
+      {
+        id: string;
+        subtotal: number;
+        withholdingTax: number;
+        netAmount: number;
+      }
+    >();
+    for (const n of existingNotifications) {
+      notificationMap.set(`${n.creatorId}-${n.year}-${n.month}`, {
+        id: n.id,
+        subtotal: n.subtotal,
+        withholdingTax: n.withholdingTax,
+        netAmount: n.netAmount,
+      });
+    }
+
+    // 4. Single pass: count videos per user per month
+    // key: `${userId}-${year}-${month}`
+    const videoCountMap = new Map<string, number>();
+    const allMonths = new Set<string>(); // "YYYY-MM"
+
+    for (const v of videos) {
+      const v1 = v.versions[0];
+      if (!v1) continue;
+      const d = v1.createdAt;
+      const year = d.getFullYear();
+      const month = d.getMonth() + 1;
+      const monthKey = `${year}-${String(month).padStart(2, "0")}`;
+      allMonths.add(monthKey);
+
+      // Count for creator
+      if (v.creatorId) {
+        const key = `${v.creatorId}-${year}-${month}`;
+        videoCountMap.set(key, (videoCountMap.get(key) || 0) + 1);
+      }
+      // Count for director
+      if (v.directorId) {
+        const key = `${v.directorId}-${year}-${month}`;
+        videoCountMap.set(key, (videoCountMap.get(key) || 0) + 1);
+      }
+    }
+
+    // 5. Build per-user, per-month payment data
+    type UserPaymentRow = {
+      userId: string;
+      userName: string;
+      role: "CREATOR" | "DIRECTOR";
+      entityType: EntityType;
+      hasCompensation: boolean;
+      compensationType: CompensationType | null;
+      perVideoRate: number | null;
+      customAmount: number | null;
+      isFixedMonthly: boolean;
+      months: {
+        year: number;
+        month: number;
+        videoCount: number;
+        subtotal: number;
+        withholdingTax: number;
+        netAmount: number;
+        notificationId: string | null;
+      }[];
+    };
+
+    const userPayments: UserPaymentRow[] = [];
+
+    // Sorted months descending
+    const sortedMonths = Array.from(allMonths)
+      .sort()
+      .reverse()
+      .map((m) => {
+        const [y, mo] = m.split("-");
+        return { year: Number(y), month: Number(mo) };
+      });
+
+    for (const u of users) {
+      const entityType =
+        (u.profile?.entityType as EntityType) || "INDIVIDUAL";
+      const comp = u.compensation;
+      const hasComp = !!comp;
+
+      const months: UserPaymentRow["months"] = [];
+
+      for (const { year, month } of sortedMonths) {
+        const videoCount =
+          videoCountMap.get(`${u.id}-${year}-${month}`) || 0;
+
+        // Calculate expected compensation
+        let subtotal = 0;
+        if (comp) {
+          if (comp.type === "CUSTOM" && comp.isFixedMonthly) {
+            subtotal = comp.customAmount || 0;
+          } else if (comp.type === "CUSTOM") {
+            subtotal = comp.customAmount || 0;
+          } else {
+            // PER_VIDEO
+            subtotal = videoCount * (comp.perVideoRate || 0);
+          }
+        }
+
+        const withholdingTax = comp
+          ? calculateWithholdingTax(subtotal, entityType)
+          : 0;
+        const netAmount = subtotal - withholdingTax;
+
+        // Check if notification already generated
+        const existing = notificationMap.get(`${u.id}-${year}-${month}`);
+
+        // Only include months where there's actual data (videos or custom compensation)
+        const hasData =
+          videoCount > 0 ||
+          (comp?.type === "CUSTOM" && (comp.customAmount || 0) > 0);
+
+        if (hasData) {
+          months.push({
+            year,
+            month,
+            videoCount,
+            subtotal,
+            withholdingTax,
+            netAmount,
+            notificationId: existing?.id || null,
+          });
+        }
+      }
+
+      userPayments.push({
+        userId: u.id,
+        userName: u.name,
+        role: u.role as "CREATOR" | "DIRECTOR",
+        entityType,
+        hasCompensation: hasComp,
+        compensationType: comp?.type || null,
+        perVideoRate: comp?.perVideoRate || null,
+        customAmount: comp?.customAmount || null,
+        isFixedMonthly: comp?.isFixedMonthly || false,
+        months,
+      });
+    }
+
+    // Available years from data
+    const yearSet = new Set<number>();
+    for (const m of allMonths) {
+      yearSet.add(Number(m.split("-")[0]));
+    }
+    // Always include current year
+    yearSet.add(new Date().getFullYear());
+    const availableYears = Array.from(yearSet).sort((a, b) => b - a);
+
+    return { userPayments, availableYears };
+  },
+  ["admin-payment-notifications"],
+  { revalidate: 30 }
+);
 
 export default async function AdminPaymentNotificationsPage() {
-  const creators = await getCreators();
+  const { userPayments, availableYears } = await getPaymentData();
 
   return (
     <PageContainer title="支払通知書">
-      <PaymentNotificationsClient creators={creators} />
+      <PaymentNotificationsClient
+        userPayments={userPayments}
+        availableYears={availableYears}
+      />
     </PageContainer>
   );
 }
