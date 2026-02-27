@@ -27,7 +27,11 @@ const getPaymentData = unstable_cache(
           },
         },
         profile: {
-          select: { entityType: true },
+          select: {
+            entityType: true,
+            businessName: true,
+            bankName: true,
+          },
         },
       },
       orderBy: { name: "asc" },
@@ -81,7 +85,6 @@ const getPaymentData = unstable_cache(
     }
 
     // 4. Single pass: count videos per user per month
-    // key: `${userId}-${year}-${month}`
     const videoCountMap = new Map<string, number>();
     const allMonths = new Set<string>(); // "YYYY-MM"
 
@@ -106,6 +109,11 @@ const getPaymentData = unstable_cache(
       }
     }
 
+    // Also add current month to allMonths
+    const now = new Date();
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    allMonths.add(currentMonthKey);
+
     // 5. Build per-user, per-month payment data
     type UserPaymentRow = {
       userId: string;
@@ -113,6 +121,7 @@ const getPaymentData = unstable_cache(
       role: "CREATOR" | "DIRECTOR";
       entityType: EntityType;
       hasCompensation: boolean;
+      hasProfile: boolean;
       compensationType: CompensationType | null;
       perVideoRate: number | null;
       customAmount: number | null;
@@ -144,6 +153,7 @@ const getPaymentData = unstable_cache(
         (u.profile?.entityType as EntityType) || "INDIVIDUAL";
       const comp = u.compensation;
       const hasComp = !!comp;
+      const hasProfile = !!(u.profile?.businessName || u.profile?.bankName);
 
       const months: UserPaymentRow["months"] = [];
 
@@ -172,7 +182,7 @@ const getPaymentData = unstable_cache(
         // Check if notification already generated
         const existing = notificationMap.get(`${u.id}-${year}-${month}`);
 
-        // Only include months where there's actual data (videos or custom compensation)
+        // Include months with data, or custom compensation (always has data)
         const hasData =
           videoCount > 0 ||
           (comp?.type === "CUSTOM" && (comp.customAmount || 0) > 0);
@@ -196,6 +206,7 @@ const getPaymentData = unstable_cache(
         role: u.role as "CREATOR" | "DIRECTOR",
         entityType,
         hasCompensation: hasComp,
+        hasProfile,
         compensationType: comp?.type || null,
         perVideoRate: comp?.perVideoRate || null,
         customAmount: comp?.customAmount || null,
@@ -209,7 +220,6 @@ const getPaymentData = unstable_cache(
     Array.from(allMonths).forEach((m) => {
       yearSet.add(Number(m.split("-")[0]));
     });
-    // Always include current year
     yearSet.add(new Date().getFullYear());
     const availableYears = Array.from(yearSet).sort((a, b) => b - a);
 
