@@ -337,9 +337,21 @@ export function PaymentNotificationDocument({
         {/* Summary */}
         <View style={styles.summarySection}>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>小計:</Text>
+            <Text style={styles.summaryLabel}>報酬（税抜）:</Text>
             <Text style={styles.summaryValue}>
               {formatYen(data.subtotal)}
+            </Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>消費税(10%):</Text>
+            <Text style={styles.summaryValue}>
+              {formatYen(Math.floor(data.subtotal * 0.1))}
+            </Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>小計:</Text>
+            <Text style={styles.summaryValue}>
+              {formatYen(data.subtotal + Math.floor(data.subtotal * 0.1))}
             </Text>
           </View>
           {data.isIndividual && data.withholdingTax > 0 && (
@@ -353,9 +365,13 @@ export function PaymentNotificationDocument({
             </View>
           )}
           <View style={styles.summaryTotal}>
-            <Text style={styles.summaryTotalLabel}>差引支払金額:</Text>
+            <Text style={styles.summaryTotalLabel}>振込額:</Text>
             <Text style={styles.summaryTotalValue}>
-              {formatYen(data.netAmount)}
+              {formatYen(
+                data.subtotal +
+                  Math.floor(data.subtotal * 0.1) -
+                  data.withholdingTax
+              )}
             </Text>
           </View>
         </View>
