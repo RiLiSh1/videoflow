@@ -166,59 +166,6 @@ function PipelineCompact({ status }: { status: VideoStatus }) {
   );
 }
 
-// ---------- Full Pipeline (for overview / large display) ----------
-
-function PipelineFull({ status }: { status: VideoStatus }) {
-  const colors = getCheckpointColors(status);
-
-  return (
-    <div className="flex items-start">
-      {PIPELINE_CHECKPOINTS.map((cp, i) => {
-        const color = colors[i];
-        const isLast = i === PIPELINE_CHECKPOINTS.length - 1;
-        return (
-          <div key={cp.label} className="flex flex-1 items-start">
-            <div className="flex flex-col items-center flex-1">
-              {/* Role label */}
-              <span className="mb-1 text-[10px] font-medium text-gray-400">
-                {cp.role || "\u00A0"}
-              </span>
-              {/* Dot + connector */}
-              <div className="flex w-full items-center">
-                {i > 0 && (
-                  <div
-                    className={`h-0.5 flex-1 ${COLOR_CLASSES[colors[i - 1]].bar === "bg-green-500" && COLOR_CLASSES[color].bar !== "bg-gray-200" ? "bg-green-500" : "bg-gray-200"}`}
-                  />
-                )}
-                <div
-                  className={`h-4 w-4 flex-shrink-0 rounded-full border-2 ${COLOR_CLASSES[color].dot} transition-all`}
-                />
-                {!isLast && (
-                  <div
-                    className={`h-0.5 flex-1 ${color === "green" ? "bg-green-500" : "bg-gray-200"}`}
-                  />
-                )}
-              </div>
-              {/* Label */}
-              <span
-                className={`mt-1 text-center text-[11px] font-medium ${
-                  color === "green"
-                    ? "text-green-700"
-                    : color === "red"
-                      ? "text-red-600 font-bold"
-                      : "text-gray-400"
-                }`}
-              >
-                {cp.label}
-              </span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 // ---------- Workflow Overview ----------
 
 function WorkflowOverview({ videos }: { videos: VideoRow[] }) {
