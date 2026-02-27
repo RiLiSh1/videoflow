@@ -9,16 +9,13 @@ import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
   Download,
-  Plus,
   Banknote,
   Users,
   Megaphone,
   Receipt,
   AlertTriangle,
   CheckCircle2,
-  RefreshCw,
 } from "lucide-react";
-import { GenerateDialog } from "./generate-dialog";
 import { ENTITY_TYPE_LABELS } from "@/lib/constants/entity-type";
 
 // ---------- Types ----------
@@ -83,9 +80,10 @@ export function PaymentNotificationsClient({
     String(now.getMonth() + 1)
   );
   const [isAllPeriod, setIsAllPeriod] = useState(false);
-  const [generateOpen, setGenerateOpen] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
-  const [generatingRow, setGeneratingRow] = useState<string | null>(null);
+  const [approvingRow, setApprovingRow] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkApproving, setBulkApproving] = useState(false);
 
   const yearOptions = availableYears.map((y) => ({
     value: String(y),
@@ -186,12 +184,12 @@ export function PaymentNotificationsClient({
   const hasWarnings =
     missingCompensation.length > 0 || missingProfile.length > 0;
 
-  // Per-row generation count (for period view)
-  const generatedCount = useMemo(() => {
+  // Approved / approvable counts
+  const approvedCount = useMemo(() => {
     if (isAllPeriod) return 0;
     return allData.filter((d) => d.notificationId !== null).length;
   }, [allData, isAllPeriod]);
-  const generatableCount = useMemo(() => {
+  const approvableCount = useMemo(() => {
     if (isAllPeriod) return 0;
     return allData.filter(
       (d) => d.hasCompensation && (d.subtotal > 0 || d.videoCount > 0)
@@ -224,10 +222,10 @@ export function PaymentNotificationsClient({
     }
   };
 
-  // Per-row generate
-  const handleRowGenerate = async (userId: string) => {
+  // Single row approve (= generate)
+  const handleRowApprove = async (userId: string) => {
     if (isAllPeriod) return;
-    setGeneratingRow(userId);
+    setApprovingRow(userId);
     try {
       const res = await fetch("/api/payment-notifications/generate", {
         method: "POST",
@@ -240,31 +238,87 @@ export function PaymentNotificationsClient({
       });
       const json = await res.json();
       if (!json.success) {
-        alert(json.error || "生成に失敗しました");
+        alert(json.error || "承認に失敗しました");
         return;
       }
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(userId);
+        return next;
+      });
       router.refresh();
     } catch {
-      alert("生成に失敗しました");
+      alert("承認に失敗しました");
     } finally {
-      setGeneratingRow(null);
+      setApprovingRow(null);
     }
   };
 
-  // Users for generate dialog
-  const usersForGenerate = useMemo(
-    () =>
-      userPayments
-        .filter((u) => u.hasCompensation)
-        .map((u) => ({
-          id: u.userId,
-          name: u.userName,
-          role: u.role,
-          entityType: u.entityType,
-          hasCompensation: true,
-        })),
-    [userPayments]
-  );
+  // Bulk approve
+  const handleBulkApprove = async () => {
+    if (selectedIds.size === 0 || isAllPeriod) return;
+    setBulkApproving(true);
+    try {
+      for (const userId of selectedIds) {
+        const res = await fetch("/api/payment-notifications/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId,
+            year: Number(selectedYear),
+            month: Number(selectedMonth),
+          }),
+        });
+        const json = await res.json();
+        if (!json.success) {
+          alert(json.error || `承認に失敗しました (${userId})`);
+        }
+      }
+      setSelectedIds(new Set());
+      router.refresh();
+    } catch {
+      alert("承認処理に失敗しました");
+    } finally {
+      setBulkApproving(false);
+    }
+  };
+
+  // Selection handlers
+  const handleToggle = useCallback((userId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
+  }, []);
+
+  const handleToggleAll = useCallback((userIds: string[]) => {
+    setSelectedIds((prev) => {
+      const allSelected = userIds.every((id) => prev.has(id));
+      const next = new Set(prev);
+      if (allSelected) {
+        userIds.forEach((id) => next.delete(id));
+      } else {
+        userIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  }, []);
+
+  // Clear selection on period change
+  const handleYearChange = (value: string) => {
+    setSelectedYear(value);
+    setSelectedIds(new Set());
+  };
+  const handleMonthChange = (value: string) => {
+    setSelectedMonth(value);
+    setSelectedIds(new Set());
+  };
+  const handleTogglePeriod = () => {
+    setIsAllPeriod((prev) => !prev);
+    setSelectedIds(new Set());
+  };
 
   return (
     <>
@@ -417,7 +471,7 @@ export function PaymentNotificationsClient({
                 label="年"
                 options={yearOptions}
                 value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
+                onChange={(e) => handleYearChange(e.target.value)}
               />
             </div>
             <div className="w-24">
@@ -426,7 +480,7 @@ export function PaymentNotificationsClient({
                 label="月"
                 options={monthOptions}
                 value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
+                onChange={(e) => handleMonthChange(e.target.value)}
               />
             </div>
           </>
@@ -434,25 +488,34 @@ export function PaymentNotificationsClient({
         <Button
           variant={isAllPeriod ? "primary" : "secondary"}
           size="sm"
-          onClick={() => setIsAllPeriod(!isAllPeriod)}
+          onClick={handleTogglePeriod}
         >
           全期間
         </Button>
 
-        {!isAllPeriod && generatableCount > 0 && (
+        {!isAllPeriod && approvableCount > 0 && (
           <span className="text-xs text-gray-500">
-            生成済み: {generatedCount}/{generatableCount}件
-            {generatedCount === generatableCount && (
+            承認済み: {approvedCount}/{approvableCount}件
+            {approvedCount === approvableCount && (
               <CheckCircle2 className="ml-1 inline h-3.5 w-3.5 text-green-500" />
             )}
           </span>
         )}
 
         <div className="flex-1" />
-        <Button onClick={() => setGenerateOpen(true)}>
-          <Plus className="mr-1.5 h-4 w-4" />
-          生成
-        </Button>
+
+        {!isAllPeriod && (
+          <Button
+            onClick={handleBulkApprove}
+            disabled={selectedIds.size === 0}
+            loading={bulkApproving}
+          >
+            <CheckCircle2 className="mr-1.5 h-4 w-4" />
+            {selectedIds.size > 0
+              ? `選択中の${selectedIds.size}件を承認`
+              : "選択して承認"}
+          </Button>
+        )}
       </div>
 
       {/* Tables */}
@@ -462,9 +525,12 @@ export function PaymentNotificationsClient({
           data={creatorData}
           isAllPeriod={isAllPeriod}
           downloading={downloading}
-          generatingRow={generatingRow}
+          approvingRow={approvingRow}
+          selectedIds={selectedIds}
+          onToggle={handleToggle}
+          onToggleAll={handleToggleAll}
           onDownload={handleDownloadPdf}
-          onGenerate={handleRowGenerate}
+          onApprove={handleRowApprove}
           emptyMessage="クリエイターが登録されていません"
         />
 
@@ -473,24 +539,15 @@ export function PaymentNotificationsClient({
           data={directorData}
           isAllPeriod={isAllPeriod}
           downloading={downloading}
-          generatingRow={generatingRow}
+          approvingRow={approvingRow}
+          selectedIds={selectedIds}
+          onToggle={handleToggle}
+          onToggleAll={handleToggleAll}
           onDownload={handleDownloadPdf}
-          onGenerate={handleRowGenerate}
+          onApprove={handleRowApprove}
           emptyMessage="ディレクターが登録されていません"
         />
       </div>
-
-      <GenerateDialog
-        open={generateOpen}
-        onClose={() => setGenerateOpen(false)}
-        onSuccess={() => {
-          setGenerateOpen(false);
-          router.refresh();
-        }}
-        users={usersForGenerate}
-        defaultYear={selectedYear}
-        defaultMonth={selectedMonth}
-      />
     </>
   );
 }
@@ -515,23 +572,33 @@ type FilteredRow = {
   notificationId: string | null;
 };
 
+function isRowApprovable(row: FilteredRow): boolean {
+  return row.hasCompensation && row.subtotal > 0 && row.notificationId === null;
+}
+
 function PaymentTable({
   title,
   data,
   isAllPeriod,
   downloading,
-  generatingRow,
+  approvingRow,
+  selectedIds,
+  onToggle,
+  onToggleAll,
   onDownload,
-  onGenerate,
+  onApprove,
   emptyMessage,
 }: {
   title: string;
   data: FilteredRow[];
   isAllPeriod: boolean;
   downloading: string | null;
-  generatingRow: string | null;
+  approvingRow: string | null;
+  selectedIds: Set<string>;
+  onToggle: (userId: string) => void;
+  onToggleAll: (userIds: string[]) => void;
   onDownload: (id: string) => void;
-  onGenerate: (userId: string) => void;
+  onApprove: (userId: string) => void;
   emptyMessage: string;
 }) {
   const totals = useMemo(() => {
@@ -553,7 +620,16 @@ function PaymentTable({
     );
   }, [data]);
 
-  const colCount = isAllPeriod ? 10 : 11;
+  const approvableIds = useMemo(
+    () => data.filter(isRowApprovable).map((d) => d.userId),
+    [data]
+  );
+
+  const allApprovableSelected =
+    approvableIds.length > 0 && approvableIds.every((id) => selectedIds.has(id));
+
+  // allPeriod: 10 cols, month view: 12 cols (checkbox + status added)
+  const colCount = isAllPeriod ? 10 : 12;
 
   return (
     <Card>
@@ -568,6 +644,17 @@ function PaymentTable({
           <table className="w-full text-sm whitespace-nowrap">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
+                {!isAllPeriod && (
+                  <th className="w-10 px-2 py-3 text-center">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      checked={allApprovableSelected}
+                      disabled={approvableIds.length === 0}
+                      onChange={() => onToggleAll(approvableIds)}
+                    />
+                  </th>
+                )}
                 <th className="px-3 py-3 text-left font-medium text-gray-500">
                   名前
                 </th>
@@ -600,7 +687,7 @@ function PaymentTable({
                 </th>
                 {!isAllPeriod && (
                   <th className="px-2 py-3 text-center font-medium text-gray-500">
-                    操作
+                    状態
                   </th>
                 )}
               </tr>
@@ -618,9 +705,7 @@ function PaymentTable({
               ) : (
                 <>
                   {data.map((row) => {
-                    const canGenerate =
-                      row.hasCompensation &&
-                      (row.subtotal > 0 || row.videoCount > 0);
+                    const canApprove = isRowApprovable(row);
 
                     // 単価表示
                     let unitPrice: string;
@@ -646,6 +731,23 @@ function PaymentTable({
                           !row.hasCompensation ? "bg-amber-50/50" : ""
                         }`}
                       >
+                        {/* チェックボックス */}
+                        {!isAllPeriod && (
+                          <td className="w-10 px-2 py-3 text-center">
+                            {canApprove ? (
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                checked={selectedIds.has(row.userId)}
+                                onChange={() => onToggle(row.userId)}
+                              />
+                            ) : row.notificationId ? (
+                              <span className="text-gray-300">—</span>
+                            ) : (
+                              <span className="text-gray-300">—</span>
+                            )}
+                          </td>
+                        )}
                         {/* 名前 */}
                         <td className="px-3 py-3 font-medium text-gray-900">
                           {row.userName}
@@ -733,45 +835,42 @@ function PaymentTable({
                         <td className="px-2 py-3 text-right font-semibold text-gray-900">
                           {formatYen(transferAmount)}
                         </td>
-                        {/* 操作 */}
+                        {/* 状態 */}
                         {!isAllPeriod && (
                           <td className="px-2 py-3 text-center">
-                            <div className="flex items-center justify-center gap-1.5">
-                              {canGenerate && (
-                                <Button
-                                  variant="secondary"
-                                  size="sm"
-                                  onClick={() => onGenerate(row.userId)}
-                                  loading={generatingRow === row.userId}
-                                  title={
-                                    row.notificationId ? "再生成" : "生成"
-                                  }
-                                >
-                                  <RefreshCw className="mr-1 h-3.5 w-3.5" />
-                                  {row.notificationId ? "再生成" : "生成"}
-                                </Button>
-                              )}
-                              {row.notificationId && (
-                                <Button
-                                  variant="secondary"
-                                  size="sm"
+                            {row.notificationId ? (
+                              <div className="flex items-center justify-center gap-1.5">
+                                <Badge className="bg-green-100 text-green-800">
+                                  承認済
+                                </Badge>
+                                <button
+                                  type="button"
+                                  className="inline-flex items-center rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
                                   onClick={() =>
                                     onDownload(row.notificationId!)
                                   }
-                                  loading={
+                                  disabled={
                                     downloading === row.notificationId
                                   }
+                                  title="PDFダウンロード"
                                 >
-                                  <Download className="mr-1 h-3.5 w-3.5" />
-                                  PDF
-                                </Button>
-                              )}
-                              {!canGenerate && !row.notificationId && (
-                                <span className="text-xs text-gray-300">
-                                  —
-                                </span>
-                              )}
-                            </div>
+                                  <Download className="h-4 w-4" />
+                                </button>
+                              </div>
+                            ) : canApprove ? (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => onApprove(row.userId)}
+                                loading={approvingRow === row.userId}
+                              >
+                                承認
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-gray-300">
+                                —
+                              </span>
+                            )}
                           </td>
                         )}
                       </tr>
@@ -779,6 +878,7 @@ function PaymentTable({
                   })}
                   {/* Totals row */}
                   <tr className="border-t-2 border-gray-200 bg-gray-50 font-semibold">
+                    {!isAllPeriod && <td className="px-2 py-3" />}
                     <td className="px-3 py-3 text-gray-700">合計</td>
                     <td className="px-2 py-3" />
                     <td className="px-2 py-3" />
