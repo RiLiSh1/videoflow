@@ -226,6 +226,16 @@ export default async function CreatorVideoDetailPage({
           </CardContent>
         </Card>
 
+        {/* Telop Section */}
+        {video.versions[0] && (
+          <TelopSection
+            videoId={video.id}
+            versionId={video.versions[0].id}
+            initialTelopText={video.versions[0].telopText ?? null}
+            initialTelopExtractedAt={video.versions[0].telopExtractedAt?.toISOString() ?? null}
+          />
+        )}
+
         {/* New version form */}
         <VersionForm videoId={video.id} />
 
