@@ -100,6 +100,8 @@ model User {
   profile            CreatorProfile?
   paymentNotifications    PaymentNotification[]  @relation("PaymentNotificationCreator")
   generatedNotifications  PaymentNotification[]  @relation("PaymentNotificationGenerator")
+  uploadedInvoices   CreatorInvoice[] @relation("InvoiceUploader")
+  approvedInvoices   CreatorInvoice[] @relation("InvoiceApprover")
 
   @@map("users")
 }
