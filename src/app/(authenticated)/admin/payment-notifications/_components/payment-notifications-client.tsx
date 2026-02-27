@@ -15,6 +15,7 @@ import {
   Receipt,
   AlertTriangle,
   CheckCircle2,
+  FileCheck,
 } from "lucide-react";
 import { ENTITY_TYPE_LABELS } from "@/lib/constants/entity-type";
 
