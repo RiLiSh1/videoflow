@@ -13,6 +13,8 @@ import {
   Users,
   HardDrive,
   Palette,
+  FileText,
+  Building2,
 } from "lucide-react";
 import type { Role } from "@prisma/client";
 import { NAV_ITEMS } from "@/lib/constants/routes";
