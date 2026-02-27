@@ -636,9 +636,8 @@ function PaymentTable({
 
                     // 税計算
                     const tax = calcTax(row.subtotal);
-                    const grossSubtotal = row.subtotal + tax;
-                    const paymentExTax = row.subtotal - row.withholdingTax;
-                    const paymentInTax = grossSubtotal - row.withholdingTax;
+                    const subtotalWithTax = row.subtotal + tax;
+                    const transferAmount = subtotalWithTax - row.withholdingTax;
 
                     return (
                       <tr
