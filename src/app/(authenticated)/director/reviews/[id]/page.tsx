@@ -241,6 +241,16 @@ export default async function DirectorReviewDetailPage({
               </CardContent>
             </Card>
           )}
+
+          {/* Telop Section */}
+          {latestVersion && (
+            <TelopSection
+              videoId={video.id}
+              versionId={latestVersion.id}
+              initialTelopText={latestVersion.telopText ?? null}
+              initialTelopExtractedAt={latestVersion.telopExtractedAt?.toISOString() ?? null}
+            />
+          )}
         </div>
 
         {/* Right: Feedback form + Actions + History */}
