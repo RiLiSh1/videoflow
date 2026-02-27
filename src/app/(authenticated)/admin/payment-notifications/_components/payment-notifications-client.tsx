@@ -291,6 +291,26 @@ export function PaymentNotificationsClient({
     }
   };
 
+  // Invoice approve
+  const handleApproveInvoice = async (invoiceId: string) => {
+    setApprovingInvoice(invoiceId);
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}/approve`, {
+        method: "POST",
+      });
+      const json = await res.json();
+      if (!json.success) {
+        alert(json.error || "請求書の承認に失敗しました");
+        return;
+      }
+      router.refresh();
+    } catch {
+      alert("請求書の承認に失敗しました");
+    } finally {
+      setApprovingInvoice(null);
+    }
+  };
+
   // Selection handlers
   const handleToggle = useCallback((userId: string) => {
     setSelectedIds((prev) => {
