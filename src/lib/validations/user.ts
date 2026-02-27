@@ -17,6 +17,7 @@ export const createUserSchema = z.object({
   email: z.string().email("正しいメールアドレスを入力してください").optional().or(z.literal("")),
   role: z.enum(["CREATOR", "DIRECTOR", "ADMIN"]),
   chatworkId: z.string().optional(),
+  chatworkRoomId: z.string().optional(),
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
