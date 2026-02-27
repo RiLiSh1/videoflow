@@ -268,3 +268,58 @@ model CreatorCompensation {
 
   @@map("creator_compensations")
 }
+
+model CreatorProfile {
+  id                String     @id @default(cuid())
+  userId            String     @unique @map("user_id")
+  entityType        EntityType @default(INDIVIDUAL) @map("entity_type")
+  businessName      String?    @map("business_name")
+  postalCode        String?    @map("postal_code")
+  address           String?
+  invoiceNumber     String?    @map("invoice_number")
+  bankName          String?    @map("bank_name")
+  bankBranch        String?    @map("bank_branch")
+  bankAccountType   String?    @map("bank_account_type")
+  bankAccountNumber String?    @map("bank_account_number")
+  bankAccountHolder String?    @map("bank_account_holder")
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("creator_profiles")
+}
+
+model PaymentNotification {
+  id             String   @id @default(cuid())
+  creatorId      String   @map("creator_id")
+  year           Int
+  month          Int
+  subtotal       Int
+  withholdingTax Int      @map("withholding_tax")
+  netAmount      Int      @map("net_amount")
+  lineItemsJson  Json     @map("line_items_json")
+  generatedBy    String   @map("generated_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  creator   User @relation("PaymentNotificationCreator", fields: [creatorId], references: [id])
+  generator User @relation("PaymentNotificationGenerator", fields: [generatedBy], references: [id])
+
+  @@unique([creatorId, year, month])
+  @@map("payment_notifications")
+}
+
+model CompanySettings {
+  id            String   @id @default(cuid())
+  companyName   String   @map("company_name")
+  postalCode    String?  @map("postal_code")
+  address       String?
+  tel           String?
+  email         String?
+  invoiceNumber String?  @map("invoice_number")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("company_settings")
+}
