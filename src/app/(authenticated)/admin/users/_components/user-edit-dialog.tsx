@@ -64,6 +64,7 @@ export function UserEditDialog({
       email: user.email || "",
       role: user.role,
       chatworkId: user.chatworkId || "",
+      chatworkRoomId: user.chatworkRoomId || "",
       password: "",
     },
   });
