@@ -206,9 +206,9 @@ const getPaymentData = unstable_cache(
 
     // Available years from data
     const yearSet = new Set<number>();
-    for (const m of allMonths) {
+    Array.from(allMonths).forEach((m) => {
       yearSet.add(Number(m.split("-")[0]));
-    }
+    });
     // Always include current year
     yearSet.add(new Date().getFullYear());
     const availableYears = Array.from(yearSet).sort((a, b) => b - a);
