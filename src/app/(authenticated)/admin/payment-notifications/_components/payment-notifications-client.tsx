@@ -167,10 +167,10 @@ export function PaymentNotificationsClient({
     [creatorData, directorData]
   );
   const totalSubtotal = allData.reduce((s, d) => s + d.subtotal, 0);
-  const totalTax = calcTax(totalSubtotal);
+  const totalTax = allData.reduce((s, d) => s + calcTax(d.subtotal), 0);
+  const totalSubtotalWithTax = totalSubtotal + totalTax;
   const totalWithholding = allData.reduce((s, d) => s + d.withholdingTax, 0);
-  const totalPaymentExTax = totalSubtotal - totalWithholding;
-  const totalPaymentInTax = totalSubtotal + totalTax - totalWithholding;
+  const totalTransferAmount = totalSubtotalWithTax - totalWithholding;
   const creatorCount = creators.length;
   const directorCount = directors.length;
 
