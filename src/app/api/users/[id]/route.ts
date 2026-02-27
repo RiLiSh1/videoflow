@@ -35,6 +35,7 @@ export async function PUT(
         email: true,
         role: true,
         chatworkId: true,
+        chatworkRoomId: true,
         isActive: true,
         createdAt: true,
       },
