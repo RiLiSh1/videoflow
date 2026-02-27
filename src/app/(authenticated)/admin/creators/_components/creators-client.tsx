@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { CompensationType } from "@prisma/client";
+import type { CompensationType, EntityType } from "@prisma/client";
 import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils/format-date";
-import { Coins, Film } from "lucide-react";
+import { ENTITY_TYPE_LABELS } from "@/lib/constants/entity-type";
+import { Coins, Film, UserCog } from "lucide-react";
 import { CompensationDialog } from "./compensation-dialog";
+import { CreatorProfileDialog } from "./creator-profile-dialog";
 
 export type CreatorRow = {
   id: string;
