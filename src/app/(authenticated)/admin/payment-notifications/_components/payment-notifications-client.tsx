@@ -535,22 +535,22 @@ function PaymentTable({
   emptyMessage: string;
 }) {
   const totals = useMemo(() => {
-    const base = data.reduce(
-      (acc, d) => ({
-        videoCount: acc.videoCount + d.videoCount,
-        subtotal: acc.subtotal + d.subtotal,
-        withholdingTax: acc.withholdingTax + d.withholdingTax,
-      }),
-      { videoCount: 0, subtotal: 0, withholdingTax: 0 }
+    return data.reduce(
+      (acc, d) => {
+        const tax = calcTax(d.subtotal);
+        const subtotalWithTax = d.subtotal + tax;
+        const transferAmount = subtotalWithTax - d.withholdingTax;
+        return {
+          videoCount: acc.videoCount + d.videoCount,
+          subtotal: acc.subtotal + d.subtotal,
+          tax: acc.tax + tax,
+          subtotalWithTax: acc.subtotalWithTax + subtotalWithTax,
+          withholdingTax: acc.withholdingTax + d.withholdingTax,
+          transferAmount: acc.transferAmount + transferAmount,
+        };
+      },
+      { videoCount: 0, subtotal: 0, tax: 0, subtotalWithTax: 0, withholdingTax: 0, transferAmount: 0 }
     );
-    const tax = calcTax(base.subtotal);
-    return {
-      ...base,
-      tax,
-      grossSubtotal: base.subtotal + tax,
-      paymentExTax: base.subtotal - base.withholdingTax,
-      paymentInTax: base.subtotal + tax - base.withholdingTax,
-    };
   }, [data]);
 
   const colCount = isAllPeriod ? 11 : 12;
