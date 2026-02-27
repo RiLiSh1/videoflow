@@ -656,7 +656,6 @@ function WorkflowOverview({ videos }: { videos: VideoRow[] }) {
       {/* Large pipeline visualization */}
       <div className="flex items-center gap-1">
         {phaseCounts.map((phase, i) => {
-          const pct = total > 0 ? (phase.count / total) * 100 : 0;
           return (
             <div key={phase.label} className="flex items-center flex-1 min-w-0">
               <div className="flex-1 min-w-0">
