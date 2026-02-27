@@ -259,7 +259,7 @@ export function PaymentNotificationsClient({
     if (selectedIds.size === 0 || isAllPeriod) return;
     setBulkApproving(true);
     try {
-      for (const userId of selectedIds) {
+      for (const userId of Array.from(selectedIds)) {
         const res = await fetch("/api/payment-notifications/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
