@@ -36,6 +36,12 @@ async function getCreators() {
           isFixedMonthly: c.compensation.isFixedMonthly,
         }
       : null,
+    profile: c.profile
+      ? {
+          entityType: c.profile.entityType,
+          businessName: c.profile.businessName,
+        }
+      : null,
   }));
 }
 
