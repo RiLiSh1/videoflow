@@ -28,6 +28,8 @@ type MonthData = {
   withholdingTax: number;
   netAmount: number;
   notificationId: string | null;
+  invoiceStatus: string | null;
+  invoiceId: string | null;
 };
 
 type UserPaymentRow = {
