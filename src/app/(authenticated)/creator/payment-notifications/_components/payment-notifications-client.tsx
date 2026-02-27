@@ -6,7 +6,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { InvoiceVerificationStatus } from "@prisma/client";
-import { CheckCircle2, XCircle, Upload, FileText } from "lucide-react";
+import { CheckCircle2, XCircle, Upload, FileText, FilePlus2 } from "lucide-react";
 
 type InvoiceData = {
   id: string;
