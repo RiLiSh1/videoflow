@@ -4,6 +4,7 @@ export type NavItem = {
   label: string;
   href: string;
   icon: string;
+  group?: string;
 };
 
 export const NAV_ITEMS: Record<Role, NavItem[]> = {
