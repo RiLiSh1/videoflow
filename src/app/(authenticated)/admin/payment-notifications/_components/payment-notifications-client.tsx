@@ -637,8 +637,8 @@ function PaymentTable({
   const allApprovableSelected =
     approvableIds.length > 0 && approvableIds.every((id) => selectedIds.has(id));
 
-  // allPeriod: 10 cols, month view: 12 cols (checkbox + status added)
-  const colCount = isAllPeriod ? 10 : 12;
+  // allPeriod: 10 cols, month view: 13 cols (checkbox + status + invoice added)
+  const colCount = isAllPeriod ? 10 : 13;
 
   return (
     <Card>
