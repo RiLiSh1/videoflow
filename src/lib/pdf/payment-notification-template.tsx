@@ -397,7 +397,10 @@ export function PaymentNotificationDocument({
           <View style={styles.noteSection}>
             <Text style={styles.noteTitle}>備考:</Text>
             <Text style={styles.noteText}>
-              ・源泉徴収税は所得税法第204条に基づき計算
+              ・源泉徴収税は報酬（税抜）に対し所得税法第204条に基づき計算
+            </Text>
+            <Text style={styles.noteText}>
+              ・振込額 = 報酬（税抜）+ 消費税 − 源泉徴収税
             </Text>
           </View>
         )}
