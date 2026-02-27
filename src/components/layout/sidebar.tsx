@@ -31,6 +31,8 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Users,
   HardDrive,
   Palette,
+  FileText,
+  Building2,
 };
 
 interface SidebarProps {
