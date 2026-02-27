@@ -11,6 +11,7 @@ async function getUsers() {
       email: true,
       role: true,
       chatworkId: true,
+      chatworkRoomId: true,
       isActive: true,
       createdAt: true,
       compensation: {
