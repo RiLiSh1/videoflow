@@ -13,6 +13,7 @@ async function getCreators() {
       isActive: true,
       createdAt: true,
       compensation: true,
+      profile: true,
       _count: { select: { createdVideos: true } },
     },
     orderBy: { name: "asc" },
