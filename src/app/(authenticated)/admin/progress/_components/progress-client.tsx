@@ -2,11 +2,8 @@
 
 import { DataTable } from "@/components/ui/data-table";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/domain/status-badge";
 import {
-  VIDEO_STATUS_LABELS,
-  VIDEO_STATUS_COLORS,
   VIDEO_STATUS_ORDER,
   WORKFLOW_PHASES,
   getPhaseIndex,
