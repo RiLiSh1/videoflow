@@ -208,6 +208,8 @@ const getPaymentData = unstable_cache(
             withholdingTax,
             netAmount,
             notificationId: existing?.id || null,
+            invoiceStatus: existing?.invoiceStatus ?? null,
+            invoiceId: existing?.invoiceId ?? null,
           });
         }
       }
