@@ -23,6 +23,7 @@ export interface UserRow {
   email: string | null;
   role: Role;
   chatworkId: string | null;
+  chatworkRoomId: string | null;
   isActive: boolean;
   createdAt: string;
   compensation: {
