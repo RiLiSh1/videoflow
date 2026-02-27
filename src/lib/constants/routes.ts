@@ -24,9 +24,9 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
     { label: "案件管理", href: "/admin/projects", icon: "FolderKanban" },
     { label: "クリエイター管理", href: "/admin/creators", icon: "Palette" },
     { label: "ユーザー管理", href: "/admin/users", icon: "Users" },
-    { label: "支払通知書", href: "/admin/payment-notifications", icon: "FileText" },
+    { label: "支払通知書", href: "/admin/payment-notifications", icon: "FileText", group: "請求関連" },
+    { label: "会社設定", href: "/admin/settings/company", icon: "Building2", group: "請求関連" },
     { label: "Drive設定", href: "/admin/settings/drive", icon: "HardDrive" },
-    { label: "会社設定", href: "/admin/settings/company", icon: "Building2" },
   ],
 };
 
