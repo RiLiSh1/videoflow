@@ -54,23 +54,15 @@ interface PaymentNotificationsClientProps {
 
 // ---------- Helpers ----------
 
+const TAX_RATE = 0.1;
+
 function formatYen(amount: number): string {
   return `¥${amount.toLocaleString()}`;
 }
 
-function compensationLabel(row: {
-  compensationType: CompensationType | null;
-  perVideoRate: number | null;
-  customAmount: number | null;
-  isFixedMonthly: boolean;
-}): string {
-  if (row.compensationType === "PER_VIDEO") {
-    return `¥${(row.perVideoRate || 0).toLocaleString()}/本`;
-  }
-  if (row.isFixedMonthly) {
-    return `¥${(row.customAmount || 0).toLocaleString()}/月`;
-  }
-  return `¥${(row.customAmount || 0).toLocaleString()}`;
+/** 消費税 (10%) — 切り捨て */
+function calcTax(subtotal: number): number {
+  return Math.floor(subtotal * TAX_RATE);
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -174,8 +166,11 @@ export function PaymentNotificationsClient({
     () => [...creatorData, ...directorData],
     [creatorData, directorData]
   );
-  const totalPayment = allData.reduce((s, d) => s + d.netAmount, 0);
+  const totalSubtotal = allData.reduce((s, d) => s + d.subtotal, 0);
+  const totalTax = calcTax(totalSubtotal);
   const totalWithholding = allData.reduce((s, d) => s + d.withholdingTax, 0);
+  const totalPaymentExTax = totalSubtotal - totalWithholding;
+  const totalPaymentInTax = totalSubtotal + totalTax - totalWithholding;
   const creatorCount = creators.length;
   const directorCount = directors.length;
 
@@ -282,9 +277,14 @@ export function PaymentNotificationsClient({
                 <Banknote className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-500">合計支払額</p>
+                <p className="text-xs font-medium text-gray-500">
+                  合計支払額（税込）
+                </p>
                 <p className="text-xl font-bold text-gray-900">
-                  {formatYen(totalPayment)}
+                  {formatYen(totalPaymentInTax)}
+                </p>
+                <p className="text-xs text-gray-400">
+                  税抜 {formatYen(totalPaymentExTax)}
                 </p>
               </div>
             </div>
@@ -535,16 +535,25 @@ function PaymentTable({
   emptyMessage: string;
 }) {
   const totals = useMemo(() => {
-    return data.reduce(
+    const base = data.reduce(
       (acc, d) => ({
         videoCount: acc.videoCount + d.videoCount,
         subtotal: acc.subtotal + d.subtotal,
         withholdingTax: acc.withholdingTax + d.withholdingTax,
-        netAmount: acc.netAmount + d.netAmount,
       }),
-      { videoCount: 0, subtotal: 0, withholdingTax: 0, netAmount: 0 }
+      { videoCount: 0, subtotal: 0, withholdingTax: 0 }
     );
+    const tax = calcTax(base.subtotal);
+    return {
+      ...base,
+      tax,
+      grossSubtotal: base.subtotal + tax,
+      paymentExTax: base.subtotal - base.withholdingTax,
+      paymentInTax: base.subtotal + tax - base.withholdingTax,
+    };
   }, [data]);
+
+  const colCount = isAllPeriod ? 11 : 12;
 
   return (
     <Card>
@@ -556,35 +565,44 @@ function PaymentTable({
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm whitespace-nowrap">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="px-4 py-3 text-left font-medium text-gray-500">
+                <th className="px-3 py-3 text-left font-medium text-gray-500">
                   名前
                 </th>
-                <th className="px-4 py-3 text-center font-medium text-gray-500">
+                <th className="px-2 py-3 text-center font-medium text-gray-500">
                   区分
                 </th>
-                <th className="px-4 py-3 text-center font-medium text-gray-500">
+                <th className="px-2 py-3 text-center font-medium text-gray-500">
                   設定
                 </th>
-                <th className="px-4 py-3 text-center font-medium text-gray-500">
-                  動画数
+                <th className="px-2 py-3 text-right font-medium text-gray-500">
+                  単価
                 </th>
-                <th className="px-4 py-3 text-center font-medium text-gray-500">
-                  単価・設定
+                <th className="px-2 py-3 text-center font-medium text-gray-500">
+                  本数
                 </th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">
-                  小計
+                <th className="px-2 py-3 text-right font-medium text-gray-500">
+                  小計（税抜）
                 </th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">
+                <th className="px-2 py-3 text-right font-medium text-gray-500">
+                  消費税
+                </th>
+                <th className="px-2 py-3 text-right font-medium text-gray-500">
+                  小計（税込）
+                </th>
+                <th className="px-2 py-3 text-right font-medium text-gray-500">
                   源泉徴収
                 </th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">
-                  支払額
+                <th className="px-2 py-3 text-right font-medium text-gray-500">
+                  支払額（税抜）
+                </th>
+                <th className="px-2 py-3 text-right font-medium text-gray-500">
+                  支払額（税込）
                 </th>
                 {!isAllPeriod && (
-                  <th className="px-4 py-3 text-center font-medium text-gray-500">
+                  <th className="px-2 py-3 text-center font-medium text-gray-500">
                     操作
                   </th>
                 )}
@@ -594,7 +612,7 @@ function PaymentTable({
               {data.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={isAllPeriod ? 8 : 9}
+                    colSpan={colCount}
                     className="px-4 py-8 text-center text-gray-400"
                   >
                     {emptyMessage}
@@ -606,19 +624,38 @@ function PaymentTable({
                     const canGenerate =
                       row.hasCompensation &&
                       (row.subtotal > 0 || row.videoCount > 0);
+
+                    // 単価表示
+                    let unitPrice: string;
+                    if (!row.hasCompensation) {
+                      unitPrice = "—";
+                    } else if (row.compensationType === "PER_VIDEO") {
+                      unitPrice = formatYen(row.perVideoRate || 0);
+                    } else if (row.isFixedMonthly) {
+                      unitPrice = "月額固定";
+                    } else {
+                      unitPrice = "カスタム";
+                    }
+
+                    // 税計算
+                    const tax = calcTax(row.subtotal);
+                    const grossSubtotal = row.subtotal + tax;
+                    const paymentExTax = row.subtotal - row.withholdingTax;
+                    const paymentInTax = grossSubtotal - row.withholdingTax;
+
                     return (
                       <tr
                         key={row.userId}
                         className={`hover:bg-gray-50 ${
-                          !row.hasCompensation
-                            ? "bg-amber-50/50"
-                            : ""
+                          !row.hasCompensation ? "bg-amber-50/50" : ""
                         }`}
                       >
-                        <td className="px-4 py-3 font-medium text-gray-900">
+                        {/* 名前 */}
+                        <td className="px-3 py-3 font-medium text-gray-900">
                           {row.userName}
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        {/* 区分 */}
+                        <td className="px-2 py-3 text-center">
                           <Badge
                             className={
                               row.entityType === "CORPORATION"
@@ -629,48 +666,65 @@ function PaymentTable({
                             {ENTITY_TYPE_LABELS[row.entityType]}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        {/* 設定 */}
+                        <td className="px-2 py-3 text-center">
                           <div className="flex items-center justify-center gap-1">
-                            {row.hasCompensation ? (
-                              <span
-                                className="inline-block h-2 w-2 rounded-full bg-green-400"
-                                title="報酬設定済み"
-                              />
-                            ) : (
-                              <span
-                                className="inline-block h-2 w-2 rounded-full bg-amber-400"
-                                title="報酬未設定"
-                              />
-                            )}
-                            {row.hasProfile ? (
-                              <span
-                                className="inline-block h-2 w-2 rounded-full bg-green-400"
-                                title="事業者情報設定済み"
-                              />
-                            ) : (
-                              <span
-                                className="inline-block h-2 w-2 rounded-full bg-amber-400"
-                                title="事業者情報未設定"
-                              />
-                            )}
+                            <span
+                              className={`inline-block h-2 w-2 rounded-full ${
+                                row.hasCompensation
+                                  ? "bg-green-400"
+                                  : "bg-amber-400"
+                              }`}
+                              title={
+                                row.hasCompensation
+                                  ? "報酬設定済み"
+                                  : "報酬未設定"
+                              }
+                            />
+                            <span
+                              className={`inline-block h-2 w-2 rounded-full ${
+                                row.hasProfile
+                                  ? "bg-green-400"
+                                  : "bg-amber-400"
+                              }`}
+                              title={
+                                row.hasProfile
+                                  ? "事業者情報設定済み"
+                                  : "事業者情報未設定"
+                              }
+                            />
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-center text-gray-700">
-                          {row.videoCount}
-                        </td>
-                        <td className="px-4 py-3 text-center text-gray-600 text-xs">
-                          {row.hasCompensation ? (
-                            compensationLabel(row)
-                          ) : (
+                        {/* 単価 */}
+                        <td className="px-2 py-3 text-right text-xs text-gray-600">
+                          {!row.hasCompensation ? (
                             <span className="text-amber-500 font-medium">
                               未設定
                             </span>
+                          ) : (
+                            unitPrice
                           )}
                         </td>
-                        <td className="px-4 py-3 text-right text-gray-700">
+                        {/* 本数 */}
+                        <td className="px-2 py-3 text-center text-gray-700">
+                          {row.videoCount}
+                        </td>
+                        {/* 小計（税抜） */}
+                        <td className="px-2 py-3 text-right text-gray-700">
                           {formatYen(row.subtotal)}
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        {/* 消費税 */}
+                        <td className="px-2 py-3 text-right text-gray-500">
+                          {tax > 0 ? formatYen(tax) : (
+                            <span className="text-gray-300">-</span>
+                          )}
+                        </td>
+                        {/* 小計（税込） */}
+                        <td className="px-2 py-3 text-right text-gray-700">
+                          {formatYen(grossSubtotal)}
+                        </td>
+                        {/* 源泉徴収 */}
+                        <td className="px-2 py-3 text-right">
                           {row.withholdingTax > 0 ? (
                             <span className="text-red-600">
                               ▲{formatYen(row.withholdingTax)}
@@ -679,13 +733,18 @@ function PaymentTable({
                             <span className="text-gray-300">-</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-right font-semibold text-gray-900">
-                          {formatYen(row.netAmount)}
+                        {/* 支払額（税抜） */}
+                        <td className="px-2 py-3 text-right text-gray-700">
+                          {formatYen(paymentExTax)}
                         </td>
+                        {/* 支払額（税込） */}
+                        <td className="px-2 py-3 text-right font-semibold text-gray-900">
+                          {formatYen(paymentInTax)}
+                        </td>
+                        {/* 操作 */}
                         {!isAllPeriod && (
-                          <td className="px-4 py-3 text-center">
+                          <td className="px-2 py-3 text-center">
                             <div className="flex items-center justify-center gap-1.5">
-                              {/* Generate / Re-generate button */}
                               {canGenerate && (
                                 <Button
                                   variant="secondary"
@@ -693,16 +752,13 @@ function PaymentTable({
                                   onClick={() => onGenerate(row.userId)}
                                   loading={generatingRow === row.userId}
                                   title={
-                                    row.notificationId
-                                      ? "再生成"
-                                      : "生成"
+                                    row.notificationId ? "再生成" : "生成"
                                   }
                                 >
                                   <RefreshCw className="mr-1 h-3.5 w-3.5" />
                                   {row.notificationId ? "再生成" : "生成"}
                                 </Button>
                               )}
-                              {/* PDF download button */}
                               {row.notificationId && (
                                 <Button
                                   variant="secondary"
@@ -731,17 +787,25 @@ function PaymentTable({
                   })}
                   {/* Totals row */}
                   <tr className="border-t-2 border-gray-200 bg-gray-50 font-semibold">
-                    <td className="px-4 py-3 text-gray-700">合計</td>
-                    <td className="px-4 py-3" />
-                    <td className="px-4 py-3" />
-                    <td className="px-4 py-3 text-center text-gray-700">
+                    <td className="px-3 py-3 text-gray-700">合計</td>
+                    <td className="px-2 py-3" />
+                    <td className="px-2 py-3" />
+                    <td className="px-2 py-3" />
+                    <td className="px-2 py-3 text-center text-gray-700">
                       {totals.videoCount}
                     </td>
-                    <td className="px-4 py-3" />
-                    <td className="px-4 py-3 text-right text-gray-700">
+                    <td className="px-2 py-3 text-right text-gray-700">
                       {formatYen(totals.subtotal)}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-2 py-3 text-right text-gray-500">
+                      {totals.tax > 0 ? formatYen(totals.tax) : (
+                        <span className="text-gray-300">-</span>
+                      )}
+                    </td>
+                    <td className="px-2 py-3 text-right text-gray-700">
+                      {formatYen(totals.grossSubtotal)}
+                    </td>
+                    <td className="px-2 py-3 text-right">
                       {totals.withholdingTax > 0 ? (
                         <span className="text-red-600">
                           ▲{formatYen(totals.withholdingTax)}
@@ -750,10 +814,13 @@ function PaymentTable({
                         <span className="text-gray-300">-</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right text-gray-900">
-                      {formatYen(totals.netAmount)}
+                    <td className="px-2 py-3 text-right text-gray-700">
+                      {formatYen(totals.paymentExTax)}
                     </td>
-                    {!isAllPeriod && <td className="px-4 py-3" />}
+                    <td className="px-2 py-3 text-right text-gray-900">
+                      {formatYen(totals.paymentInTax)}
+                    </td>
+                    {!isAllPeriod && <td className="px-2 py-3" />}
                   </tr>
                 </>
               )}
