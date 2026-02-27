@@ -572,6 +572,8 @@ type FilteredRow = {
   withholdingTax: number;
   netAmount: number;
   notificationId: string | null;
+  invoiceStatus: string | null;
+  invoiceId: string | null;
 };
 
 function isRowApprovable(row: FilteredRow): boolean {
