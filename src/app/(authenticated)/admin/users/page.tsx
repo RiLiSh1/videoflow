@@ -13,6 +13,18 @@ async function getUsers() {
       chatworkId: true,
       isActive: true,
       createdAt: true,
+      compensation: {
+        select: {
+          type: true,
+          perVideoRate: true,
+          customAmount: true,
+          customNote: true,
+          isFixedMonthly: true,
+        },
+      },
+      profile: {
+        select: { entityType: true },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -20,6 +32,8 @@ async function getUsers() {
   return users.map((u) => ({
     ...u,
     createdAt: u.createdAt.toISOString(),
+    compensation: u.compensation ?? null,
+    profile: u.profile ?? null,
   }));
 }
 
