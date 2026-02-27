@@ -80,7 +80,7 @@ export async function GET(
 
   const fileName = `支払通知書_${notification.creator.name}_${notification.year}年${String(notification.month).padStart(2, "0")}月.pdf`;
 
-  return new NextResponse(buffer, {
+  return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
