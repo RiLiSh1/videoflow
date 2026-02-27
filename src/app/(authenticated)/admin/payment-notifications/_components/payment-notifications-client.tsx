@@ -705,7 +705,7 @@ function PaymentTable({
                         <td className="px-2 py-3 text-center text-gray-700">
                           {row.videoCount}
                         </td>
-                        {/* 小計（税抜） */}
+                        {/* 報酬（税抜） */}
                         <td className="px-2 py-3 text-right text-gray-700">
                           {formatYen(row.subtotal)}
                         </td>
@@ -715,9 +715,9 @@ function PaymentTable({
                             <span className="text-gray-300">-</span>
                           )}
                         </td>
-                        {/* 小計（税込） */}
+                        {/* 小計 */}
                         <td className="px-2 py-3 text-right text-gray-700">
-                          {formatYen(grossSubtotal)}
+                          {formatYen(subtotalWithTax)}
                         </td>
                         {/* 源泉徴収 */}
                         <td className="px-2 py-3 text-right">
@@ -729,13 +729,9 @@ function PaymentTable({
                             <span className="text-gray-300">-</span>
                           )}
                         </td>
-                        {/* 支払額（税抜） */}
-                        <td className="px-2 py-3 text-right text-gray-700">
-                          {formatYen(paymentExTax)}
-                        </td>
-                        {/* 支払額（税込） */}
+                        {/* 振込額 */}
                         <td className="px-2 py-3 text-right font-semibold text-gray-900">
-                          {formatYen(paymentInTax)}
+                          {formatYen(transferAmount)}
                         </td>
                         {/* 操作 */}
                         {!isAllPeriod && (
