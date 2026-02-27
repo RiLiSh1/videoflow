@@ -321,7 +321,7 @@ export function PaymentNotificationDocument({
             <Text style={styles.colProjectHeader}>案件名</Text>
             <Text style={styles.colTitleHeader}>動画タイトル</Text>
             <Text style={styles.colCodeHeader}>動画コード</Text>
-            <Text style={styles.colAmountHeader}>金額</Text>
+            <Text style={styles.colAmountHeader}>金額（税抜）</Text>
           </View>
           {data.lineItems.map((item) => (
             <View key={item.no} style={styles.tableRow}>
