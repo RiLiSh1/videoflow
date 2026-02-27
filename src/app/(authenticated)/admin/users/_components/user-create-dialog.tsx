@@ -41,6 +41,7 @@ export function UserCreateDialog({
       email: "",
       role: "CREATOR",
       chatworkId: "",
+      chatworkRoomId: "",
     },
   });
 
