@@ -278,13 +278,13 @@ export function PaymentNotificationsClient({
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-500">
-                  合計支払額（税込）
+                  合計振込額
                 </p>
                 <p className="text-xl font-bold text-gray-900">
-                  {formatYen(totalPaymentInTax)}
+                  {formatYen(totalTransferAmount)}
                 </p>
                 <p className="text-xs text-gray-400">
-                  税抜 {formatYen(totalPaymentExTax)}
+                  小計 {formatYen(totalSubtotalWithTax)}
                 </p>
               </div>
             </div>
