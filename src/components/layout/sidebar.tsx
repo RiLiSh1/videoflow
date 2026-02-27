@@ -53,11 +53,19 @@ export function Sidebar({ role }: SidebarProps) {
       </div>
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
-          {items.map((item) => {
+          {items.map((item, index) => {
             const Icon = ICON_MAP[item.icon];
             const isActive = pathname.startsWith(item.href);
+            const prevGroup = index > 0 ? items[index - 1].group : undefined;
+            const showGroupHeader = item.group && item.group !== prevGroup;
+
             return (
               <li key={item.href}>
+                {showGroupHeader && (
+                  <div className="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    {item.group}
+                  </div>
+                )}
                 <Link
                   href={item.href}
                   className={cn(
