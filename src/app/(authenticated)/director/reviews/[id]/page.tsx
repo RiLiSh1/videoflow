@@ -61,6 +61,8 @@ export default async function DirectorReviewDetailPage({
     googleDriveUrl: v.googleDriveUrl,
     uploaderName: v.uploader.name,
     createdAt: v.createdAt.toISOString(),
+    telopText: v.telopText ?? null,
+    telopExtractedAt: v.telopExtractedAt?.toISOString() ?? null,
   }));
 
   const serializedFeedbacks = video.feedbacks.map((f) => ({
