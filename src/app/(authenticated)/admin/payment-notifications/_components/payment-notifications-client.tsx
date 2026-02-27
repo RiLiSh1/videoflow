@@ -132,6 +132,8 @@ export function PaymentNotificationsClient({
             withholdingTax: totalWithholding,
             netAmount: totalNet,
             notificationId: null as string | null,
+            invoiceStatus: null as string | null,
+            invoiceId: null as string | null,
           };
         });
       }
@@ -146,6 +148,8 @@ export function PaymentNotificationsClient({
           withholdingTax: md?.withholdingTax || 0,
           netAmount: md?.netAmount || 0,
           notificationId: md?.notificationId || null,
+          invoiceStatus: md?.invoiceStatus ?? null,
+          invoiceId: md?.invoiceId ?? null,
         };
       });
     },
