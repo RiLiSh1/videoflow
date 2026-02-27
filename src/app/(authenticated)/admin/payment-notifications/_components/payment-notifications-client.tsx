@@ -4,10 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { EntityType } from "@prisma/client";
 import { DataTable } from "@/components/ui/data-table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
-import { ENTITY_TYPE_LABELS } from "@/lib/constants/entity-type";
 import { Download, Plus } from "lucide-react";
 import { GenerateDialog } from "./generate-dialog";
 
