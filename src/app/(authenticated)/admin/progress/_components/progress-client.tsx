@@ -3,10 +3,13 @@
 import { DataTable } from "@/components/ui/data-table";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/domain/status-badge";
 import {
   VIDEO_STATUS_LABELS,
   VIDEO_STATUS_COLORS,
   VIDEO_STATUS_ORDER,
+  WORKFLOW_PHASES,
+  getPhaseIndex,
 } from "@/lib/constants/video-status";
 import type { VideoStatus } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -92,6 +95,57 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   UserCheck,
 };
 
+// ---------- Phase Stepper ----------
+
+function PhaseStepper({ status }: { status: VideoStatus }) {
+  const currentPhase = getPhaseIndex(status);
+  const isRevision = status === "REVISION_REQUESTED";
+
+  return (
+    <div className="space-y-1.5">
+      <StatusBadge status={status} />
+      <div className="flex gap-0.5">
+        {WORKFLOW_PHASES.map((phase, i) => {
+          const isCurrent = i === currentPhase;
+          const isPast = i < currentPhase;
+          const isFuture = i > currentPhase;
+
+          let segmentColor: string;
+          if (isPast) {
+            segmentColor = "bg-green-400";
+          } else if (isCurrent && isRevision) {
+            segmentColor = "bg-red-400 animate-pulse";
+          } else if (isCurrent) {
+            segmentColor = phase.color;
+          } else {
+            segmentColor = "bg-gray-200";
+          }
+
+          return (
+            <div
+              key={phase.label}
+              className="group relative flex-1"
+            >
+              <div
+                className={`h-1.5 rounded-full ${segmentColor} transition-all`}
+              />
+              {/* Tooltip on hover */}
+              <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-1.5 py-0.5 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
+                {phase.label}
+                {isCurrent && !isFuture ? " ←" : ""}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex justify-between text-[10px] text-gray-400">
+        <span>作成</span>
+        <span>完了</span>
+      </div>
+    </div>
+  );
+}
+
 // ---------- Video Table Columns ----------
 
 const videoColumns: ColumnDef<VideoRow, unknown>[] = [
@@ -143,9 +197,9 @@ const videoColumns: ColumnDef<VideoRow, unknown>[] = [
     cell: ({ getValue }) => {
       const status = getValue<VideoStatus>();
       return (
-        <Badge className={VIDEO_STATUS_COLORS[status]}>
-          {VIDEO_STATUS_LABELS[status]}
-        </Badge>
+        <div className="min-w-[140px]">
+          <PhaseStepper status={status} />
+        </div>
       );
     },
     sortingFn: (rowA, rowB) => {
@@ -181,6 +235,68 @@ function StatCell({
     >
       {value}
     </span>
+  );
+}
+
+// ---------- Project Phase Bar ----------
+
+function ProjectPhaseBar({
+  statusCounts,
+  totalVideos,
+}: {
+  statusCounts: Partial<Record<VideoStatus, number>>;
+  totalVideos: number;
+}) {
+  if (totalVideos === 0) return null;
+
+  const phaseCounts = WORKFLOW_PHASES.map((phase) => ({
+    label: phase.label,
+    color: phase.color,
+    count: phase.statuses.reduce(
+      (sum, s) => sum + (statusCounts[s] || 0),
+      0
+    ),
+  }));
+
+  return (
+    <div className="space-y-1.5">
+      {/* Stacked bar */}
+      <div className="flex h-3 w-full overflow-hidden rounded-full bg-gray-100">
+        {phaseCounts.map(
+          (phase) =>
+            phase.count > 0 && (
+              <div
+                key={phase.label}
+                className={`${phase.color} transition-all`}
+                style={{
+                  width: `${(phase.count / totalVideos) * 100}%`,
+                }}
+                title={`${phase.label}: ${phase.count}件`}
+              />
+            )
+        )}
+      </div>
+      {/* Legend */}
+      <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+        {phaseCounts.map(
+          (phase) =>
+            phase.count > 0 && (
+              <div
+                key={phase.label}
+                className="flex items-center gap-1 text-[11px] text-gray-500"
+              >
+                <span
+                  className={`inline-block h-2 w-2 rounded-full ${phase.color}`}
+                />
+                {phase.label}
+                <span className="font-medium text-gray-700">
+                  {phase.count}
+                </span>
+              </div>
+            )
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -223,6 +339,18 @@ export function ProgressClient({
           );
         })}
       </div>
+
+      {/* Workflow Overview - Phase distribution across all videos */}
+      <Card className="mb-6">
+        <CardHeader>
+          <h2 className="text-base font-semibold text-gray-900">
+            全体ワークフロー分布
+          </h2>
+        </CardHeader>
+        <CardContent>
+          <WorkflowOverview videos={videos} />
+        </CardContent>
+      </Card>
 
       {/* Main Grid */}
       <div className="space-y-6">
@@ -492,31 +620,11 @@ export function ProgressClient({
                           {project.pct}%)
                         </span>
                       </div>
-                      <div className="h-2 w-full rounded-full bg-gray-100">
-                        <div
-                          className="h-2 rounded-full bg-green-500 transition-all"
-                          style={{ width: `${project.pct}%` }}
-                        />
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {VIDEO_STATUS_ORDER.map((status) => {
-                          const count = project.statusCounts[status];
-                          if (!count) return null;
-                          return (
-                            <div
-                              key={status}
-                              className="flex items-center gap-1"
-                            >
-                              <Badge className={VIDEO_STATUS_COLORS[status]}>
-                                {VIDEO_STATUS_LABELS[status]}
-                              </Badge>
-                              <span className="text-xs font-medium text-gray-600">
-                                {count}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      {/* Phase-based stacked bar */}
+                      <ProjectPhaseBar
+                        statusCounts={project.statusCounts}
+                        totalVideos={project.totalVideos}
+                      />
                     </div>
                   </CardContent>
                 </Card>
@@ -526,5 +634,65 @@ export function ProgressClient({
         </div>
       </div>
     </>
+  );
+}
+
+// ---------- Workflow Overview ----------
+
+function WorkflowOverview({ videos }: { videos: VideoRow[] }) {
+  const total = videos.length;
+  if (total === 0) {
+    return (
+      <p className="text-center text-sm text-gray-400">動画がありません</p>
+    );
+  }
+
+  const phaseCounts = WORKFLOW_PHASES.map((phase) => {
+    const count = videos.filter((v) =>
+      (phase.statuses as readonly VideoStatus[]).includes(v.status)
+    ).length;
+    return { ...phase, count };
+  });
+
+  return (
+    <div className="space-y-4">
+      {/* Large pipeline visualization */}
+      <div className="flex items-center gap-1">
+        {phaseCounts.map((phase, i) => {
+          const pct = total > 0 ? (phase.count / total) * 100 : 0;
+          return (
+            <div key={phase.label} className="flex items-center flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <div
+                  className={`relative flex h-10 items-center justify-center rounded-lg ${phase.color} text-white transition-all`}
+                  style={{ opacity: phase.count > 0 ? 1 : 0.3 }}
+                >
+                  <span className="text-sm font-bold">{phase.count}</span>
+                </div>
+                <p className="mt-1 text-center text-xs font-medium text-gray-600">
+                  {phase.label}
+                </p>
+              </div>
+              {i < phaseCounts.length - 1 && (
+                <div className="mx-0.5 text-gray-300 flex-shrink-0">→</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {/* Percentage bar */}
+      <div className="flex h-2 w-full overflow-hidden rounded-full bg-gray-100">
+        {phaseCounts.map(
+          (phase) =>
+            phase.count > 0 && (
+              <div
+                key={phase.label}
+                className={`${phase.color} transition-all`}
+                style={{ width: `${(phase.count / total) * 100}%` }}
+              />
+            )
+        )}
+      </div>
+    </div>
   );
 }
