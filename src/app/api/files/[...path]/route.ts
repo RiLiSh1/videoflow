@@ -43,6 +43,7 @@ export async function GET(
       ".flv": "video/x-flv",
       ".3gp": "video/3gpp",
       ".ogv": "video/ogg",
+      ".pdf": "application/pdf",
     };
 
     const contentType = mimeTypes[ext] || "application/octet-stream";
