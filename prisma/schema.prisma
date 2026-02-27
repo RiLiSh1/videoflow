@@ -54,6 +54,13 @@ enum CompensationType {
   @@map("compensation_type")
 }
 
+enum EntityType {
+  INDIVIDUAL
+  CORPORATION
+
+  @@map("entity_type")
+}
+
 // ============================================================
 // Models
 // ============================================================
