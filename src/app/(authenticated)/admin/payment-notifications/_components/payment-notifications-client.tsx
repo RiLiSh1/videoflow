@@ -584,22 +584,19 @@ function PaymentTable({
                   本数
                 </th>
                 <th className="px-2 py-3 text-right font-medium text-gray-500">
-                  小計（税抜）
+                  報酬（税抜）
                 </th>
                 <th className="px-2 py-3 text-right font-medium text-gray-500">
                   消費税
                 </th>
                 <th className="px-2 py-3 text-right font-medium text-gray-500">
-                  小計（税込）
+                  小計
                 </th>
                 <th className="px-2 py-3 text-right font-medium text-gray-500">
                   源泉徴収
                 </th>
                 <th className="px-2 py-3 text-right font-medium text-gray-500">
-                  支払額（税抜）
-                </th>
-                <th className="px-2 py-3 text-right font-medium text-gray-500">
-                  支払額（税込）
+                  振込額
                 </th>
                 {!isAllPeriod && (
                   <th className="px-2 py-3 text-center font-medium text-gray-500">
