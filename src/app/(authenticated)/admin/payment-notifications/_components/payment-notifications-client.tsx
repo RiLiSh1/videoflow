@@ -553,7 +553,7 @@ function PaymentTable({
     );
   }, [data]);
 
-  const colCount = isAllPeriod ? 11 : 12;
+  const colCount = isAllPeriod ? 10 : 11;
 
   return (
     <Card>
