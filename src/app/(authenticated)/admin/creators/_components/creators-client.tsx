@@ -212,6 +212,18 @@ export function CreatorsClient({ creators }: CreatorsClientProps) {
           creator={editCreator}
         />
       )}
+
+      {profileCreator && (
+        <CreatorProfileDialog
+          open={!!profileCreator}
+          onClose={() => setProfileCreator(null)}
+          onSuccess={() => {
+            setProfileCreator(null);
+            router.refresh();
+          }}
+          creator={profileCreator}
+        />
+      )}
     </>
   );
 }
