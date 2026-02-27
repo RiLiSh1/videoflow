@@ -964,6 +964,7 @@ function PaymentTable({
                       {formatYen(totals.transferAmount)}
                     </td>
                     {!isAllPeriod && <td className="px-2 py-3" />}
+                    {!isAllPeriod && <td className="px-2 py-3" />}
                   </tr>
                 </>
               )}
