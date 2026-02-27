@@ -47,6 +47,13 @@ enum ProjectStatus {
   @@map("project_status")
 }
 
+enum CompensationType {
+  PER_VIDEO
+  CUSTOM
+
+  @@map("compensation_type")
+}
+
 // ============================================================
 // Models
 // ============================================================
