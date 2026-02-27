@@ -70,6 +70,7 @@ export async function POST(request: Request) {
         email: true,
         role: true,
         chatworkId: true,
+        chatworkRoomId: true,
         isActive: true,
         createdAt: true,
       },
