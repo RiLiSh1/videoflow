@@ -88,6 +88,7 @@ function CompensationSummary({
 export function CreatorsClient({ creators }: CreatorsClientProps) {
   const router = useRouter();
   const [editCreator, setEditCreator] = useState<CreatorRow | null>(null);
+  const [profileCreator, setProfileCreator] = useState<CreatorRow | null>(null);
 
   const columns: ColumnDef<CreatorRow, unknown>[] = [
     {
