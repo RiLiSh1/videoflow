@@ -575,6 +575,8 @@ export function PaymentNotificationsClient({
           onToggleAll={handleToggleAll}
           onDownload={handleDownloadPdf}
           onApprove={handleRowApprove}
+          onApproveInvoice={handleApproveInvoice}
+          approvingInvoice={approvingInvoice}
           emptyMessage="ディレクターが登録されていません"
         />
       </div>
