@@ -585,6 +585,23 @@ function isRowApprovable(row: FilteredRow): boolean {
   return row.hasCompensation && row.subtotal > 0 && row.notificationId === null;
 }
 
+function InvoiceStatusBadge({ status }: { status: string | null }) {
+  if (!status) return <span className="text-xs text-gray-300">未提出</span>;
+  const styles: Record<string, string> = {
+    PENDING: "bg-yellow-100 text-yellow-800",
+    MATCHED: "bg-green-100 text-green-800",
+    MISMATCHED: "bg-red-100 text-red-800",
+    APPROVED: "bg-blue-100 text-blue-800",
+  };
+  const labels: Record<string, string> = {
+    PENDING: "検証中",
+    MATCHED: "一致",
+    MISMATCHED: "不一致",
+    APPROVED: "承認済",
+  };
+  return <Badge className={styles[status] || ""}>{labels[status] || status}</Badge>;
+}
+
 function PaymentTable({
   title,
   data,
@@ -596,6 +613,8 @@ function PaymentTable({
   onToggleAll,
   onDownload,
   onApprove,
+  onApproveInvoice,
+  approvingInvoice,
   emptyMessage,
 }: {
   title: string;
@@ -608,6 +627,8 @@ function PaymentTable({
   onToggleAll: (userIds: string[]) => void;
   onDownload: (id: string) => void;
   onApprove: (userId: string) => void;
+  onApproveInvoice: (invoiceId: string) => void;
+  approvingInvoice: string | null;
   emptyMessage: string;
 }) {
   const totals = useMemo(() => {
