@@ -14,6 +14,9 @@ import {
   Users,
   Megaphone,
   Receipt,
+  AlertTriangle,
+  CheckCircle2,
+  RefreshCw,
 } from "lucide-react";
 import { GenerateDialog } from "./generate-dialog";
 import { ENTITY_TYPE_LABELS } from "@/lib/constants/entity-type";
@@ -36,6 +39,7 @@ type UserPaymentRow = {
   role: "CREATOR" | "DIRECTOR";
   entityType: EntityType;
   hasCompensation: boolean;
+  hasProfile: boolean;
   compensationType: CompensationType | null;
   perVideoRate: number | null;
   customAmount: number | null;
@@ -69,6 +73,11 @@ function compensationLabel(row: {
   return `¥${(row.customAmount || 0).toLocaleString()}`;
 }
 
+const ROLE_LABELS: Record<string, string> = {
+  CREATOR: "クリエイター",
+  DIRECTOR: "ディレクター",
+};
+
 // ---------- Component ----------
 
 export function PaymentNotificationsClient({
@@ -84,6 +93,7 @@ export function PaymentNotificationsClient({
   const [isAllPeriod, setIsAllPeriod] = useState(false);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [generatingRow, setGeneratingRow] = useState<string | null>(null);
 
   const yearOptions = availableYears.map((y) => ({
     value: String(y),
@@ -109,7 +119,6 @@ export function PaymentNotificationsClient({
   const getFilteredData = useCallback(
     (users: UserPaymentRow[]) => {
       if (isAllPeriod) {
-        // Aggregate all months per user
         return users.map((u) => {
           const totalVideoCount = u.months.reduce(
             (sum, m) => sum + m.videoCount,
@@ -130,11 +139,10 @@ export function PaymentNotificationsClient({
             subtotal: totalSubtotal,
             withholdingTax: totalWithholding,
             netAmount: totalNet,
-            notificationId: null as string | null, // no single notification for all-period
+            notificationId: null as string | null,
           };
         });
       }
-      // Filter to specific year/month
       const year = Number(selectedYear);
       const month = Number(selectedMonth);
       return users.map((u) => {
@@ -171,6 +179,30 @@ export function PaymentNotificationsClient({
   const creatorCount = creators.length;
   const directorCount = directors.length;
 
+  // Double-check: users missing compensation or profile
+  const missingCompensation = useMemo(
+    () => userPayments.filter((u) => !u.hasCompensation),
+    [userPayments]
+  );
+  const missingProfile = useMemo(
+    () => userPayments.filter((u) => !u.hasProfile),
+    [userPayments]
+  );
+  const hasWarnings =
+    missingCompensation.length > 0 || missingProfile.length > 0;
+
+  // Per-row generation count (for period view)
+  const generatedCount = useMemo(() => {
+    if (isAllPeriod) return 0;
+    return allData.filter((d) => d.notificationId !== null).length;
+  }, [allData, isAllPeriod]);
+  const generatableCount = useMemo(() => {
+    if (isAllPeriod) return 0;
+    return allData.filter(
+      (d) => d.hasCompensation && (d.subtotal > 0 || d.videoCount > 0)
+    ).length;
+  }, [allData, isAllPeriod]);
+
   // PDF download
   const handleDownloadPdf = async (notificationId: string) => {
     setDownloading(notificationId);
@@ -197,7 +229,34 @@ export function PaymentNotificationsClient({
     }
   };
 
-  // Users for generate dialog (both roles with compensation)
+  // Per-row generate
+  const handleRowGenerate = async (userId: string) => {
+    if (isAllPeriod) return;
+    setGeneratingRow(userId);
+    try {
+      const res = await fetch("/api/payment-notifications/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          year: Number(selectedYear),
+          month: Number(selectedMonth),
+        }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        alert(json.error || "生成に失敗しました");
+        return;
+      }
+      router.refresh();
+    } catch {
+      alert("生成に失敗しました");
+    } finally {
+      setGeneratingRow(null);
+    }
+  };
+
+  // Users for generate dialog
   const usersForGenerate = useMemo(
     () =>
       userPayments
@@ -284,6 +343,70 @@ export function PaymentNotificationsClient({
         </Card>
       </div>
 
+      {/* Double-check Panel */}
+      {hasWarnings && (
+        <Card className="mb-6 border-amber-200 bg-amber-50">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <h2 className="text-sm font-semibold text-amber-800">
+                ダブルチェック — 設定漏れ確認
+              </h2>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {missingCompensation.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-amber-800">
+                    報酬未設定（{missingCompensation.length}名）
+                  </p>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {missingCompensation.map((u) => (
+                      <span
+                        key={u.userId}
+                        className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800"
+                      >
+                        {u.userName}
+                        <span className="text-amber-500">
+                          ({ROLE_LABELS[u.role]})
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                  <p className="mt-1 text-xs text-amber-600">
+                    → ユーザー管理ページで報酬設定を行ってください
+                  </p>
+                </div>
+              )}
+              {missingProfile.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-amber-800">
+                    事業者情報未設定（{missingProfile.length}名）
+                  </p>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {missingProfile.map((u) => (
+                      <span
+                        key={u.userId}
+                        className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800"
+                      >
+                        {u.userName}
+                        <span className="text-amber-500">
+                          ({ROLE_LABELS[u.role]})
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                  <p className="mt-1 text-xs text-amber-600">
+                    → ユーザー管理ページで事業者情報を登録してください
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Filters */}
       <div className="mb-4 flex flex-wrap items-end gap-3">
         {!isAllPeriod && (
@@ -315,6 +438,16 @@ export function PaymentNotificationsClient({
         >
           全期間
         </Button>
+
+        {!isAllPeriod && generatableCount > 0 && (
+          <span className="text-xs text-gray-500">
+            生成済み: {generatedCount}/{generatableCount}件
+            {generatedCount === generatableCount && (
+              <CheckCircle2 className="ml-1 inline h-3.5 w-3.5 text-green-500" />
+            )}
+          </span>
+        )}
+
         <div className="flex-1" />
         <Button onClick={() => setGenerateOpen(true)}>
           <Plus className="mr-1.5 h-4 w-4" />
@@ -322,14 +455,16 @@ export function PaymentNotificationsClient({
         </Button>
       </div>
 
-      {/* Creator Table */}
+      {/* Tables */}
       <div className="space-y-6">
         <PaymentTable
           title="クリエイター支払一覧"
           data={creatorData}
           isAllPeriod={isAllPeriod}
           downloading={downloading}
+          generatingRow={generatingRow}
           onDownload={handleDownloadPdf}
+          onGenerate={handleRowGenerate}
           emptyMessage="クリエイターが登録されていません"
         />
 
@@ -338,7 +473,9 @@ export function PaymentNotificationsClient({
           data={directorData}
           isAllPeriod={isAllPeriod}
           downloading={downloading}
+          generatingRow={generatingRow}
           onDownload={handleDownloadPdf}
+          onGenerate={handleRowGenerate}
           emptyMessage="ディレクターが登録されていません"
         />
       </div>
@@ -366,6 +503,7 @@ type FilteredRow = {
   role: "CREATOR" | "DIRECTOR";
   entityType: EntityType;
   hasCompensation: boolean;
+  hasProfile: boolean;
   compensationType: CompensationType | null;
   perVideoRate: number | null;
   customAmount: number | null;
@@ -382,14 +520,18 @@ function PaymentTable({
   data,
   isAllPeriod,
   downloading,
+  generatingRow,
   onDownload,
+  onGenerate,
   emptyMessage,
 }: {
   title: string;
   data: FilteredRow[];
   isAllPeriod: boolean;
   downloading: string | null;
+  generatingRow: string | null;
   onDownload: (id: string) => void;
+  onGenerate: (userId: string) => void;
   emptyMessage: string;
 }) {
   const totals = useMemo(() => {
@@ -424,6 +566,9 @@ function PaymentTable({
                   区分
                 </th>
                 <th className="px-4 py-3 text-center font-medium text-gray-500">
+                  設定
+                </th>
+                <th className="px-4 py-3 text-center font-medium text-gray-500">
                   動画数
                 </th>
                 <th className="px-4 py-3 text-center font-medium text-gray-500">
@@ -440,7 +585,7 @@ function PaymentTable({
                 </th>
                 {!isAllPeriod && (
                   <th className="px-4 py-3 text-center font-medium text-gray-500">
-                    PDF
+                    操作
                   </th>
                 )}
               </tr>
@@ -449,7 +594,7 @@ function PaymentTable({
               {data.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={isAllPeriod ? 7 : 8}
+                    colSpan={isAllPeriod ? 8 : 9}
                     className="px-4 py-8 text-center text-gray-400"
                   >
                     {emptyMessage}
@@ -457,73 +602,137 @@ function PaymentTable({
                 </tr>
               ) : (
                 <>
-                  {data.map((row) => (
-                    <tr key={row.userId} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-900">
-                        {row.userName}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <Badge
-                          className={
-                            row.entityType === "CORPORATION"
-                              ? "bg-teal-100 text-teal-800"
-                              : "bg-orange-100 text-orange-800"
-                          }
-                        >
-                          {ENTITY_TYPE_LABELS[row.entityType]}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-center text-gray-700">
-                        {row.videoCount}
-                      </td>
-                      <td className="px-4 py-3 text-center text-gray-600 text-xs">
-                        {row.hasCompensation ? (
-                          compensationLabel(row)
-                        ) : (
-                          <span className="text-gray-300">未設定</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-700">
-                        {formatYen(row.subtotal)}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {row.withholdingTax > 0 ? (
-                          <span className="text-red-600">
-                            ▲{formatYen(row.withholdingTax)}
-                          </span>
-                        ) : (
-                          <span className="text-gray-300">-</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-900">
-                        {formatYen(row.netAmount)}
-                      </td>
-                      {!isAllPeriod && (
+                  {data.map((row) => {
+                    const canGenerate =
+                      row.hasCompensation &&
+                      (row.subtotal > 0 || row.videoCount > 0);
+                    return (
+                      <tr
+                        key={row.userId}
+                        className={`hover:bg-gray-50 ${
+                          !row.hasCompensation
+                            ? "bg-amber-50/50"
+                            : ""
+                        }`}
+                      >
+                        <td className="px-4 py-3 font-medium text-gray-900">
+                          {row.userName}
+                        </td>
                         <td className="px-4 py-3 text-center">
-                          {row.notificationId ? (
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() =>
-                                onDownload(row.notificationId!)
-                              }
-                              loading={downloading === row.notificationId}
-                            >
-                              <Download className="mr-1 h-3.5 w-3.5" />
-                              PDF
-                            </Button>
+                          <Badge
+                            className={
+                              row.entityType === "CORPORATION"
+                                ? "bg-teal-100 text-teal-800"
+                                : "bg-orange-100 text-orange-800"
+                            }
+                          >
+                            {ENTITY_TYPE_LABELS[row.entityType]}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            {row.hasCompensation ? (
+                              <span
+                                className="inline-block h-2 w-2 rounded-full bg-green-400"
+                                title="報酬設定済み"
+                              />
+                            ) : (
+                              <span
+                                className="inline-block h-2 w-2 rounded-full bg-amber-400"
+                                title="報酬未設定"
+                              />
+                            )}
+                            {row.hasProfile ? (
+                              <span
+                                className="inline-block h-2 w-2 rounded-full bg-green-400"
+                                title="事業者情報設定済み"
+                              />
+                            ) : (
+                              <span
+                                className="inline-block h-2 w-2 rounded-full bg-amber-400"
+                                title="事業者情報未設定"
+                              />
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-700">
+                          {row.videoCount}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-600 text-xs">
+                          {row.hasCompensation ? (
+                            compensationLabel(row)
                           ) : (
-                            <span className="text-xs text-gray-300">
-                              未生成
+                            <span className="text-amber-500 font-medium">
+                              未設定
                             </span>
                           )}
                         </td>
-                      )}
-                    </tr>
-                  ))}
+                        <td className="px-4 py-3 text-right text-gray-700">
+                          {formatYen(row.subtotal)}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {row.withholdingTax > 0 ? (
+                            <span className="text-red-600">
+                              ▲{formatYen(row.withholdingTax)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-300">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold text-gray-900">
+                          {formatYen(row.netAmount)}
+                        </td>
+                        {!isAllPeriod && (
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex items-center justify-center gap-1.5">
+                              {/* Generate / Re-generate button */}
+                              {canGenerate && (
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => onGenerate(row.userId)}
+                                  loading={generatingRow === row.userId}
+                                  title={
+                                    row.notificationId
+                                      ? "再生成"
+                                      : "生成"
+                                  }
+                                >
+                                  <RefreshCw className="mr-1 h-3.5 w-3.5" />
+                                  {row.notificationId ? "再生成" : "生成"}
+                                </Button>
+                              )}
+                              {/* PDF download button */}
+                              {row.notificationId && (
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() =>
+                                    onDownload(row.notificationId!)
+                                  }
+                                  loading={
+                                    downloading === row.notificationId
+                                  }
+                                >
+                                  <Download className="mr-1 h-3.5 w-3.5" />
+                                  PDF
+                                </Button>
+                              )}
+                              {!canGenerate && !row.notificationId && (
+                                <span className="text-xs text-gray-300">
+                                  —
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
                   {/* Totals row */}
                   <tr className="border-t-2 border-gray-200 bg-gray-50 font-semibold">
                     <td className="px-4 py-3 text-gray-700">合計</td>
+                    <td className="px-4 py-3" />
                     <td className="px-4 py-3" />
                     <td className="px-4 py-3 text-center text-gray-700">
                       {totals.videoCount}
