@@ -21,6 +21,7 @@ export async function PUT(
     if (email !== undefined) updateData.email = email || null;
     if (role !== undefined) updateData.role = role;
     if (chatworkId !== undefined) updateData.chatworkId = chatworkId || null;
+    if (chatworkRoomId !== undefined) updateData.chatworkRoomId = chatworkRoomId || null;
     if (isActive !== undefined) updateData.isActive = isActive;
     if (password) updateData.passwordHash = await hashPassword(password);
 
