@@ -61,6 +61,7 @@ export async function POST(request: Request) {
         email: email || null,
         role,
         chatworkId: chatworkId || null,
+        chatworkRoomId: chatworkRoomId || null,
       },
       select: {
         id: true,
