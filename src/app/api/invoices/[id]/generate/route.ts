@@ -14,16 +14,16 @@ const UPLOAD_DIR = path.join(process.cwd(), "uploads");
 
 export async function POST(
   _request: Request,
-  { params }: { params: Promise<{ notificationId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = await requireAuth(["CREATOR", "DIRECTOR"]);
   if (!isSessionUser(auth)) return auth;
 
   try {
-    const { notificationId } = await params;
+    const { id } = await params;
 
     const notification = await prisma.paymentNotification.findUnique({
-      where: { id: notificationId },
+      where: { id: id },
       include: {
         creator: {
           select: {
@@ -90,7 +90,7 @@ export async function POST(
     const fileName = `請求書_${notification.creator.name}_${notification.year}年${String(notification.month).padStart(2, "0")}月.pdf`;
 
     // Save to disk and create CreatorInvoice record
-    const uploadDir = path.join(UPLOAD_DIR, "invoices", notificationId);
+    const uploadDir = path.join(UPLOAD_DIR, "invoices", id);
     await mkdir(uploadDir, { recursive: true });
 
     const timestamp = Date.now();
@@ -98,13 +98,13 @@ export async function POST(
     const filePath = path.join(uploadDir, diskFileName);
     await writeFile(filePath, new Uint8Array(buffer));
 
-    const relativePath = `invoices/${notificationId}/${diskFileName}`;
+    const relativePath = `invoices/${id}/${diskFileName}`;
 
     // Upsert invoice record — generated invoices auto-match
     await prisma.creatorInvoice.upsert({
-      where: { paymentNotificationId: notificationId },
+      where: { paymentNotificationId: id },
       create: {
-        paymentNotificationId: notificationId,
+        paymentNotificationId: id,
         uploadedBy: auth.id,
         filePath: relativePath,
         fileName,
