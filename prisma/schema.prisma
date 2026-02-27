@@ -199,6 +199,10 @@ model Version {
   uploadedBy       String   @map("uploaded_by")
   createdAt        DateTime @default(now()) @map("created_at")
 
+  // テロップ書き起こし
+  telopText        String?   @map("telop_text") @db.Text
+  telopExtractedAt DateTime? @map("telop_extracted_at")
+
   // Relations
   video     Video      @relation(fields: [videoId], references: [id], onDelete: Cascade)
   uploader  User       @relation(fields: [uploadedBy], references: [id])
