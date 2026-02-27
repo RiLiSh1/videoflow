@@ -28,6 +28,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   FolderKanban,
   Users,
   HardDrive,
+  Palette,
 };
 
 interface SidebarProps {
