@@ -3,16 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { Role } from "@prisma/client";
+import type { Role, CompensationType } from "@prisma/client";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RoleBadge } from "@/components/domain/role-badge";
 import { formatDate } from "@/lib/utils/format-date";
-import { Pencil, UserX, Plus } from "lucide-react";
+import { Pencil, UserX, Plus, Banknote, Building2 } from "lucide-react";
 import { UserCreateDialog } from "./user-create-dialog";
 import { UserEditDialog } from "./user-edit-dialog";
 import { UserDeactivateDialog } from "./user-deactivate-dialog";
+import { UserCompensationDialog } from "./user-compensation-dialog";
+import { UserProfileDialog } from "./user-profile-dialog";
 
 export interface UserRow {
   id: string;
@@ -23,6 +25,16 @@ export interface UserRow {
   chatworkId: string | null;
   isActive: boolean;
   createdAt: string;
+  compensation: {
+    type: CompensationType;
+    perVideoRate: number | null;
+    customAmount: number | null;
+    customNote: string | null;
+    isFixedMonthly: boolean;
+  } | null;
+  profile: {
+    entityType: string;
+  } | null;
 }
 
 interface UsersClientProps {
@@ -34,6 +46,10 @@ export function UsersClient({ users }: UsersClientProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const [editUser, setEditUser] = useState<UserRow | null>(null);
   const [deactivateUser, setDeactivateUser] = useState<UserRow | null>(null);
+  const [compensationUser, setCompensationUser] = useState<UserRow | null>(
+    null
+  );
+  const [profileUser, setProfileUser] = useState<UserRow | null>(null);
 
   const columns: ColumnDef<UserRow, unknown>[] = [
     {
@@ -78,26 +94,50 @@ export function UsersClient({ users }: UsersClientProps) {
       id: "actions",
       header: "操作",
       enableSorting: false,
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setEditUser(row.original)}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          {row.original.isActive && (
+      cell: ({ row }) => {
+        const isPayable =
+          row.original.role === "CREATOR" || row.original.role === "DIRECTOR";
+        return (
+          <div className="flex items-center gap-2">
+            {isPayable && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCompensationUser(row.original)}
+                  title="報酬設定"
+                >
+                  <Banknote className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setProfileUser(row.original)}
+                  title="事業者情報"
+                >
+                  <Building2 className="h-4 w-4" />
+                </Button>
+              </>
+            )}
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setDeactivateUser(row.original)}
+              onClick={() => setEditUser(row.original)}
             >
-              <UserX className="h-4 w-4 text-red-500" />
+              <Pencil className="h-4 w-4" />
             </Button>
-          )}
-        </div>
-      ),
+            {row.original.isActive && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDeactivateUser(row.original)}
+              >
+                <UserX className="h-4 w-4 text-red-500" />
+              </Button>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
@@ -142,6 +182,31 @@ export function UsersClient({ users }: UsersClientProps) {
           onClose={() => setDeactivateUser(null)}
           onSuccess={handleSuccess}
           user={deactivateUser}
+        />
+      )}
+
+      {compensationUser && (
+        <UserCompensationDialog
+          open={!!compensationUser}
+          onClose={() => setCompensationUser(null)}
+          onSuccess={() => {
+            setCompensationUser(null);
+            handleSuccess();
+          }}
+          user={compensationUser}
+        />
+      )}
+
+      {profileUser && (
+        <UserProfileDialog
+          open={!!profileUser}
+          onClose={() => setProfileUser(null)}
+          onSuccess={() => {
+            setProfileUser(null);
+            handleSuccess();
+          }}
+          userId={profileUser.id}
+          userName={profileUser.name}
         />
       )}
     </>
