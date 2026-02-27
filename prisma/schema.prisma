@@ -79,6 +79,7 @@ model User {
   feedbacks         Feedback[]
   triggeredNotifications Notification[] @relation("NotificationTriggeredBy")
   targetNotifications    Notification[] @relation("NotificationTarget")
+  compensation      CreatorCompensation?
 
   @@map("users")
 }
