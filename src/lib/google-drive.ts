@@ -115,6 +115,49 @@ export async function uploadFileToDrive(options: {
 }
 
 /**
+ * Create a resumable upload session on Google Drive.
+ * Returns the upload URL that clients can PUT directly to (bypassing our server).
+ */
+export async function createResumableUploadSession(options: {
+  fileName: string;
+  mimeType: string;
+  parentFolderId: string;
+}): Promise<{ uploadUrl: string }> {
+  const auth = await getAuth();
+  const accessToken = await auth.getAccessToken();
+
+  const metadata = {
+    name: options.fileName,
+    parents: [options.parentFolderId],
+  };
+
+  const res = await fetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-Upload-Content-Type": options.mimeType,
+      },
+      body: JSON.stringify(metadata),
+    }
+  );
+
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Failed to create resumable upload session: ${res.status} ${errBody}`);
+  }
+
+  const uploadUrl = res.headers.get("Location");
+  if (!uploadUrl) {
+    throw new Error("No Location header in resumable upload response");
+  }
+
+  return { uploadUrl };
+}
+
+/**
  * Download a file from Google Drive by fileId.
  * Returns the file content as a Buffer.
  */
