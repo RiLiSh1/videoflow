@@ -36,6 +36,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   FileText,
   Building2,
   MessageSquare,
+  CircleCheckBig,
 };
 
 interface SidebarProps {
