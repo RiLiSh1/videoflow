@@ -42,7 +42,6 @@ export function ProjectCreateDialog({
       projectCode: "",
       name: "",
       description: "",
-      deadline: "",
       directorIds: [],
     },
   });
