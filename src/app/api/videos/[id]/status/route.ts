@@ -145,6 +145,18 @@ export async function PATCH(
       },
     });
 
+    // Warm CDN cache when video moves to a viewable state
+    if (["SUBMITTED", "IN_REVIEW", "REVISED", "FINAL_REVIEW"].includes(status)) {
+      const latestVersion = await prisma.version.findFirst({
+        where: { videoId: id },
+        orderBy: { versionNumber: "desc" },
+        select: { googleDriveFileId: true },
+      });
+      if (latestVersion?.googleDriveFileId) {
+        warmVideoCache(latestVersion.googleDriveFileId);
+      }
+    }
+
     // Create notifications
     const notifications: {
       type: string;
