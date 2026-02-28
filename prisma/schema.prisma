@@ -345,6 +345,18 @@ model CompanySettings {
   @@map("company_settings")
 }
 
+model NotificationTemplate {
+  id              String   @id @default(cuid())
+  type            String   @unique
+  title           String
+  messageTemplate String   @map("message_template") @db.Text
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("notification_templates")
+}
+
 model CreatorInvoice {
   id                     String                    @id @default(cuid())
   paymentNotificationId  String                    @unique @map("payment_notification_id")
