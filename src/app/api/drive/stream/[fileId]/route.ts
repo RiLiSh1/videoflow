@@ -1,6 +1,12 @@
 import { getSession } from "@/lib/auth/session";
 import { getAccessTokenLite } from "@/lib/google-auth-lite";
 
+/**
+ * Edge Runtime: near-zero cold start, runs on CDN edge close to user.
+ * All imports (jose, cookies) are Edge-compatible.
+ */
+export const runtime = "edge";
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ fileId: string }> }
@@ -14,7 +20,6 @@ export async function GET(
     const accessToken = await getAccessTokenLite();
     const driveUrl = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true`;
 
-    // ?proxy=1 → fallback: proxy data through our server
     const url = new URL(request.url);
     if (url.searchParams.get("proxy") === "1") {
       const headers: Record<string, string> = {
@@ -44,7 +49,7 @@ export async function GET(
       });
     }
 
-    // Default: 302 redirect (no data proxying, browser streams directly)
+    // Fast path: redirect (no data proxying)
     return Response.redirect(
       `${driveUrl}&access_token=${accessToken}`,
       302
