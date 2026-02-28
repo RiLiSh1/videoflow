@@ -43,10 +43,10 @@ export async function PATCH(
       );
     }
 
-    // Director approving → auto-transition to FINAL_REVIEW
+    // Director/Admin approving → auto-transition to FINAL_REVIEW
     // (APPROVED is an intermediate state, skip it and go straight to FINAL_REVIEW)
     if (
-      auth.role === "DIRECTOR" &&
+      ["DIRECTOR", "ADMIN"].includes(auth.role) &&
       status === "APPROVED" &&
       video.status === "IN_REVIEW"
     ) {
