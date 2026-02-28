@@ -258,7 +258,8 @@ export default function UploadClient({
           fileName: fileData.fileName,
           fileSize: fileData.fileSize,
           mimeType: fileData.mimeType,
-          googleDriveUrl: fileData.url,
+          googleDriveFileId: fileData.googleDriveFileId || undefined,
+          googleDriveUrl: fileData.googleDriveUrl || fileData.url,
         }),
       });
       if (!(await vRes.json()).success)
