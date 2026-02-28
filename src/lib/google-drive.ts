@@ -158,12 +158,12 @@ export async function createResumableUploadSession(options: {
     }
   );
 
-  if (!res.ok) {
+  if (res.status !== 200 && res.status !== 308) {
     const errBody = await res.text();
     throw new Error(`Failed to create resumable upload session: ${res.status} ${errBody}`);
   }
 
-  const uploadUrl = res.headers.get("Location");
+  const uploadUrl = res.headers.get("location") || res.headers.get("Location");
   if (!uploadUrl) {
     throw new Error("No Location header in resumable upload response");
   }
