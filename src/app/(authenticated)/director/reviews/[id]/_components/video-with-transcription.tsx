@@ -122,7 +122,7 @@ export function VideoWithTranscription({
         initialTelopExtractedAt={version.telopExtractedAt}
         initialAudioText={version.audioText}
         initialAudioExtractedAt={version.audioExtractedAt}
-        onSeek={isLocalVideo ? handleSeek : undefined}
+        onSeek={streamUrl ? handleSeek : undefined}
       />
     </div>
   );
