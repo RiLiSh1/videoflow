@@ -17,7 +17,7 @@ export type TelopResult = {
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? "";
 
 export async function extractTelopFromVideo(
-  filePath: string,
+  fileData: string | Buffer,
   mimeType: string
 ): Promise<TelopResult> {
   if (!GEMINI_API_KEY) {
