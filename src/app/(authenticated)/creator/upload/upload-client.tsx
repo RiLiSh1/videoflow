@@ -56,6 +56,8 @@ type UploadResult = {
   mimeType: string;
   filePath: string;
   url: string;
+  googleDriveUrl: string | null;
+  googleDriveFileId: string | null;
 };
 
 type Props = {
