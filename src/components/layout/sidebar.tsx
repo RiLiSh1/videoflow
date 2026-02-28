@@ -16,6 +16,7 @@ import {
   FileText,
   Building2,
   MessageSquare,
+  CircleCheckBig,
 } from "lucide-react";
 import type { Role } from "@prisma/client";
 import { NAV_ITEMS } from "@/lib/constants/routes";
