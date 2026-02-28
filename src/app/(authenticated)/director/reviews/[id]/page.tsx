@@ -85,6 +85,15 @@ export default async function DirectorReviewDetailPage({
 
   return (
     <PageContainer title="レビュー画面">
+      {/* Preload video: browser starts fetching before React hydrates */}
+      {videoFileId && (
+        <link
+          rel="preload"
+          href={`/api/drive/stream/${videoFileId}`}
+          as="video"
+          type="video/mp4"
+        />
+      )}
       {/* Header: Back link + Video meta */}
       <div className="mb-5 flex items-start justify-between">
         <div>
