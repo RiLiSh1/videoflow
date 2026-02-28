@@ -16,7 +16,6 @@ async function getProjects() {
 
   return projects.map((p) => ({
     ...p,
-    deadline: p.deadline ? p.deadline.toISOString() : null,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   }));
