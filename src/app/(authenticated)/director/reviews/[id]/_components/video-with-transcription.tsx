@@ -52,9 +52,9 @@ export function VideoWithTranscription({
 }: VideoWithTranscriptionProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const isLocalVideo =
-    version.googleDriveUrl &&
-    !toGoogleDriveEmbedUrl(version.googleDriveUrl);
+  const streamUrl = version.googleDriveUrl
+    ? toGoogleDriveStreamUrl(version.googleDriveUrl) || version.googleDriveUrl
+    : null;
 
   const handleSeek = useCallback((seconds: number) => {
     if (videoRef.current) {
