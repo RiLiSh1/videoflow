@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { TranscriptionSection } from "@/components/domain/transcription-section";
 import { ExternalLink, Clock } from "lucide-react";
@@ -20,6 +20,8 @@ interface VersionInfo {
 interface VideoWithTranscriptionProps {
   videoId: string;
   version: VersionInfo;
+  /** SSR-generated direct Google Drive URL (bypasses proxy) */
+  directStreamUrl?: string | null;
 }
 
 /** Extract Google Drive file ID from various URL formats. */
@@ -49,12 +51,17 @@ function formatFileSize(bytes: number): string {
 export function VideoWithTranscription({
   videoId,
   version,
+  directStreamUrl,
 }: VideoWithTranscriptionProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [useFallback, setUseFallback] = useState(false);
 
-  const streamUrl = version.googleDriveUrl
+  const proxyUrl = version.googleDriveUrl
     ? toStreamUrl(version.googleDriveUrl) || version.googleDriveUrl
     : null;
+
+  // Use direct URL if available, fall back to proxy on error
+  const streamUrl = (!useFallback && directStreamUrl) || proxyUrl;
 
   const handleSeek = useCallback((seconds: number) => {
     if (videoRef.current) {
