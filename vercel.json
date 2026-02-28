@@ -9,6 +9,9 @@
     },
     "src/app/api/drive/stream-url/[fileId]/route.ts": {
       "maxDuration": 10
+    },
+    "src/app/api/internal/copy-to-blob/route.ts": {
+      "maxDuration": 60
     }
   }
 }
