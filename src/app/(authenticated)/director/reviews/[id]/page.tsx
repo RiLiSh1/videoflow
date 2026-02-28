@@ -51,11 +51,15 @@ export default async function DirectorReviewDetailPage({
 
   const latestVersion = video.versions[0] ?? null;
 
-  // Extract fileId for video preloading
-  const videoFileId = latestVersion?.googleDriveUrl
-    ? (latestVersion.googleDriveUrl.match(/drive\.google\.com\/file\/d\/([^/]+)/)?.[1]
-      || latestVersion.googleDriveUrl.match(/drive\.google\.com\/open\?id=([^&]+)/)?.[1])
-    : null;
+  // Video preload URL: prefer Blob CDN (instant), fall back to proxy
+  const videoPreloadUrl = latestVersion?.blobUrl
+    ?? (latestVersion?.googleDriveUrl
+      ? (() => {
+          const fileId = latestVersion.googleDriveUrl!.match(/drive\.google\.com\/file\/d\/([^/]+)/)?.[1]
+            || latestVersion.googleDriveUrl!.match(/drive\.google\.com\/open\?id=([^&]+)/)?.[1];
+          return fileId ? `/api/drive/stream/${fileId}` : null;
+        })()
+      : null);
 
   // Serialize for client component
   const serializedVersions = video.versions.map((v) => ({
