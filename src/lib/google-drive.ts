@@ -36,6 +36,18 @@ async function getDrive() {
 }
 
 /**
+ * Get a fresh access token string for direct API calls.
+ */
+export async function getAuthClient(): Promise<string> {
+  const auth = await getAuth();
+  const client = await auth.getClient();
+  const tokenRes = await client.getAccessToken();
+  const token = typeof tokenRes === "string" ? tokenRes : tokenRes?.token;
+  if (!token) throw new Error("Failed to get access token");
+  return token;
+}
+
+/**
  * Get the root folder ID — DB preferred, env fallback.
  */
 export async function getRootFolderId(): Promise<string> {
