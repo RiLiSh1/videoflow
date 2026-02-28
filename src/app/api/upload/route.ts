@@ -77,7 +77,7 @@ export async function POST(request: Request) {
 
     if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY && process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID) {
       try {
-        const rootFolderId = getRootFolderId();
+        const rootFolderId = await getRootFolderId();
 
         // Determine folder: use video's project folder structure
         let targetFolderId = rootFolderId;
