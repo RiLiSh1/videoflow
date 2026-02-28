@@ -44,6 +44,15 @@ export async function POST(
 
     const versionNumber = (lastVersion?.versionNumber || 0) + 1;
 
+    // Share file publicly so it's viewable via embed
+    if (googleDriveFileId) {
+      try {
+        await shareFilePublicly(googleDriveFileId);
+      } catch (e) {
+        console.error("Failed to share file publicly:", e);
+      }
+    }
+
     const version = await prisma.version.create({
       data: {
         videoId: id,
