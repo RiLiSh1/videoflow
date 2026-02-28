@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
+import { getAccessTokenLite } from "@/lib/google-auth-lite";
 import { PageContainer } from "@/components/layout/page-container";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/domain/status-badge";
@@ -9,6 +10,12 @@ import { formatDate } from "@/lib/utils/format-date";
 import { ReviewClient } from "./_components/review-client";
 import { VideoWithTranscription } from "./_components/video-with-transcription";
 import { ArrowLeft, ExternalLink } from "lucide-react";
+
+function extractFileId(url: string): string | null {
+  const m = url.match(/drive\.google\.com\/file\/d\/([^/]+)/) ||
+            url.match(/drive\.google\.com\/open\?id=([^&]+)/);
+  return m ? m[1] : null;
+}
 
 export default async function DirectorReviewDetailPage({
   params,
