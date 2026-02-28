@@ -11,13 +11,25 @@ export interface NotificationContext {
   triggeredByName?: string;
 }
 
-const NOTIFICATION_TITLES: Record<string, string> = {
+const FALLBACK_TITLES: Record<string, string> = {
   VIDEO_SUBMITTED: "動画が提出されました",
+  VIDEO_REVISED: "修正済み再提出",
   VIDEO_REVISION_REQUESTED: "修正依頼",
   VIDEO_COMPLETED: "最終承認完了",
   VIDEO_FINAL_REVIEW: "最終確認依頼",
   NEW_FEEDBACK: "新しいフィードバック",
 };
+
+function applyTemplate(
+  template: string,
+  variables: Record<string, string>
+): string {
+  let result = template;
+  for (const [key, value] of Object.entries(variables)) {
+    result = result.replaceAll(`{${key}}`, value);
+  }
+  return result;
+}
 
 function buildRoleLink(role: string, videoId: string | null): string {
   const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -55,6 +67,14 @@ export async function sendChatworkNotification(
   ctx: NotificationContext
 ): Promise<void> {
   try {
+    // Fetch template from DB
+    const template = await prisma.notificationTemplate.findUnique({
+      where: { type: ctx.type },
+    });
+
+    // If template exists and is disabled, skip Chatwork send
+    if (template && !template.isActive) return;
+
     const user = await prisma.user.findUnique({
       where: { id: ctx.targetUserId },
       select: {
@@ -67,13 +87,22 @@ export async function sendChatworkNotification(
 
     if (!user?.chatworkId || !user?.chatworkRoomId) return;
 
-    const title = NOTIFICATION_TITLES[ctx.type] || ctx.type;
+    const variables: Record<string, string> = {};
+    if (ctx.videoTitle) variables.videoTitle = ctx.videoTitle;
+    if (ctx.triggeredByName) variables.triggeredByName = ctx.triggeredByName;
+
+    // Use template from DB, fall back to hardcoded values
+    const title = template?.title || FALLBACK_TITLES[ctx.type] || ctx.type;
+    const messageBody = template
+      ? applyTemplate(template.messageTemplate, variables)
+      : ctx.message;
+
     const link = buildRoleLink(user.role, ctx.videoId);
     const message = buildChatworkMessage(
       user.chatworkId,
       user.name,
       title,
-      ctx.message,
+      messageBody,
       ctx.triggeredByName,
       link
     );
