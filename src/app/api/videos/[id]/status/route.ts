@@ -6,6 +6,7 @@ import {
   sendChatworkNotifications,
   type NotificationContext,
 } from "@/lib/chatwork-notification";
+import { warmVideoCache } from "@/lib/warm-cache";
 
 const VALID_TRANSITIONS: Record<VideoStatus, VideoStatus[]> = {
   DRAFT: ["SUBMITTED"],
