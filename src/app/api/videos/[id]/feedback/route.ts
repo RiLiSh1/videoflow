@@ -53,7 +53,7 @@ export async function POST(
     if (video) {
       const targetUserId = auth.role === "DIRECTOR" ? video.creatorId : video.directorId;
       if (targetUserId && targetUserId !== auth.id) {
-        await prisma.notification.create({
+        const notification = await prisma.notification.create({
           data: {
             type: "NEW_FEEDBACK",
             videoId: id,
@@ -61,6 +61,16 @@ export async function POST(
             targetUserId,
             message: `「${video.title}」に新しいフィードバックがあります`,
           },
+        });
+
+        sendChatworkNotification({
+          notificationId: notification.id,
+          type: notification.type,
+          videoId: notification.videoId,
+          targetUserId: notification.targetUserId,
+          message: notification.message,
+          videoTitle: video.title,
+          triggeredByName: auth.name,
         });
       }
     }
