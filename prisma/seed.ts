@@ -558,6 +558,46 @@ async function main() {
   });
 
   console.log("Google Drive settings created");
+
+  // ============================================================
+  // Notification Templates
+  // ============================================================
+  await prisma.notificationTemplate.createMany({
+    data: [
+      {
+        type: "VIDEO_SUBMITTED",
+        title: "動画が提出されました",
+        messageTemplate: "「{videoTitle}」が提出されました",
+      },
+      {
+        type: "VIDEO_REVISED",
+        title: "修正済み再提出",
+        messageTemplate: "「{videoTitle}」が修正されました。再レビューをお願いします",
+      },
+      {
+        type: "VIDEO_REVISION_REQUESTED",
+        title: "修正依頼",
+        messageTemplate: "「{videoTitle}」に修正依頼があります",
+      },
+      {
+        type: "VIDEO_FINAL_REVIEW",
+        title: "最終確認依頼",
+        messageTemplate: "「{videoTitle}」がディレクターに承認されました。最終確認をお願いします",
+      },
+      {
+        type: "VIDEO_COMPLETED",
+        title: "最終承認完了",
+        messageTemplate: "「{videoTitle}」が最終承認されました",
+      },
+      {
+        type: "NEW_FEEDBACK",
+        title: "新しいフィードバック",
+        messageTemplate: "「{videoTitle}」に新しいフィードバックがあります",
+      },
+    ],
+  });
+
+  console.log("Notification templates created");
   console.log("Seeding completed!");
   console.log("");
   console.log("=== ログイン情報 ===");
