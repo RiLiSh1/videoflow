@@ -127,12 +127,6 @@ export function ProjectsClient({
       ),
     },
     {
-      accessorKey: "deadline",
-      header: "納期",
-      cell: ({ row }) =>
-        row.original.deadline ? formatDate(row.original.deadline) : "-",
-    },
-    {
       accessorKey: "createdAt",
       header: "作成日",
       cell: ({ row }) => formatDate(row.original.createdAt),
