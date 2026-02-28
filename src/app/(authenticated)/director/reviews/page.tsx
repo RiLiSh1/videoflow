@@ -21,7 +21,7 @@ export default async function DirectorReviewsPage() {
       versions: {
         take: 1,
         orderBy: { versionNumber: "desc" },
-        select: { googleDriveFileId: true },
+        select: { blobUrl: true, googleDriveFileId: true },
       },
     },
     orderBy: { updatedAt: "desc" },
