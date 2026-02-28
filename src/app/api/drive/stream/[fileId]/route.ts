@@ -1,12 +1,16 @@
-import { requireAuth, isSessionUser } from "@/lib/auth/require-auth";
+import { NextResponse } from "next/server";
+import { getSession } from "@/lib/auth/session";
 import { getAuthClient } from "@/lib/google-drive";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ fileId: string }> }
 ) {
-  const auth = await requireAuth(["ADMIN", "CREATOR", "DIRECTOR"]);
-  if (!isSessionUser(auth)) return auth;
+  // Lightweight auth: JWT verification only (no DB, no role check)
+  const user = await getSession();
+  if (!user) {
+    return NextResponse.json({ success: false, error: "認証が必要です" }, { status: 401 });
+  }
 
   const { fileId } = await params;
 
