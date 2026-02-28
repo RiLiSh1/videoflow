@@ -14,6 +14,7 @@ import {
   MessageSquare,
   ChevronDown,
   ChevronUp,
+  Clock,
 } from "lucide-react";
 
 interface VersionInfo {
