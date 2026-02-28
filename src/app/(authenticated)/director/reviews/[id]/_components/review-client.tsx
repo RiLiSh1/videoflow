@@ -316,6 +316,7 @@ export function ReviewClient({
                 <Button
                   variant="primary"
                   loading={statusLoading === "APPROVED"}
+                  disabled={currentStatus === "REVISION_REQUESTED"}
                   onClick={() => handleApproveOrReject("APPROVED", "承認")}
                 >
                   <CheckCircle2 className="mr-1.5 h-4 w-4" />
