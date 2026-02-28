@@ -29,7 +29,7 @@ export async function GET(
     const responseHeaders: Record<string, string> = {
       "Content-Type": res.headers.get("Content-Type") || "video/mp4",
       "Accept-Ranges": "bytes",
-      "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=86400",
+      "Cache-Control": "public, s-maxage=2592000, stale-while-revalidate=2592000",
       "Vary": "Range",
     };
     const contentRange = res.headers.get("Content-Range");
