@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth, isSessionUser } from "@/lib/auth/require-auth";
+import { sendChatworkNotification } from "@/lib/chatwork-notification";
 
 export async function POST(
   request: Request,
