@@ -16,6 +16,8 @@ type UploadResult = {
   mimeType: string;
   filePath: string;
   url: string;
+  googleDriveUrl: string | null;
+  googleDriveFileId: string | null;
 };
 
 export function VersionForm({ videoId }: VersionFormProps) {
