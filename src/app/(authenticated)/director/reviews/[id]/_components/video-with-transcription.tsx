@@ -53,9 +53,11 @@ export function VideoWithTranscription({
 }: VideoWithTranscriptionProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const streamUrl = version.googleDriveUrl
-    ? toStreamUrl(version.googleDriveUrl) || version.googleDriveUrl
-    : null;
+  // Prefer Blob CDN URL (instant) → proxy stream (slower) → raw Drive URL
+  const streamUrl = version.blobUrl
+    || (version.googleDriveUrl
+      ? toStreamUrl(version.googleDriveUrl) || version.googleDriveUrl
+      : null);
 
   const handleSeek = useCallback((seconds: number) => {
     if (videoRef.current) {
