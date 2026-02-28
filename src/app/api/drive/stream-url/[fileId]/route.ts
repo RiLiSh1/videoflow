@@ -22,7 +22,7 @@ export async function GET(
   const { fileId } = await params;
 
   try {
-    const accessToken = await getAuthClient();
+    const accessToken = await getAccessTokenLite();
     const url = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true&access_token=${accessToken}`;
 
     return NextResponse.json(
