@@ -26,8 +26,8 @@ export async function extractAudioFromVideo(
 
   const fileManager = new GoogleAIFileManager(GEMINI_API_KEY);
 
-  // Upload video to Gemini File API
-  const uploadResult = await fileManager.uploadFile(filePath, {
+  // Upload video to Gemini File API (SDK accepts string path or Buffer)
+  const uploadResult = await fileManager.uploadFile(fileData, {
     mimeType,
     displayName: `audio-extract-${Date.now()}`,
   });
