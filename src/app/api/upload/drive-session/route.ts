@@ -63,10 +63,14 @@ export async function POST(request: Request) {
       }
     }
 
+    // Pass the browser's Origin so Google Drive sets CORS headers for the upload URL
+    const origin = request.headers.get("Origin") || request.headers.get("Referer")?.replace(/\/[^/]*$/, "") || undefined;
+
     const { uploadUrl } = await createResumableUploadSession({
       fileName,
       mimeType,
       parentFolderId: targetFolderId,
+      origin: origin || undefined,
     });
 
     return NextResponse.json({
