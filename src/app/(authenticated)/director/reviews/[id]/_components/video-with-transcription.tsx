@@ -53,7 +53,7 @@ export function VideoWithTranscription({
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const streamUrl = version.googleDriveUrl
-    ? toGoogleDriveStreamUrl(version.googleDriveUrl) || version.googleDriveUrl
+    ? toStreamUrl(version.googleDriveUrl) || version.googleDriveUrl
     : null;
 
   const handleSeek = useCallback((seconds: number) => {
