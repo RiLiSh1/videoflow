@@ -1,0 +1,441 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import type { VideoStatus, Role } from "@prisma/client";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { RoleBadge } from "@/components/domain/role-badge";
+import { formatDateTime } from "@/lib/utils/format-date";
+import {
+  CheckCircle2,
+  RotateCcw,
+  Send,
+  MessageSquare,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+
+interface VersionInfo {
+  id: string;
+  versionNumber: number;
+}
+
+interface FeedbackItem {
+  id: string;
+  comment: string;
+  videoTimestamp: number | null;
+  actionType: string | null;
+  createdAt: string;
+  user: { id: string; name: string; role: Role };
+  version: { id: string; versionNumber: number };
+}
+
+interface SerializedVersion {
+  id: string;
+  versionNumber: number;
+  fileName: string;
+  fileSize: number;
+  mimeType: string | null;
+  googleDriveUrl: string | null;
+  uploaderName: string;
+  createdAt: string;
+}
+
+interface AdminReviewClientProps {
+  videoId: string;
+  currentStatus: VideoStatus;
+  latestVersion: VersionInfo | null;
+  feedbacks: FeedbackItem[];
+  versions: SerializedVersion[];
+}
+
+function formatTimestamp(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${String(secs).padStart(2, "0")}`;
+}
+
+export function AdminReviewClient({
+  videoId,
+  currentStatus,
+  latestVersion,
+  feedbacks,
+}: AdminReviewClientProps) {
+  const router = useRouter();
+  const [comment, setComment] = useState("");
+  const [timestamp, setTimestamp] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusLoading, setStatusLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showAllFeedbacks, setShowAllFeedbacks] = useState(false);
+
+  const isFinalReview = currentStatus === "FINAL_REVIEW";
+  const isCompleted = currentStatus === "COMPLETED";
+  const isRevisionRequested = currentStatus === "REVISION_REQUESTED";
+  const canAct =
+    ["SUBMITTED", "REVISED", "IN_REVIEW", "FINAL_REVIEW"].includes(
+      currentStatus
+    );
+  const canWriteFeedback = !isCompleted && !!latestVersion;
+
+  const handleSendFeedback = async () => {
+    if (!comment.trim() || !latestVersion) return;
+    setIsSubmitting(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const body: Record<string, unknown> = {
+        versionId: latestVersion.id,
+        comment: comment.trim(),
+      };
+      if (timestamp) {
+        const parsed = parseFloat(timestamp);
+        if (!isNaN(parsed) && parsed >= 0) {
+          body.videoTimestamp = parsed;
+        }
+      }
+
+      const res = await fetch(`/api/videos/${videoId}/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const result = await res.json();
+
+      if (!result.success) {
+        setError(result.error || "フィードバックの送信に失敗しました");
+        return;
+      }
+
+      setComment("");
+      setTimestamp("");
+      setSuccessMessage("フィードバックを送信しました");
+      setTimeout(() => setSuccessMessage(null), 3000);
+      router.refresh();
+    } catch {
+      setError("フィードバックの送信に失敗しました");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleStatusChange = async (
+    targetStatus: VideoStatus,
+    label: string
+  ) => {
+    setStatusLoading(targetStatus);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      // For SUBMITTED/REVISED, auto-transition through IN_REVIEW first
+      if (
+        ["SUBMITTED", "REVISED"].includes(currentStatus) &&
+        targetStatus !== "REVISION_REQUESTED"
+      ) {
+        const midRes = await fetch(`/api/videos/${videoId}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "IN_REVIEW" }),
+        });
+        const midResult = await midRes.json();
+        if (!midResult.success) {
+          setError(midResult.error || "ステータスの更新に失敗しました");
+          return;
+        }
+      }
+
+      const res = await fetch(`/api/videos/${videoId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: targetStatus }),
+      });
+      const result = await res.json();
+
+      if (!result.success) {
+        setError(result.error || "ステータスの更新に失敗しました");
+        return;
+      }
+
+      setSuccessMessage(`${label}しました`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+      router.refresh();
+    } catch {
+      setError("ステータスの更新に失敗しました");
+    } finally {
+      setStatusLoading(null);
+    }
+  };
+
+  const VISIBLE_FEEDBACKS = 5;
+  const totalFeedbackCount = feedbacks.length;
+  const visibleFeedbacks = showAllFeedbacks
+    ? feedbacks
+    : feedbacks.slice(0, VISIBLE_FEEDBACKS);
+
+  const visibleGrouped = visibleFeedbacks.reduce<
+    Record<number, FeedbackItem[]>
+  >((acc, fb) => {
+    const vn = fb.version.versionNumber;
+    if (!acc[vn]) acc[vn] = [];
+    acc[vn].push(fb);
+    return acc;
+  }, {});
+  const visibleVersionNumbers = Object.keys(visibleGrouped)
+    .map(Number)
+    .sort((a, b) => b - a);
+
+  return (
+    <>
+      {/* Notice Banners */}
+      {isRevisionRequested && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm font-medium text-amber-800">修正待ち</p>
+          <p className="text-xs text-amber-600 mt-0.5">
+            クリエイターの修正を待っています。
+          </p>
+        </div>
+      )}
+
+      {isCompleted && (
+        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <p className="text-sm font-medium text-green-800">完了</p>
+          </div>
+          <p className="text-xs text-green-600 mt-0.5">
+            この動画は最終承認済みです。
+          </p>
+        </div>
+      )}
+
+      {/* Feedback Form */}
+      {canWriteFeedback && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-gray-500" />
+              <h2 className="text-sm font-semibold text-gray-900">
+                フィードバック
+                <span className="ml-1 text-xs font-normal text-gray-400">
+                  v{latestVersion.versionNumber}
+                </span>
+              </h2>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  タイムスタンプ（秒）
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={timestamp}
+                  onChange={(e) => setTimestamp(e.target.value)}
+                  placeholder="例: 1:30 の箇所なら 90"
+                  className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  コメント
+                </label>
+                <textarea
+                  rows={4}
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="フィードバックを入力してください..."
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+                />
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  loading={isSubmitting}
+                  disabled={!comment.trim()}
+                  onClick={handleSendFeedback}
+                >
+                  <Send className="mr-1.5 h-3.5 w-3.5" />
+                  コメント送信
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Actions */}
+      {canAct && (
+        <Card className="border-primary-200">
+          <CardContent>
+            <div className="py-2 space-y-3">
+              {isFinalReview ? (
+                <>
+                  <p className="text-sm font-medium text-gray-700">
+                    最終確認を行ってください
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      variant="danger"
+                      loading={statusLoading === "REVISION_REQUESTED"}
+                      onClick={() =>
+                        handleStatusChange("REVISION_REQUESTED", "差し戻し")
+                      }
+                    >
+                      <RotateCcw className="mr-1.5 h-4 w-4" />
+                      差し戻し
+                    </Button>
+                    <Button
+                      variant="primary"
+                      loading={statusLoading === "COMPLETED"}
+                      onClick={() =>
+                        handleStatusChange("COMPLETED", "最終承認")
+                      }
+                    >
+                      <CheckCircle2 className="mr-1.5 h-4 w-4" />
+                      最終承認
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium text-gray-700">
+                    レビュー結果を選択してください
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      variant="danger"
+                      loading={statusLoading === "REVISION_REQUESTED"}
+                      onClick={() =>
+                        handleStatusChange("REVISION_REQUESTED", "差し戻し")
+                      }
+                    >
+                      <RotateCcw className="mr-1.5 h-4 w-4" />
+                      差し戻し
+                    </Button>
+                    <Button
+                      variant="primary"
+                      loading={statusLoading === "APPROVED"}
+                      onClick={() =>
+                        handleStatusChange("APPROVED", "承認")
+                      }
+                    >
+                      <CheckCircle2 className="mr-1.5 h-4 w-4" />
+                      承認
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    差し戻す場合は先にフィードバックを送信してください
+                  </p>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Messages */}
+      {error && (
+        <div className="rounded-md bg-red-50 border border-red-200 p-3">
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+      {successMessage && (
+        <div className="rounded-md bg-green-50 border border-green-200 p-3">
+          <p className="text-sm text-green-700">{successMessage}</p>
+        </div>
+      )}
+
+      {/* Feedback History */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-900">
+              フィードバック履歴
+            </h2>
+            {totalFeedbackCount > 0 && (
+              <span className="text-xs text-gray-400">
+                {totalFeedbackCount}件
+              </span>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {feedbacks.length === 0 ? (
+            <p className="py-4 text-center text-sm text-gray-400">
+              フィードバックはまだありません
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {visibleVersionNumbers.map((versionNumber) => (
+                <div key={versionNumber}>
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      v{versionNumber}
+                    </span>
+                    <div className="flex-1 border-t border-gray-100" />
+                  </div>
+                  <div className="space-y-2">
+                    {visibleGrouped[versionNumber].map((fb) => (
+                      <div
+                        key={fb.id}
+                        className="rounded-lg border border-gray-100 bg-gray-50 p-3"
+                      >
+                        <div className="mb-1.5 flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-medium text-gray-800">
+                              {fb.user.name}
+                            </span>
+                            <RoleBadge role={fb.user.role} />
+                            {fb.videoTimestamp !== null && (
+                              <span className="inline-flex items-center rounded bg-purple-50 px-1.5 py-0.5 text-[10px] font-medium text-purple-700">
+                                {formatTimestamp(fb.videoTimestamp)}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-gray-400">
+                            {formatDateTime(fb.createdAt)}
+                          </span>
+                        </div>
+                        <p className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
+                          {fb.comment}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              {totalFeedbackCount > VISIBLE_FEEDBACKS && (
+                <button
+                  onClick={() => setShowAllFeedbacks(!showAllFeedbacks)}
+                  className="w-full flex items-center justify-center gap-1 py-2 text-xs text-primary-600 hover:text-primary-800 transition-colors"
+                >
+                  {showAllFeedbacks ? (
+                    <>
+                      <ChevronUp className="h-3.5 w-3.5" />
+                      閉じる
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-3.5 w-3.5" />
+                      すべて表示（残り
+                      {totalFeedbackCount - VISIBLE_FEEDBACKS}件）
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </>
+  );
+}
