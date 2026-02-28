@@ -110,7 +110,6 @@ export default async function AdminApprovalDetailPage({
           {latestVersion?.googleDriveUrl ? (
             <VideoWithTranscription
               videoId={video.id}
-              directStreamUrl={directStreamUrl}
               version={{
                 id: latestVersion.id,
                 versionNumber: latestVersion.versionNumber,
