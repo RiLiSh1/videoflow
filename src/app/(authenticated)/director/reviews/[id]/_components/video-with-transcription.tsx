@@ -75,7 +75,7 @@ export function VideoWithTranscription({
                 src={streamUrl}
                 controls
                 className="w-full h-full"
-                preload="metadata"
+                preload="auto"
               >
                 お使いのブラウザは動画の再生に対応していません。
               </video>
