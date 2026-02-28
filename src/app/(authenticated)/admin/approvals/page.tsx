@@ -60,7 +60,7 @@ export default async function AdminApprovalsPage() {
           type="video/mp4"
         />
       ))}
-      <ApprovalsClient videos={videos} />
+      <ApprovalsClient videos={clientVideos} />
     </PageContainer>
   );
 }
