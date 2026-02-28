@@ -29,7 +29,7 @@ async function getAllVideos() {
     project: v.project,
     creator: v.creator,
     director: v.director,
-    _prefetchFileId: v.versions[0]?.googleDriveFileId ?? null,
+    _fileId: v.versions[0]?.googleDriveFileId ?? null,
   }));
 }
 
@@ -42,8 +42,11 @@ export default async function AdminApprovalsPage() {
       ["SUBMITTED", "IN_REVIEW", "FINAL_REVIEW", "REVISED"].includes(v.status)
     )
     .slice(0, 3)
-    .map((v) => v._prefetchFileId)
+    .map((v) => v._fileId)
     .filter(Boolean) as string[];
+
+  // Strip _fileId before passing to client component
+  const clientVideos = videos.map(({ _fileId, ...rest }) => rest);
 
   return (
     <PageContainer title="承認管理">
