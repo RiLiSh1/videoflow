@@ -3,6 +3,7 @@ import path from "path";
 import { requireAuth, isSessionUser } from "@/lib/auth/require-auth";
 import { prisma } from "@/lib/db";
 import { extractAudioFromVideo } from "@/lib/gemini/extract-audio";
+import { downloadFileFromDrive } from "@/lib/google-drive";
 
 const UPLOAD_DIR = path.join(process.cwd(), "uploads");
 
@@ -45,6 +46,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
     where: { id: versionId },
     select: {
       id: true,
+      googleDriveFileId: true,
       googleDriveUrl: true,
       mimeType: true,
       fileName: true,
@@ -58,37 +60,42 @@ export async function POST(_request: Request, { params }: RouteParams) {
     );
   }
 
-  if (!version.googleDriveUrl) {
+  const mimeType = version.mimeType || "video/mp4";
+  let fileData: string | Buffer;
+
+  if (version.googleDriveFileId) {
+    // Production: download from Google Drive
+    try {
+      fileData = await downloadFileFromDrive(version.googleDriveFileId);
+    } catch (error) {
+      console.error("Drive download error:", error);
+      return NextResponse.json(
+        { success: false, error: "Google Driveからのファイル取得に失敗しました" },
+        { status: 500 }
+      );
+    }
+  } else if (version.googleDriveUrl?.startsWith("/api/files/")) {
+    // Development: local file path
+    const localPrefix = "/api/files/";
+    const relativePath = version.googleDriveUrl.slice(localPrefix.length);
+    const filePath = path.join(UPLOAD_DIR, relativePath);
+
+    if (!filePath.startsWith(UPLOAD_DIR)) {
+      return NextResponse.json(
+        { success: false, error: "アクセスが拒否されました" },
+        { status: 403 }
+      );
+    }
+    fileData = filePath;
+  } else {
     return NextResponse.json(
       { success: false, error: "動画ファイルが登録されていません" },
       { status: 400 }
     );
   }
 
-  // Resolve local file path from /api/files/ prefix
-  const localPrefix = "/api/files/";
-  if (!version.googleDriveUrl.startsWith(localPrefix)) {
-    return NextResponse.json(
-      { success: false, error: "ローカルファイルのみ音声抽出に対応しています" },
-      { status: 400 }
-    );
-  }
-
-  const relativePath = version.googleDriveUrl.slice(localPrefix.length);
-  const filePath = path.join(UPLOAD_DIR, relativePath);
-
-  // Directory traversal prevention
-  if (!filePath.startsWith(UPLOAD_DIR)) {
-    return NextResponse.json(
-      { success: false, error: "アクセスが拒否されました" },
-      { status: 403 }
-    );
-  }
-
-  const mimeType = version.mimeType || "video/mp4";
-
   try {
-    const result = await extractAudioFromVideo(filePath, mimeType);
+    const result = await extractAudioFromVideo(fileData, mimeType);
 
     const updated = await prisma.version.update({
       where: { id: versionId },
