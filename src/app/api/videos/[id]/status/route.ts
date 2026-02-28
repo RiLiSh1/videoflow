@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { headers as getHeaders } from "next/headers";
 import { prisma } from "@/lib/db";
 import { requireAuth, isSessionUser } from "@/lib/auth/require-auth";
 import type { VideoStatus } from "@prisma/client";
@@ -6,7 +7,6 @@ import {
   sendChatworkNotifications,
   type NotificationContext,
 } from "@/lib/chatwork-notification";
-import { warmVideoCache } from "@/lib/warm-cache";
 
 const VALID_TRANSITIONS: Record<VideoStatus, VideoStatus[]> = {
   DRAFT: ["SUBMITTED"],
