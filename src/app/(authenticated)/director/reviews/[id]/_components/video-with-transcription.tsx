@@ -68,26 +68,17 @@ export function VideoWithTranscription({
       {/* Video Player */}
       <Card className="overflow-hidden">
         <div className="bg-black">
-          {version.googleDriveUrl ? (
+          {streamUrl ? (
             <div className="aspect-video">
-              {toGoogleDriveEmbedUrl(version.googleDriveUrl) ? (
-                <iframe
-                  src={toGoogleDriveEmbedUrl(version.googleDriveUrl)!}
-                  className="w-full h-full"
-                  allow="autoplay; encrypted-media"
-                  allowFullScreen
-                />
-              ) : (
-                <video
-                  ref={videoRef}
-                  src={version.googleDriveUrl}
-                  controls
-                  className="w-full h-full"
-                  preload="metadata"
-                >
-                  お使いのブラウザは動画の再生に対応していません。
-                </video>
-              )}
+              <video
+                ref={videoRef}
+                src={streamUrl}
+                controls
+                className="w-full h-full"
+                preload="metadata"
+              >
+                お使いのブラウザは動画の再生に対応していません。
+              </video>
             </div>
           ) : (
             <div className="aspect-video flex items-center justify-center">
