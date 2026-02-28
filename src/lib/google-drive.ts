@@ -125,7 +125,12 @@ export async function createResumableUploadSession(options: {
   origin?: string;
 }): Promise<{ uploadUrl: string }> {
   const auth = await getAuth();
-  const accessToken = await auth.getAccessToken();
+  const client = await auth.getClient();
+  const tokenRes = await client.getAccessToken();
+  const accessToken = typeof tokenRes === "string" ? tokenRes : tokenRes?.token;
+  if (!accessToken) {
+    throw new Error("Failed to get access token for Google Drive");
+  }
 
   const metadata = {
     name: options.fileName,
@@ -149,6 +154,7 @@ export async function createResumableUploadSession(options: {
       method: "POST",
       headers,
       body: JSON.stringify(metadata),
+      redirect: "manual",
     }
   );
 
