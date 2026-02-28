@@ -72,13 +72,7 @@ export async function POST(
 
     // Warm CDN cache in background (fire and forget)
     if (googleDriveFileId) {
-      const reqHeaders = await getHeaders();
-      const host = reqHeaders.get("host") || "localhost:3000";
-      const proto = reqHeaders.get("x-forwarded-proto") || "https";
-      const cookie = reqHeaders.get("cookie") || "";
-      const warmUrl = `${proto}://${host}/api/drive/stream/${googleDriveFileId}`;
-      // Fire and forget — don't await, don't block the response
-      fetch(warmUrl, { headers: { Cookie: cookie } }).catch(() => {});
+      warmVideoCache(googleDriveFileId);
     }
 
     // Serialize BigInt for JSON
