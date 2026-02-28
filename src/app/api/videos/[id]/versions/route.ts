@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { headers as getHeaders } from "next/headers";
 import { prisma } from "@/lib/db";
 import { requireAuth, isSessionUser } from "@/lib/auth/require-auth";
 import { shareFilePublicly } from "@/lib/google-drive";
