@@ -17,7 +17,7 @@ export type AudioResult = {
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? "";
 
 export async function extractAudioFromVideo(
-  filePath: string,
+  fileData: string | Buffer,
   mimeType: string
 ): Promise<AudioResult> {
   if (!GEMINI_API_KEY) {
