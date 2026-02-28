@@ -53,14 +53,19 @@ async function getDrive() {
 }
 
 /**
- * Get a fresh access token string for direct API calls.
+ * Get an access token string for direct API calls (cached for 50 min).
  */
 export async function getAuthClient(): Promise<string> {
+  const now = Date.now();
+  if (tokenCache && now < tokenCache.expiresAt) {
+    return tokenCache.token;
+  }
   const auth = await getAuth();
   const client = await auth.getClient();
   const tokenRes = await client.getAccessToken();
   const token = typeof tokenRes === "string" ? tokenRes : tokenRes?.token;
   if (!token) throw new Error("Failed to get access token");
+  tokenCache = { token, expiresAt: now + TOKEN_TTL };
   return token;
 }
 
