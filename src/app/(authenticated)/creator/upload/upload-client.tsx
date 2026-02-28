@@ -293,15 +293,26 @@ export default function UploadClient({
           googleDriveUrl: fileData.googleDriveUrl || fileData.url,
         }),
       });
-      if (!(await vRes.json()).success)
+      const vResult = await vRes.json();
+      if (!vResult.success)
         return (
           setSubmitError("バージョンの登録に失敗しました"),
           setIsSubmitting(false)
         );
 
-      // Warm CDN cache for instant video playback (fire and forget)
-      if (fileData.googleDriveFileId) {
-        fetch(`/api/drive/stream/${fileData.googleDriveFileId}`).catch(() => {});
+      // Copy to Blob CDN for instant playback (fire and forget from browser)
+      if (fileData.googleDriveFileId && vResult.data?.id) {
+        fetch("/api/internal/copy-to-blob", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            versionId: vResult.data.id,
+            googleDriveFileId: fileData.googleDriveFileId,
+            fileName: fileData.fileName,
+            mimeType: fileData.mimeType || "video/mp4",
+          }),
+          keepalive: true,
+        }).catch(() => {});
       }
 
       // Update status → 提出済み
