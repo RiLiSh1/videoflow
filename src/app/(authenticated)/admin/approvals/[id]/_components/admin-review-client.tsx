@@ -148,10 +148,7 @@ export function AdminReviewClient({
 
     try {
       // For SUBMITTED/REVISED, auto-transition through IN_REVIEW first
-      if (
-        ["SUBMITTED", "REVISED"].includes(currentStatus) &&
-        targetStatus !== "REVISION_REQUESTED"
-      ) {
+      if (["SUBMITTED", "REVISED"].includes(currentStatus)) {
         const midRes = await fetch(`/api/videos/${videoId}/status`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
