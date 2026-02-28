@@ -1,12 +1,6 @@
 import { getSession } from "@/lib/auth/session";
 import { getAccessTokenLite } from "@/lib/google-auth-lite";
 
-/**
- * Edge Runtime: near-zero cold start, runs on CDN edge close to user.
- * All imports (jose, cookies) are Edge-compatible.
- */
-export const runtime = "edge";
-
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ fileId: string }> }
@@ -18,42 +12,34 @@ export async function GET(
 
   try {
     const accessToken = await getAccessTokenLite();
-    const driveUrl = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true`;
+    const url = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true`;
 
-    const url = new URL(request.url);
-    if (url.searchParams.get("proxy") === "1") {
-      const headers: Record<string, string> = {
-        Authorization: `Bearer ${accessToken}`,
-      };
-      const range = request.headers.get("Range");
-      if (range) headers["Range"] = range;
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${accessToken}`,
+    };
+    const range = request.headers.get("Range");
+    if (range) headers["Range"] = range;
 
-      const res = await fetch(driveUrl, { headers });
-      if (!res.ok && res.status !== 206) {
-        return new Response("File not found", { status: 404 });
-      }
+    const res = await fetch(url, { headers });
 
-      const responseHeaders: Record<string, string> = {
-        "Content-Type": res.headers.get("Content-Type") || "video/mp4",
-        "Accept-Ranges": "bytes",
-        "Cache-Control": "public, max-age=86400, immutable",
-      };
-      const contentRange = res.headers.get("Content-Range");
-      if (contentRange) responseHeaders["Content-Range"] = contentRange;
-      const contentLength = res.headers.get("Content-Length");
-      if (contentLength) responseHeaders["Content-Length"] = contentLength;
-
-      return new Response(res.body, {
-        status: res.status,
-        headers: responseHeaders,
-      });
+    if (!res.ok && res.status !== 206) {
+      return new Response("File not found", { status: 404 });
     }
 
-    // Fast path: redirect (no data proxying)
-    return Response.redirect(
-      `${driveUrl}&access_token=${accessToken}`,
-      302
-    );
+    const responseHeaders: Record<string, string> = {
+      "Content-Type": res.headers.get("Content-Type") || "video/mp4",
+      "Accept-Ranges": "bytes",
+      "Cache-Control": "public, max-age=86400, immutable",
+    };
+    const contentRange = res.headers.get("Content-Range");
+    if (contentRange) responseHeaders["Content-Range"] = contentRange;
+    const contentLength = res.headers.get("Content-Length");
+    if (contentLength) responseHeaders["Content-Length"] = contentLength;
+
+    return new Response(res.body, {
+      status: res.status,
+      headers: responseHeaders,
+    });
   } catch {
     return new Response("Stream error", { status: 500 });
   }
