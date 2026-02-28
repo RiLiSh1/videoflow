@@ -22,17 +22,20 @@ interface VideoWithTranscriptionProps {
   version: VersionInfo;
 }
 
-/** Convert a Google Drive URL to its embeddable /preview form. Returns null for non-Drive URLs. */
-function toGoogleDriveEmbedUrl(url: string): string | null {
+/** Extract Google Drive file ID from various URL formats. */
+function extractDriveFileId(url: string): string | null {
   const fileMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
-  if (fileMatch) {
-    return `https://drive.google.com/file/d/${fileMatch[1]}/preview`;
-  }
+  if (fileMatch) return fileMatch[1];
   const openMatch = url.match(/drive\.google\.com\/open\?id=([^&]+)/);
-  if (openMatch) {
-    return `https://drive.google.com/file/d/${openMatch[1]}/preview`;
-  }
+  if (openMatch) return openMatch[1];
   return null;
+}
+
+/** Convert a Google Drive URL to a direct streaming URL. */
+function toGoogleDriveStreamUrl(url: string): string | null {
+  const fileId = extractDriveFileId(url);
+  if (!fileId) return null;
+  return `https://drive.google.com/uc?id=${fileId}&export=download&confirm=t`;
 }
 
 function formatFileSize(bytes: number): string {
