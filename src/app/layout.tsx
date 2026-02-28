@@ -14,8 +14,10 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
-        <link rel="preconnect" href="https://www.googleapis.com" />
-        <link rel="dns-prefetch" href="https://www.googleapis.com" />
+        <link rel="preconnect" href="https://drive.google.com" />
+        <link rel="preconnect" href="https://drive.usercontent.google.com" />
+        <link rel="dns-prefetch" href="https://drive.google.com" />
+        <link rel="dns-prefetch" href="https://drive.usercontent.google.com" />
         <link
           href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
           rel="stylesheet"
