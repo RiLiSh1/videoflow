@@ -353,6 +353,11 @@ export default function UploadClient({
           setIsSubmitting(false)
         );
 
+      // Warm CDN cache for instant video playback (fire and forget)
+      if (fileData.googleDriveFileId) {
+        fetch(`/api/drive/stream/${fileData.googleDriveFileId}`).catch(() => {});
+      }
+
       await fetch(`/api/videos/${selectedRevisionVideoId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
