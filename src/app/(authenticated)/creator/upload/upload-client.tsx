@@ -299,6 +299,11 @@ export default function UploadClient({
           setIsSubmitting(false)
         );
 
+      // Warm CDN cache for instant video playback (fire and forget)
+      if (fileData.googleDriveFileId) {
+        fetch(`/api/drive/stream/${fileData.googleDriveFileId}`).catch(() => {});
+      }
+
       // Update status → 提出済み
       await fetch(`/api/videos/${videoId}/status`, {
         method: "PATCH",
