@@ -2,10 +2,10 @@ import { prisma } from "@/lib/db";
 import { PageContainer } from "@/components/layout/page-container";
 import { ApprovalsClient } from "./_components/approvals-client";
 
-async function getPendingVideos() {
+async function getAllVideos() {
   const videos = await prisma.video.findMany({
     where: {
-      status: "FINAL_REVIEW",
+      status: { not: "DRAFT" },
     },
     include: {
       project: { select: { projectCode: true, name: true } },
