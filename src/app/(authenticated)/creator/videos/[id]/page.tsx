@@ -226,13 +226,15 @@ export default async function CreatorVideoDetailPage({
           </CardContent>
         </Card>
 
-        {/* Telop Section */}
+        {/* Transcription Section */}
         {video.versions[0] && (
-          <TelopSection
+          <TranscriptionSection
             videoId={video.id}
             versionId={video.versions[0].id}
             initialTelopText={video.versions[0].telopText ?? null}
             initialTelopExtractedAt={video.versions[0].telopExtractedAt?.toISOString() ?? null}
+            initialAudioText={video.versions[0].audioText ?? null}
+            initialAudioExtractedAt={video.versions[0].audioExtractedAt?.toISOString() ?? null}
           />
         )}
 
