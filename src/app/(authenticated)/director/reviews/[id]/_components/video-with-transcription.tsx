@@ -50,12 +50,10 @@ export function VideoWithTranscription({
     ? extractDriveFileId(version.googleDriveUrl)
     : null;
 
-  // Primary: Google Drive public download URL (no server involved at all)
-  // Fallback: our proxy endpoint (reliable but slower)
+  // Default: /api/drive/stream/{fileId} → Edge function redirects to Google (fast)
+  // Fallback: ?proxy=1 → proxies data through server (reliable)
   const streamUrl = fileId
-    ? (useProxy
-        ? `/api/drive/stream/${fileId}?proxy=1`
-        : `https://drive.google.com/uc?export=download&confirm=t&id=${fileId}`)
+    ? `/api/drive/stream/${fileId}${useProxy ? "?proxy=1" : ""}`
     : null;
 
   const handleSeek = useCallback((seconds: number) => {
