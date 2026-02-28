@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth, isSessionUser } from "@/lib/auth/require-auth";
+import { shareFilePublicly } from "@/lib/google-drive";
 
 export async function POST(
   request: Request,
