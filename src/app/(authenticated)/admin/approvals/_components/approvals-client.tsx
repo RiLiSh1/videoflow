@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { VideoStatus } from "@prisma/client";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/domain/status-badge";
+import { VIDEO_STATUS_LABELS } from "@/lib/constants/video-status";
 import { formatRelative } from "@/lib/utils/format-date";
 import { Dialog } from "@/components/ui/dialog";
-import { CheckCircle2, RotateCcw } from "lucide-react";
+import { CheckCircle2, RotateCcw, ExternalLink } from "lucide-react";
 
 export interface ApprovalVideoRow {
   id: string;
@@ -41,6 +43,18 @@ function getActionLabel(action: ActionType): string {
   return action === "complete" ? "最終承認" : "差し戻し";
 }
 
+type FilterTab = "ALL" | VideoStatus;
+
+const FILTER_TABS: { value: FilterTab; label: string }[] = [
+  { value: "ALL", label: "全て" },
+  { value: "SUBMITTED", label: VIDEO_STATUS_LABELS.SUBMITTED },
+  { value: "IN_REVIEW", label: VIDEO_STATUS_LABELS.IN_REVIEW },
+  { value: "REVISION_REQUESTED", label: VIDEO_STATUS_LABELS.REVISION_REQUESTED },
+  { value: "REVISED", label: VIDEO_STATUS_LABELS.REVISED },
+  { value: "FINAL_REVIEW", label: VIDEO_STATUS_LABELS.FINAL_REVIEW },
+  { value: "COMPLETED", label: VIDEO_STATUS_LABELS.COMPLETED },
+];
+
 export function ApprovalsClient({ videos }: ApprovalsClientProps) {
   const router = useRouter();
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(
@@ -48,6 +62,12 @@ export function ApprovalsClient({ videos }: ApprovalsClientProps) {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState<FilterTab>("ALL");
+
+  const filteredVideos =
+    activeTab === "ALL"
+      ? videos
+      : videos.filter((v) => v.status === activeTab);
 
   const handleAction = async () => {
     if (!pendingAction) return;
@@ -93,9 +113,12 @@ export function ApprovalsClient({ videos }: ApprovalsClientProps) {
       accessorKey: "title",
       header: "タイトル",
       cell: ({ row }) => (
-        <span className="font-medium text-gray-900">
+        <Link
+          href={`/admin/approvals/${row.original.id}`}
+          className="font-medium text-primary-600 hover:text-primary-800 hover:underline"
+        >
           {row.original.title}
-        </span>
+        </Link>
       ),
     },
     {
@@ -128,7 +151,7 @@ export function ApprovalsClient({ videos }: ApprovalsClientProps) {
     },
     {
       accessorKey: "updatedAt",
-      header: "承認日時",
+      header: "更新日時",
       cell: ({ row }) => (
         <span className="text-xs text-gray-500">
           {formatRelative(row.original.updatedAt)}
@@ -143,26 +166,36 @@ export function ApprovalsClient({ videos }: ApprovalsClientProps) {
         const video = row.original;
         return (
           <div className="flex items-center gap-2">
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() =>
-                setPendingAction({ video, type: "complete" })
-              }
-            >
-              <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-              承認
-            </Button>
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() =>
-                setPendingAction({ video, type: "revision" })
-              }
-            >
-              <RotateCcw className="mr-1 h-3.5 w-3.5" />
-              差し戻し
-            </Button>
+            {video.status === "FINAL_REVIEW" && (
+              <>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() =>
+                    setPendingAction({ video, type: "complete" })
+                  }
+                >
+                  <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+                  承認
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() =>
+                    setPendingAction({ video, type: "revision" })
+                  }
+                >
+                  <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                  差し戻し
+                </Button>
+              </>
+            )}
+            <Link href={`/admin/approvals/${video.id}`}>
+              <Button variant="secondary" size="sm">
+                <ExternalLink className="mr-1 h-3.5 w-3.5" />
+                詳細
+              </Button>
+            </Link>
           </div>
         );
       },
@@ -171,26 +204,54 @@ export function ApprovalsClient({ videos }: ApprovalsClientProps) {
 
   return (
     <>
-      {videos.length === 0 ? (
+      {/* Status Filter Tabs */}
+      <div className="mb-4 flex flex-wrap gap-2">
+        {FILTER_TABS.map((tab) => {
+          const count =
+            tab.value === "ALL"
+              ? videos.length
+              : videos.filter((v) => v.status === tab.value).length;
+          return (
+            <button
+              key={tab.value}
+              onClick={() => setActiveTab(tab.value)}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                activeTab === tab.value
+                  ? "bg-primary-100 text-primary-800"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {tab.label}
+              <span
+                className={`text-xs ${
+                  activeTab === tab.value
+                    ? "text-primary-600"
+                    : "text-gray-400"
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {filteredVideos.length === 0 ? (
         <div className="rounded-lg border border-gray-200 bg-white py-12 text-center">
           <CheckCircle2 className="mx-auto h-10 w-10 text-green-300 mb-2" />
-          <p className="text-gray-500">承認待ちの動画はありません</p>
+          <p className="text-gray-500">
+            {activeTab === "ALL"
+              ? "動画はありません"
+              : `${FILTER_TABS.find((t) => t.value === activeTab)?.label}の動画はありません`}
+          </p>
         </div>
       ) : (
-        <>
-          <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
-            <p className="text-sm text-blue-800">
-              ディレクターが承認した動画が{videos.length}件あります。
-              最終確認を行い、承認または差し戻してください。
-            </p>
-          </div>
-          <DataTable
-            data={videos}
-            columns={columns}
-            searchPlaceholder="動画コード、タイトルで検索..."
-            searchColumn="title"
-          />
-        </>
+        <DataTable
+          data={filteredVideos}
+          columns={columns}
+          searchPlaceholder="動画コード、タイトルで検索..."
+          searchColumn="title"
+        />
       )}
 
       {pendingAction && (
