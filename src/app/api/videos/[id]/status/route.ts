@@ -68,7 +68,7 @@ export async function PATCH(
         select: { id: true },
       });
 
-      const notifications = admins
+      const notificationData = admins
         .filter((a) => a.id !== auth.id)
         .map((admin) => ({
           type: "VIDEO_FINAL_REVIEW",
@@ -78,8 +78,21 @@ export async function PATCH(
           message: `「${updated.title}」がディレクターに承認されました。最終確認をお願いします`,
         }));
 
-      if (notifications.length > 0) {
-        await prisma.notification.createMany({ data: notifications });
+      if (notificationData.length > 0) {
+        const created = await prisma.$transaction(
+          notificationData.map((n) => prisma.notification.create({ data: n }))
+        );
+
+        const cwContexts: NotificationContext[] = created.map((n) => ({
+          notificationId: n.id,
+          type: n.type,
+          videoId: n.videoId,
+          targetUserId: n.targetUserId,
+          message: n.message,
+          videoTitle: updated.title,
+          triggeredByName: auth.name,
+        }));
+        sendChatworkNotifications(cwContexts);
       }
 
       return NextResponse.json({ success: true, data: updated });
