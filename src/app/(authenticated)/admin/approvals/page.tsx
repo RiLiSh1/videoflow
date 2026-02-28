@@ -29,6 +29,7 @@ async function getAllVideos() {
     project: v.project,
     creator: v.creator,
     director: v.director,
+    _blobUrl: v.versions[0]?.blobUrl ?? null,
     _fileId: v.versions[0]?.googleDriveFileId ?? null,
   }));
 }
