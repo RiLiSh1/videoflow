@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback, useState } from "react";
+import { useRef, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { TranscriptionSection } from "@/components/domain/transcription-section";
 import { ExternalLink, Clock } from "lucide-react";
@@ -31,6 +31,13 @@ function extractDriveFileId(url: string): string | null {
   return null;
 }
 
+/** Convert a Google Drive URL to our streaming proxy URL. */
+function toStreamUrl(url: string): string | null {
+  const fileId = extractDriveFileId(url);
+  if (!fileId) return null;
+  return `/api/drive/stream/${fileId}`;
+}
+
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -44,16 +51,9 @@ export function VideoWithTranscription({
   version,
 }: VideoWithTranscriptionProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [useProxy, setUseProxy] = useState(false);
 
-  const fileId = version.googleDriveUrl
-    ? extractDriveFileId(version.googleDriveUrl)
-    : null;
-
-  // Default: /api/drive/stream/{fileId} → Edge function redirects to Google (fast)
-  // Fallback: ?proxy=1 → proxies data through server (reliable)
-  const streamUrl = fileId
-    ? `/api/drive/stream/${fileId}${useProxy ? "?proxy=1" : ""}`
+  const streamUrl = version.googleDriveUrl
+    ? toStreamUrl(version.googleDriveUrl) || version.googleDriveUrl
     : null;
 
   const handleSeek = useCallback((seconds: number) => {
