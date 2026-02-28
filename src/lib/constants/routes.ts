@@ -28,6 +28,7 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
     { label: "支払通知書", href: "/admin/payment-notifications", icon: "FileText", group: "請求関連" },
     { label: "会社設定", href: "/admin/settings/company", icon: "Building2", group: "請求関連" },
     { label: "Drive設定", href: "/admin/settings/drive", icon: "HardDrive" },
+    { label: "通知設定", href: "/admin/settings/notifications", icon: "MessageSquare" },
   ],
 };
 
