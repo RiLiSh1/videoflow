@@ -3,7 +3,7 @@
 import { useRef, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { TranscriptionSection } from "@/components/domain/transcription-section";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Clock } from "lucide-react";
 
 interface VersionInfo {
   id: string;
