@@ -131,6 +131,7 @@ export default async function AdminApprovalDetailPage({
                 fileName: latestVersion.fileName,
                 fileSize: Number(latestVersion.fileSize),
                 googleDriveUrl: latestVersion.googleDriveUrl,
+                blobUrl: latestVersion.blobUrl ?? null,
                 telopText: latestVersion.telopText ?? null,
                 telopExtractedAt: latestVersion.telopExtractedAt?.toISOString() ?? null,
                 audioText: latestVersion.audioText ?? null,
