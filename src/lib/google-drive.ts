@@ -30,8 +30,12 @@ async function getActiveDriveSetting() {
   return setting;
 }
 
+/** Cached GoogleAuth instance (reused as long as the service account key is the same) */
+let authCache: { auth: InstanceType<typeof google.auth.GoogleAuth>; keyHash: string } | null = null;
+
 /**
  * Build GoogleAuth — DB serviceAccountKey preferred, env fallback.
+ * Caches the GoogleAuth instance to avoid re-parsing JSON and re-creating on every call.
  */
 async function getAuth() {
   const setting = await getActiveDriveSetting();
@@ -40,12 +44,18 @@ async function getAuth() {
     throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY is not configured");
   }
 
-  const credentials = JSON.parse(key);
+  // Reuse existing auth instance if the key hasn't changed
+  if (authCache && authCache.keyHash === key) {
+    return authCache.auth;
+  }
 
-  return new google.auth.GoogleAuth({
+  const credentials = JSON.parse(key);
+  const auth = new google.auth.GoogleAuth({
     credentials,
     scopes: SCOPES,
   });
+  authCache = { auth, keyHash: key };
+  return auth;
 }
 
 async function getDrive() {
