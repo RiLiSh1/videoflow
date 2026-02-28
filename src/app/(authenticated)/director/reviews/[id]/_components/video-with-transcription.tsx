@@ -83,6 +83,11 @@ export function VideoWithTranscription({
                 controls
                 className="w-full h-full"
                 preload="auto"
+                onError={() => {
+                  if (!useFallback && directStreamUrl && proxyUrl) {
+                    setUseFallback(true);
+                  }
+                }}
               >
                 お使いのブラウザは動画の再生に対応していません。
               </video>
