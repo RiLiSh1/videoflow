@@ -172,6 +172,12 @@ export default function UploadClient({
       });
       xhr.addEventListener("load", () => {
         try {
+          if (xhr.status === 413) {
+            setUploadStatus("error");
+            setUploadError("ファイルサイズが大きすぎます。4MB以下のファイルを選択してください。");
+            resolve(null);
+            return;
+          }
           const result = JSON.parse(xhr.responseText);
           if (xhr.status >= 200 && xhr.status < 300 && result.success) {
             setUploadStatus("success");
@@ -183,7 +189,11 @@ export default function UploadClient({
           }
         } catch {
           setUploadStatus("error");
-          setUploadError("レスポンスの解析に失敗しました");
+          setUploadError(
+            xhr.status === 413 || file.size > 4 * 1024 * 1024
+              ? "ファイルサイズが大きすぎます。4MB以下のファイルを選択してください。"
+              : "サーバーエラーが発生しました。もう一度お試しください。"
+          );
           resolve(null);
         }
       });
