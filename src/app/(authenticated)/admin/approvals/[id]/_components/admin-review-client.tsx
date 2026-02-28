@@ -72,6 +72,21 @@ export function AdminReviewClient({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showAllFeedbacks, setShowAllFeedbacks] = useState(false);
 
+  // Listen for timestamp events from video player
+  const handleTimestampEvent = useCallback((e: Event) => {
+    const { seconds, formatted } = (e as CustomEvent).detail;
+    setTimestamp(String(Math.round(seconds * 10) / 10));
+    setComment((prev) => {
+      const prefix = prev && !prev.endsWith("\n") ? "\n" : "";
+      return `${prev}${prefix}[${formatted}] `;
+    });
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("video-timestamp", handleTimestampEvent);
+    return () => window.removeEventListener("video-timestamp", handleTimestampEvent);
+  }, [handleTimestampEvent]);
+
   const isFinalReview = currentStatus === "FINAL_REVIEW";
   const isCompleted = currentStatus === "COMPLETED";
   const isRevisionRequested = currentStatus === "REVISION_REQUESTED";
