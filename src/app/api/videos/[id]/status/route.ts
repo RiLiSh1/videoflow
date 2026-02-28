@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth, isSessionUser } from "@/lib/auth/require-auth";
 import type { VideoStatus } from "@prisma/client";
+import {
+  sendChatworkNotifications,
+  type NotificationContext,
+} from "@/lib/chatwork-notification";
 
 const VALID_TRANSITIONS: Record<VideoStatus, VideoStatus[]> = {
   DRAFT: ["SUBMITTED"],
