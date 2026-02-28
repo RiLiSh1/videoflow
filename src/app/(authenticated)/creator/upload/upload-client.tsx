@@ -358,15 +358,26 @@ export default function UploadClient({
           }),
         }
       );
-      if (!(await vRes.json()).success)
+      const vRevResult = await vRes.json();
+      if (!vRevResult.success)
         return (
           setSubmitError("バージョンの登録に失敗しました"),
           setIsSubmitting(false)
         );
 
-      // Warm CDN cache for instant video playback (fire and forget)
-      if (fileData.googleDriveFileId) {
-        fetch(`/api/drive/stream/${fileData.googleDriveFileId}`).catch(() => {});
+      // Copy to Blob CDN for instant playback (fire and forget from browser)
+      if (fileData.googleDriveFileId && vRevResult.data?.id) {
+        fetch("/api/internal/copy-to-blob", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            versionId: vRevResult.data.id,
+            googleDriveFileId: fileData.googleDriveFileId,
+            fileName: fileData.fileName,
+            mimeType: fileData.mimeType || "video/mp4",
+          }),
+          keepalive: true,
+        }).catch(() => {});
       }
 
       await fetch(`/api/videos/${selectedRevisionVideoId}/status`, {
