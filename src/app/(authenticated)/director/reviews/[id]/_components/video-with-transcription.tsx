@@ -39,33 +39,22 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
-/**
- * Build video source URLs.
- * Primary: Google CDN direct URL (no auth needed, files are publicly shared)
- * Fallback: our proxy endpoint
- */
-function buildVideoUrls(googleDriveUrl: string | null): {
-  directUrl: string | null;
-  proxyUrl: string | null;
-} {
-  if (!googleDriveUrl) return { directUrl: null, proxyUrl: null };
-  const fileId = extractDriveFileId(googleDriveUrl);
-  if (!fileId) return { directUrl: null, proxyUrl: null };
-  return {
-    directUrl: `https://lh3.googleusercontent.com/d/${fileId}`,
-    proxyUrl: `/api/drive/stream/${fileId}`,
-  };
-}
-
 export function VideoWithTranscription({
   videoId,
   version,
 }: VideoWithTranscriptionProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [useFallback, setUseFallback] = useState(false);
+  const [useProxy, setUseProxy] = useState(false);
 
-  const { directUrl, proxyUrl } = buildVideoUrls(version.googleDriveUrl);
-  const streamUrl = useFallback ? proxyUrl : (directUrl || proxyUrl);
+  const fileId = version.googleDriveUrl
+    ? extractDriveFileId(version.googleDriveUrl)
+    : null;
+
+  // Default: /api/drive/stream/{fileId} → endpoint returns 302 redirect (fast)
+  // Fallback: /api/drive/stream/{fileId}?proxy=1 → endpoint proxies data (reliable)
+  const streamUrl = fileId
+    ? `/api/drive/stream/${fileId}${useProxy ? "?proxy=1" : ""}`
+    : null;
 
   const handleSeek = useCallback((seconds: number) => {
     if (videoRef.current) {
@@ -88,8 +77,8 @@ export function VideoWithTranscription({
                 className="w-full h-full"
                 preload="auto"
                 onError={() => {
-                  if (!useFallback && directUrl && proxyUrl) {
-                    setUseFallback(true);
+                  if (!useProxy) {
+                    setUseProxy(true);
                   }
                 }}
               >
