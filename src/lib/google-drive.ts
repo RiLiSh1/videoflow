@@ -3,13 +3,30 @@ import { prisma } from "@/lib/db";
 
 const SCOPES = ["https://www.googleapis.com/auth/drive"];
 
+// --------------- In-memory caches ---------------
+
+/** TTL cache for DB drive setting (5 minutes) */
+let driveSettingCache: { data: Awaited<ReturnType<typeof prisma.googleDriveSetting.findFirst>>; expiresAt: number } | null = null;
+const DRIVE_SETTING_TTL = 5 * 60 * 1000; // 5 min
+
+/** TTL cache for access token (50 minutes, tokens expire at 60 min) */
+let tokenCache: { token: string; expiresAt: number } | null = null;
+const TOKEN_TTL = 50 * 60 * 1000; // 50 min
+
+// ------------------------------------------------
+
 /**
- * Get the active GoogleDriveSetting from DB (cached per request).
+ * Get the active GoogleDriveSetting from DB with in-memory cache (TTL 5 min).
  */
 async function getActiveDriveSetting() {
+  const now = Date.now();
+  if (driveSettingCache && now < driveSettingCache.expiresAt) {
+    return driveSettingCache.data;
+  }
   const setting = await prisma.googleDriveSetting.findFirst({
     where: { isActive: true },
   });
+  driveSettingCache = { data: setting, expiresAt: now + DRIVE_SETTING_TTL };
   return setting;
 }
 
