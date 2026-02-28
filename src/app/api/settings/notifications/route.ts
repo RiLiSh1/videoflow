@@ -35,7 +35,27 @@ const DEFAULT_TEMPLATES = [
   },
 ];
 
+async function ensureTable() {
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "notification_templates" (
+      "id" TEXT NOT NULL,
+      "type" TEXT NOT NULL,
+      "title" TEXT NOT NULL,
+      "message_template" TEXT NOT NULL,
+      "is_active" BOOLEAN NOT NULL DEFAULT true,
+      "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "notification_templates_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await prisma.$executeRawUnsafe(`
+    CREATE UNIQUE INDEX IF NOT EXISTS "notification_templates_type_key"
+    ON "notification_templates"("type")
+  `);
+}
+
 async function ensureTemplates() {
+  await ensureTable();
   const count = await prisma.notificationTemplate.count();
   if (count === 0) {
     await prisma.notificationTemplate.createMany({ data: DEFAULT_TEMPLATES });
