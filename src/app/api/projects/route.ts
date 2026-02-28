@@ -60,7 +60,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { projectCode, name, description, deadline, directorIds } = parsed.data;
+    const { projectCode, name, description, directorIds } = parsed.data;
 
     const existing = await prisma.project.findUnique({
       where: { projectCode },
