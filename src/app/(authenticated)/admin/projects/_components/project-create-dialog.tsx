@@ -132,14 +132,6 @@ export function ProjectCreateDialog({
           )}
         </div>
 
-        <Input
-          id="deadline"
-          label="納期"
-          type="date"
-          error={errors.deadline?.message}
-          {...register("deadline")}
-        />
-
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
             ディレクター
