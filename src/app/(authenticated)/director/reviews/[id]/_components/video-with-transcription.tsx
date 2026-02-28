@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback, useState, useEffect } from "react";
+import { useRef, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { TranscriptionSection } from "@/components/domain/transcription-section";
 import { ExternalLink, Clock } from "lucide-react";
@@ -31,6 +31,13 @@ function extractDriveFileId(url: string): string | null {
   return null;
 }
 
+/** Convert a Google Drive URL to our streaming proxy URL. */
+function toStreamUrl(url: string): string | null {
+  const fileId = extractDriveFileId(url);
+  if (!fileId) return null;
+  return `/api/drive/stream/${fileId}`;
+}
+
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -39,50 +46,15 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
-/**
- * Fetch a direct Google Drive URL (with embedded token) so the browser
- * streams directly from Google's CDN instead of going through our proxy.
- * Falls back to the proxy URL on failure.
- */
-function useDirectStreamUrl(googleDriveUrl: string | null): string | null {
-  const [src, setSrc] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!googleDriveUrl) return;
-    const fileId = extractDriveFileId(googleDriveUrl);
-    if (!fileId) return;
-
-    const proxyUrl = `/api/drive/stream/${fileId}`;
-    let cancelled = false;
-
-    fetch(`/api/drive/stream-url/${fileId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
-      })
-      .then((data) => {
-        if (!cancelled) setSrc(data.url);
-      })
-      .catch(() => {
-        // Fallback to proxy
-        if (!cancelled) setSrc(proxyUrl);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [googleDriveUrl]);
-
-  return src;
-}
-
 export function VideoWithTranscription({
   videoId,
   version,
 }: VideoWithTranscriptionProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const streamUrl = useDirectStreamUrl(version.googleDriveUrl);
+  const streamUrl = version.googleDriveUrl
+    ? toStreamUrl(version.googleDriveUrl) || version.googleDriveUrl
+    : null;
 
   const handleSeek = useCallback((seconds: number) => {
     if (videoRef.current) {
