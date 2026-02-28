@@ -202,6 +202,15 @@ export async function PATCH(
         targetUserId: updated.creator.id,
         message: `「${updated.title}」が最終承認されました`,
       });
+    } else if (status === "REVISED" && updated.directorId) {
+      // Creator resubmitted after revision → notify director
+      notifications.push({
+        type: "VIDEO_REVISED",
+        videoId: id,
+        triggeredBy: auth.id,
+        targetUserId: updated.directorId,
+        message: `「${updated.title}」が修正されました。再レビューをお願いします`,
+      });
     }
 
     // Filter out self-notifications and create
