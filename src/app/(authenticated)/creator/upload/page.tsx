@@ -18,11 +18,9 @@ export default async function CreatorUploadPage() {
   const [projects, revisionVideos] = await Promise.all([
     prisma.project.findMany({
       where:
-        user.role === "CREATOR"
-          ? { videos: { some: { creatorId: user.id } } }
-          : user.role === "DIRECTOR"
-            ? { directors: { some: { userId: user.id } } }
-            : {},
+        user.role === "DIRECTOR"
+          ? { directors: { some: { userId: user.id } } }
+          : { status: "ACTIVE" },
       select: { id: true, projectCode: true, name: true },
       orderBy: { createdAt: "desc" },
     }),
