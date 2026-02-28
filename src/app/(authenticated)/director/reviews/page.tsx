@@ -27,11 +27,18 @@ export default async function DirectorReviewsPage() {
     orderBy: { updatedAt: "desc" },
   });
 
-  // Prefetch video streams for reviewable videos (max 3)
-  const prefetchFileIds = videos
+  // Prefetch video URLs for reviewable videos (max 3)
+  // Prefer Blob CDN URL (no auth needed, global CDN), fall back to stream proxy
+  const prefetchUrls = videos
     .filter((v) => ["SUBMITTED", "IN_REVIEW", "REVISED"].includes(v.status))
     .slice(0, 3)
-    .map((v) => v.versions[0]?.googleDriveFileId)
+    .map((v) => {
+      const ver = v.versions[0];
+      if (!ver) return null;
+      if (ver.blobUrl) return ver.blobUrl;
+      if (ver.googleDriveFileId) return `/api/drive/stream/${ver.googleDriveFileId}`;
+      return null;
+    })
     .filter(Boolean) as string[];
 
   // Serialize dates for client component
