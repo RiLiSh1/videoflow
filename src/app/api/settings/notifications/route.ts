@@ -2,15 +2,65 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth, isSessionUser } from "@/lib/auth/require-auth";
 
+const DEFAULT_TEMPLATES = [
+  {
+    type: "VIDEO_SUBMITTED",
+    title: "動画が提出されました",
+    messageTemplate: "「{videoTitle}」が提出されました",
+  },
+  {
+    type: "VIDEO_REVISED",
+    title: "修正済み再提出",
+    messageTemplate: "「{videoTitle}」が修正されました。再レビューをお願いします",
+  },
+  {
+    type: "VIDEO_REVISION_REQUESTED",
+    title: "修正依頼",
+    messageTemplate: "「{videoTitle}」に修正依頼があります",
+  },
+  {
+    type: "VIDEO_FINAL_REVIEW",
+    title: "最終確認依頼",
+    messageTemplate: "「{videoTitle}」がディレクターに承認されました。最終確認をお願いします",
+  },
+  {
+    type: "VIDEO_COMPLETED",
+    title: "最終承認完了",
+    messageTemplate: "「{videoTitle}」が最終承認されました",
+  },
+  {
+    type: "NEW_FEEDBACK",
+    title: "新しいフィードバック",
+    messageTemplate: "「{videoTitle}」に新しいフィードバックがあります",
+  },
+];
+
+async function ensureTemplates() {
+  const count = await prisma.notificationTemplate.count();
+  if (count === 0) {
+    await prisma.notificationTemplate.createMany({ data: DEFAULT_TEMPLATES });
+  }
+}
+
 export async function GET() {
   const auth = await requireAuth(["ADMIN"]);
   if (!isSessionUser(auth)) return auth;
 
-  const templates = await prisma.notificationTemplate.findMany({
-    orderBy: { createdAt: "asc" },
-  });
+  try {
+    await ensureTemplates();
 
-  return NextResponse.json({ success: true, data: templates });
+    const templates = await prisma.notificationTemplate.findMany({
+      orderBy: { createdAt: "asc" },
+    });
+
+    return NextResponse.json({ success: true, data: templates });
+  } catch (error) {
+    console.error("Fetch notification templates error:", error);
+    return NextResponse.json(
+      { success: false, error: "テンプレートの読み込みに失敗しました" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function PUT(request: Request) {
