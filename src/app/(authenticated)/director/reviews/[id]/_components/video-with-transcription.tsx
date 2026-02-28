@@ -50,10 +50,12 @@ export function VideoWithTranscription({
     ? extractDriveFileId(version.googleDriveUrl)
     : null;
 
-  // Default: /api/drive/stream/{fileId} → endpoint returns 302 redirect (fast)
-  // Fallback: /api/drive/stream/{fileId}?proxy=1 → endpoint proxies data (reliable)
+  // Primary: Google Drive public download URL (no server involved at all)
+  // Fallback: our proxy endpoint (reliable but slower)
   const streamUrl = fileId
-    ? `/api/drive/stream/${fileId}${useProxy ? "?proxy=1" : ""}`
+    ? (useProxy
+        ? `/api/drive/stream/${fileId}?proxy=1`
+        : `https://drive.google.com/uc?export=download&confirm=t&id=${fileId}`)
     : null;
 
   const handleSeek = useCallback((seconds: number) => {
