@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { requireAuth, isSessionUser } from "@/lib/auth/require-auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { prisma } from "@/lib/db";
+import {
+  findOrCreateFolder,
+  uploadFileToDrive,
+  getRootFolderId,
+} from "@/lib/google-drive";
 
 const UPLOAD_DIR = path.join(process.cwd(), "uploads");
 
@@ -48,24 +54,84 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create upload directory: uploads/{videoId or 'temp'}/{timestamp}
+    // Read file into buffer
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    // Save locally (for telop/audio extraction)
     const subDir = videoId || "temp";
     const uploadDir = path.join(UPLOAD_DIR, subDir);
     await mkdir(uploadDir, { recursive: true });
-
-    // Generate unique filename
     const timestamp = Date.now();
     const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const uniqueFileName = `${timestamp}_${sanitizedName}`;
     const filePath = path.join(uploadDir, uniqueFileName);
-
-    // Write file to disk
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
     await writeFile(filePath, buffer);
 
-    // Return file metadata
     const relativePath = `${subDir}/${uniqueFileName}`;
+    const localUrl = `/api/files/${relativePath}`;
+
+    // Try uploading to Google Drive
+    let googleDriveUrl: string | null = null;
+    let googleDriveFileId: string | null = null;
+
+    if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY && process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID) {
+      try {
+        const rootFolderId = getRootFolderId();
+
+        // Determine folder: use video's project folder structure
+        let targetFolderId = rootFolderId;
+
+        if (videoId) {
+          const video = await prisma.video.findUnique({
+            where: { id: videoId },
+            select: {
+              videoCode: true,
+              googleDriveFolderId: true,
+              project: { select: { projectCode: true, googleDriveFolderId: true } },
+            },
+          });
+
+          if (video) {
+            // Find or create project folder
+            const projectFolderId = video.project.googleDriveFolderId
+              || await findOrCreateFolder(video.project.projectCode, rootFolderId);
+
+            // Save project folder ID if new
+            if (!video.project.googleDriveFolderId) {
+              await prisma.project.updateMany({
+                where: { projectCode: video.project.projectCode },
+                data: { googleDriveFolderId: projectFolderId },
+              });
+            }
+
+            // Find or create video folder
+            targetFolderId = video.googleDriveFolderId
+              || await findOrCreateFolder(video.videoCode, projectFolderId);
+
+            // Save video folder ID if new
+            if (!video.googleDriveFolderId) {
+              await prisma.video.update({
+                where: { id: videoId },
+                data: { googleDriveFolderId: targetFolderId },
+              });
+            }
+          }
+        }
+
+        const driveResult = await uploadFileToDrive({
+          fileName: file.name,
+          mimeType: file.type || "video/mp4",
+          buffer,
+          parentFolderId: targetFolderId,
+        });
+
+        googleDriveUrl = driveResult.webViewLink;
+        googleDriveFileId = driveResult.fileId;
+      } catch (error) {
+        console.error("Google Drive upload failed (continuing with local):", error);
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -74,7 +140,9 @@ export async function POST(request: Request) {
         fileSize: file.size,
         mimeType: file.type,
         filePath: relativePath,
-        url: `/api/files/${relativePath}`,
+        url: localUrl,
+        googleDriveUrl,
+        googleDriveFileId,
       },
     });
   } catch (error) {
