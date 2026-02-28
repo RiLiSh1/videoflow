@@ -727,14 +727,31 @@ export default function UploadClient({
                         <CardContent>
                           {videoUrl ? (
                             <div className="rounded-lg overflow-hidden bg-black aspect-video">
-                              <video
-                                src={videoUrl}
-                                controls
-                                className="w-full h-full"
-                                preload="metadata"
-                              >
-                                お使いのブラウザは動画の再生に対応していません。
-                              </video>
+                              {(() => {
+                                const fileMatch = videoUrl.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+                                const openMatch = videoUrl.match(/drive\.google\.com\/open\?id=([^&]+)/);
+                                const fileId = fileMatch?.[1] || openMatch?.[1];
+                                if (fileId) {
+                                  return (
+                                    <iframe
+                                      src={`https://drive.google.com/file/d/${fileId}/preview`}
+                                      className="w-full h-full"
+                                      allow="autoplay; encrypted-media"
+                                      allowFullScreen
+                                    />
+                                  );
+                                }
+                                return (
+                                  <video
+                                    src={videoUrl}
+                                    controls
+                                    className="w-full h-full"
+                                    preload="metadata"
+                                  >
+                                    お使いのブラウザは動画の再生に対応していません。
+                                  </video>
+                                );
+                              })()}
                             </div>
                           ) : (
                             <div className="flex items-center justify-center rounded-lg bg-gray-100 aspect-video">
