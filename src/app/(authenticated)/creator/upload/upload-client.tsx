@@ -731,19 +731,12 @@ export default function UploadClient({
                                 const fileMatch = videoUrl.match(/drive\.google\.com\/file\/d\/([^/]+)/);
                                 const openMatch = videoUrl.match(/drive\.google\.com\/open\?id=([^&]+)/);
                                 const fileId = fileMatch?.[1] || openMatch?.[1];
-                                if (fileId) {
-                                  return (
-                                    <iframe
-                                      src={`https://drive.google.com/file/d/${fileId}/preview`}
-                                      className="w-full h-full"
-                                      allow="autoplay; encrypted-media"
-                                      allowFullScreen
-                                    />
-                                  );
-                                }
+                                const src = fileId
+                                  ? `https://drive.google.com/uc?id=${fileId}&export=download&confirm=t`
+                                  : videoUrl;
                                 return (
                                   <video
-                                    src={videoUrl}
+                                    src={src}
                                     controls
                                     className="w-full h-full"
                                     preload="metadata"
