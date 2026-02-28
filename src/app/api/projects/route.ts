@@ -77,7 +77,6 @@ export async function POST(request: Request) {
         projectCode,
         name,
         description: description || null,
-        deadline: deadline ? new Date(deadline) : null,
         createdBy: auth.id,
         directors: {
           create: directorIds.map((userId: string) => ({ userId })),
