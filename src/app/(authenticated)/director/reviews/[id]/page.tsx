@@ -90,10 +90,10 @@ export default async function DirectorReviewDetailPage({
   return (
     <PageContainer title="レビュー画面">
       {/* Preload video: browser starts fetching before React hydrates */}
-      {videoFileId && (
+      {videoPreloadUrl && (
         <link
           rel="preload"
-          href={`/api/drive/stream/${videoFileId}`}
+          href={videoPreloadUrl}
           as="video"
           type="video/mp4"
         />
