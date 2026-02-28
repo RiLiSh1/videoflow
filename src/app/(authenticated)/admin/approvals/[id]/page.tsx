@@ -89,10 +89,10 @@ export default async function AdminApprovalDetailPage({
   return (
     <PageContainer title="動画詳細">
       {/* Preload video: browser starts fetching before React hydrates */}
-      {videoFileId && (
+      {videoPreloadUrl && (
         <link
           rel="preload"
-          href={`/api/drive/stream/${videoFileId}`}
+          href={videoPreloadUrl}
           as="video"
           type="video/mp4"
         />
