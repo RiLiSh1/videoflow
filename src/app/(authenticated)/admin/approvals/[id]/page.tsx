@@ -66,20 +66,6 @@ export default async function AdminApprovalDetailPage({
     audioExtractedAt: v.audioExtractedAt?.toISOString() ?? null,
   }));
 
-  // Generate direct Google Drive URL for fast streaming (bypasses proxy)
-  let directStreamUrl: string | null = null;
-  if (latestVersion?.googleDriveUrl) {
-    try {
-      const fileId = extractFileId(latestVersion.googleDriveUrl);
-      if (fileId) {
-        const token = await getAccessTokenLite();
-        directStreamUrl = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true&access_token=${token}`;
-      }
-    } catch {
-      // Falls back to proxy in client component
-    }
-  }
-
   const serializedFeedbacks = video.feedbacks.map((f) => ({
     id: f.id,
     comment: f.comment,
