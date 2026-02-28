@@ -172,6 +172,21 @@ export async function createResumableUploadSession(options: {
 }
 
 /**
+ * Share a file publicly so anyone with the link can view it.
+ */
+export async function shareFilePublicly(fileId: string): Promise<void> {
+  const drive = await getDrive();
+  await drive.permissions.create({
+    fileId,
+    requestBody: {
+      role: "reader",
+      type: "anyone",
+    },
+    supportsAllDrives: true,
+  });
+}
+
+/**
  * Download a file from Google Drive by fileId.
  * Returns the file content as a Buffer.
  */
