@@ -20,8 +20,6 @@ interface VersionInfo {
 interface VideoWithTranscriptionProps {
   videoId: string;
   version: VersionInfo;
-  /** SSR-generated direct Google Drive URL (bypasses proxy) */
-  directStreamUrl?: string | null;
 }
 
 /** Extract Google Drive file ID from various URL formats. */
@@ -33,13 +31,6 @@ function extractDriveFileId(url: string): string | null {
   return null;
 }
 
-/** Convert a Google Drive URL to our streaming proxy URL. */
-function toStreamUrl(url: string): string | null {
-  const fileId = extractDriveFileId(url);
-  if (!fileId) return null;
-  return `/api/drive/stream/${fileId}`;
-}
-
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -48,20 +39,33 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
+/**
+ * Build video source URLs.
+ * Primary: Google CDN direct URL (no auth needed, files are publicly shared)
+ * Fallback: our proxy endpoint
+ */
+function buildVideoUrls(googleDriveUrl: string | null): {
+  directUrl: string | null;
+  proxyUrl: string | null;
+} {
+  if (!googleDriveUrl) return { directUrl: null, proxyUrl: null };
+  const fileId = extractDriveFileId(googleDriveUrl);
+  if (!fileId) return { directUrl: null, proxyUrl: null };
+  return {
+    directUrl: `https://lh3.googleusercontent.com/d/${fileId}`,
+    proxyUrl: `/api/drive/stream/${fileId}`,
+  };
+}
+
 export function VideoWithTranscription({
   videoId,
   version,
-  directStreamUrl,
 }: VideoWithTranscriptionProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [useFallback, setUseFallback] = useState(false);
 
-  const proxyUrl = version.googleDriveUrl
-    ? toStreamUrl(version.googleDriveUrl) || version.googleDriveUrl
-    : null;
-
-  // Use direct URL if available, fall back to proxy on error
-  const streamUrl = (!useFallback && directStreamUrl) || proxyUrl;
+  const { directUrl, proxyUrl } = buildVideoUrls(version.googleDriveUrl);
+  const streamUrl = useFallback ? proxyUrl : (directUrl || proxyUrl);
 
   const handleSeek = useCallback((seconds: number) => {
     if (videoRef.current) {
@@ -84,7 +88,7 @@ export function VideoWithTranscription({
                 className="w-full h-full"
                 preload="auto"
                 onError={() => {
-                  if (!useFallback && directStreamUrl && proxyUrl) {
+                  if (!useFallback && directUrl && proxyUrl) {
                     setUseFallback(true);
                   }
                 }}
