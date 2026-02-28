@@ -196,6 +196,7 @@ model Version {
   mimeType         String?  @map("mime_type")
   googleDriveFileId String? @map("google_drive_file_id")
   googleDriveUrl   String?  @map("google_drive_url")
+  blobUrl          String?  @map("blob_url") @db.Text
   uploadedBy       String   @map("uploaded_by")
   createdAt        DateTime @default(now()) @map("created_at")
 
