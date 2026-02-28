@@ -209,7 +209,20 @@ export async function PATCH(
       (n) => n.targetUserId !== auth.id
     );
     if (validNotifications.length > 0) {
-      await prisma.notification.createMany({ data: validNotifications });
+      const created = await prisma.$transaction(
+        validNotifications.map((n) => prisma.notification.create({ data: n }))
+      );
+
+      const cwContexts: NotificationContext[] = created.map((n) => ({
+        notificationId: n.id,
+        type: n.type,
+        videoId: n.videoId,
+        targetUserId: n.targetUserId,
+        message: n.message,
+        videoTitle: updated.title,
+        triggeredByName: auth.name,
+      }));
+      sendChatworkNotifications(cwContexts);
     }
 
     return NextResponse.json({ success: true, data: updated });
