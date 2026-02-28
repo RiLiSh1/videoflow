@@ -48,9 +48,11 @@ export function ProjectCreateDialog({
   });
 
   const toggleDirector = (id: string) => {
-    setSelectedDirectorIds((prev) =>
-      prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]
-    );
+    setSelectedDirectorIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id];
+      setValue("directorIds", next, { shouldValidate: true });
+      return next;
+    });
   };
 
   const onSubmit = async (data: CreateProjectInput) => {
