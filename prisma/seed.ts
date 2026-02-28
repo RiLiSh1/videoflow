@@ -11,6 +11,7 @@ async function main() {
   console.log("Seeding database...");
 
   // Clean existing data
+  await prisma.notificationTemplate.deleteMany();
   await prisma.paymentNotification.deleteMany();
   await prisma.creatorCompensation.deleteMany();
   await prisma.creatorProfile.deleteMany();
