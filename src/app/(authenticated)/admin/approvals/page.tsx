@@ -37,18 +37,22 @@ async function getAllVideos() {
 export default async function AdminApprovalsPage() {
   const videos = await getAllVideos();
 
-  // Prefetch video streams for actionable videos (max 3)
-  const prefetchFileIds = videos
+  // Prefetch video URLs for actionable videos (max 3)
+  const prefetchUrls = videos
     .filter((v) =>
       ["SUBMITTED", "IN_REVIEW", "FINAL_REVIEW", "REVISED"].includes(v.status)
     )
     .slice(0, 3)
-    .map((v) => v._fileId)
+    .map((v) => {
+      if (v._blobUrl) return v._blobUrl;
+      if (v._fileId) return `/api/drive/stream/${v._fileId}`;
+      return null;
+    })
     .filter(Boolean) as string[];
 
-  // Strip _fileId before passing to client component
+  // Strip internal fields before passing to client component
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const clientVideos = videos.map(({ _fileId, ...rest }) => rest);
+  const clientVideos = videos.map(({ _blobUrl, _fileId, ...rest }) => rest);
 
   return (
     <PageContainer title="承認管理">
