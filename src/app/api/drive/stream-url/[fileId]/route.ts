@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
-import { getAuthClient } from "@/lib/google-drive";
+import { getAccessTokenLite } from "@/lib/google-auth-lite";
 
 /**
  * Returns a direct Google Drive URL with embedded access token.
