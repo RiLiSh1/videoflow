@@ -11,6 +11,7 @@ interface VersionInfo {
   fileName: string;
   fileSize: number;
   googleDriveUrl: string | null;
+  blobUrl?: string | null;
   telopText: string | null;
   telopExtractedAt: string | null;
   audioText: string | null;
