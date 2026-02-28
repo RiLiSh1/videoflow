@@ -100,17 +100,38 @@ export function VideoWithTranscription({
               {formatFileSize(version.fileSize)}
             </span>
           </div>
-          {version.googleDriveUrl && (
-            <a
-              href={version.googleDriveUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              Google Drive
-            </a>
-          )}
+          <div className="flex items-center gap-2">
+            {streamUrl && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!videoRef.current) return;
+                  const t = videoRef.current.currentTime;
+                  const mins = Math.floor(t / 60);
+                  const secs = Math.floor(t % 60);
+                  const formatted = `${mins}:${String(secs).padStart(2, "0")}`;
+                  window.dispatchEvent(
+                    new CustomEvent("video-timestamp", { detail: { seconds: t, formatted } })
+                  );
+                }}
+                className="inline-flex items-center gap-1 rounded-md bg-primary-50 border border-primary-200 px-2.5 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100 transition-colors"
+              >
+                <Clock className="h-3.5 w-3.5" />
+                タイムスタンプ
+              </button>
+            )}
+            {version.googleDriveUrl && (
+              <a
+                href={version.googleDriveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Google Drive
+              </a>
+            )}
+          </div>
         </div>
       </Card>
 
