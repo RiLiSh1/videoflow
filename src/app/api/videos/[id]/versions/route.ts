@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
+import { headers as getHeaders } from "next/headers";
 import { prisma } from "@/lib/db";
 import { requireAuth, isSessionUser } from "@/lib/auth/require-auth";
 import { shareFilePublicly } from "@/lib/google-drive";
-import { warmVideoCache } from "@/lib/warm-cache";
 
 export async function POST(
   request: Request,
@@ -70,9 +70,26 @@ export async function POST(
       },
     });
 
-    // Warm CDN cache in background (fire and forget)
+    // Trigger background copy to Blob storage (CDN delivery)
     if (googleDriveFileId) {
-      warmVideoCache(googleDriveFileId);
+      const reqHeaders = await getHeaders();
+      const host = reqHeaders.get("host") || "localhost:3000";
+      const proto = reqHeaders.get("x-forwarded-proto") || "https";
+      const cookie = reqHeaders.get("cookie") || "";
+      const copyUrl = `${proto}://${host}/api/internal/copy-to-blob`;
+      fetch(copyUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: cookie,
+        },
+        body: JSON.stringify({
+          versionId: version.id,
+          googleDriveFileId,
+          fileName,
+          mimeType: mimeType || "video/mp4",
+        }),
+      }).catch(() => {});
     }
 
     // Serialize BigInt for JSON
