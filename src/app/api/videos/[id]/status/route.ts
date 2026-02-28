@@ -126,7 +126,7 @@ export async function PATCH(
         );
       }
     } else if (auth.role === "ADMIN") {
-      if (!["COMPLETED", "REVISION_REQUESTED", "IN_REVIEW"].includes(status)) {
+      if (!["COMPLETED", "REVISION_REQUESTED", "IN_REVIEW", "APPROVED"].includes(status)) {
         return NextResponse.json(
           { success: false, error: "この操作の権限がありません" },
           { status: 403 }
