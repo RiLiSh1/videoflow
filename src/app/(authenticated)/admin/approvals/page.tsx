@@ -28,7 +28,7 @@ async function getAllVideos() {
 }
 
 export default async function AdminApprovalsPage() {
-  const videos = await getPendingVideos();
+  const videos = await getAllVideos();
 
   return (
     <PageContainer title="承認管理">
