@@ -732,7 +732,7 @@ export default function UploadClient({
                                 const openMatch = videoUrl.match(/drive\.google\.com\/open\?id=([^&]+)/);
                                 const fileId = fileMatch?.[1] || openMatch?.[1];
                                 const src = fileId
-                                  ? `https://drive.google.com/uc?id=${fileId}&export=download&confirm=t`
+                                  ? `/api/drive/stream/${fileId}`
                                   : videoUrl;
                                 return (
                                   <video
