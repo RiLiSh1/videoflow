@@ -46,6 +46,7 @@ export default async function AdminApprovalsPage() {
     .filter(Boolean) as string[];
 
   // Strip _fileId before passing to client component
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const clientVideos = videos.map(({ _fileId, ...rest }) => rest);
 
   return (
