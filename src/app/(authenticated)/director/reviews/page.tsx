@@ -55,11 +55,11 @@ export default async function DirectorReviewsPage() {
   return (
     <PageContainer title="レビュー一覧">
       {/* Prefetch: browser loads video data during idle time */}
-      {prefetchFileIds.map((fileId) => (
+      {prefetchUrls.map((url) => (
         <link
-          key={fileId}
+          key={url}
           rel="prefetch"
-          href={`/api/drive/stream/${fileId}`}
+          href={url}
           as="video"
           type="video/mp4"
         />
