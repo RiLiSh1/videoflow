@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     let googleDriveUrl: string | null = null;
     let googleDriveFileId: string | null = null;
 
-    if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY && process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID) {
+    {
       try {
         const rootFolderId = await getRootFolderId();
 
