@@ -136,8 +136,8 @@ export function VideoWithTranscription({
                   if (!videoRef.current) return;
                   const t = videoRef.current.currentTime;
                   const mins = Math.floor(t / 60);
-                  const secs = Math.floor(t % 60);
-                  const formatted = `${mins}:${String(secs).padStart(2, "0")}`;
+                  const secs = (t % 60).toFixed(1);
+                  const formatted = `${mins}:${secs.padStart(4, "0")}`;
                   window.dispatchEvent(
                     new CustomEvent("video-timestamp", { detail: { seconds: t, formatted } })
                   );
