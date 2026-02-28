@@ -145,15 +145,31 @@ export async function PATCH(
       },
     });
 
-    // Warm CDN cache when video moves to a viewable state
+    // Ensure Blob CDN copy exists when video moves to a viewable state
     if (["SUBMITTED", "IN_REVIEW", "REVISED", "FINAL_REVIEW"].includes(status)) {
       const latestVersion = await prisma.version.findFirst({
         where: { videoId: id },
         orderBy: { versionNumber: "desc" },
-        select: { googleDriveFileId: true },
+        select: { id: true, googleDriveFileId: true, blobUrl: true, fileName: true, mimeType: true },
       });
-      if (latestVersion?.googleDriveFileId) {
-        warmVideoCache(latestVersion.googleDriveFileId);
+      if (latestVersion?.googleDriveFileId && !latestVersion.blobUrl) {
+        const reqHeaders = await getHeaders();
+        const host = reqHeaders.get("host") || "localhost:3000";
+        const proto = reqHeaders.get("x-forwarded-proto") || "https";
+        const warmToken = process.env.JWT_SECRET || "";
+        fetch(`${proto}://${host}/api/internal/copy-to-blob`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Warm-Token": warmToken,
+          },
+          body: JSON.stringify({
+            versionId: latestVersion.id,
+            googleDriveFileId: latestVersion.googleDriveFileId,
+            fileName: latestVersion.fileName,
+            mimeType: latestVersion.mimeType || "video/mp4",
+          }),
+        }).catch(() => {});
       }
     }
 
