@@ -31,11 +31,11 @@ function extractDriveFileId(url: string): string | null {
   return null;
 }
 
-/** Convert a Google Drive URL to a direct streaming URL. */
-function toGoogleDriveStreamUrl(url: string): string | null {
+/** Convert a Google Drive URL to our streaming proxy URL. */
+function toStreamUrl(url: string): string | null {
   const fileId = extractDriveFileId(url);
   if (!fileId) return null;
-  return `https://drive.google.com/uc?id=${fileId}&export=download&confirm=t`;
+  return `/api/drive/stream/${fileId}`;
 }
 
 function formatFileSize(bytes: number): string {
