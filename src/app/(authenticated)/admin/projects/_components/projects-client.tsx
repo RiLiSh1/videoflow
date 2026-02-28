@@ -35,7 +35,6 @@ export interface ProjectRow {
   name: string;
   description: string | null;
   status: ProjectStatus;
-  deadline: string | null;
   createdAt: string;
   creator: { id: string; name: string };
   directors: { user: DirectorInfo }[];
