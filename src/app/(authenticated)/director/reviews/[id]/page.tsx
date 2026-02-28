@@ -7,7 +7,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/domain/status-badge";
 import { formatDate } from "@/lib/utils/format-date";
 import { ReviewClient } from "./_components/review-client";
-import { TelopSection } from "@/components/domain/telop-section";
+import { VideoWithTranscription } from "./_components/video-with-transcription";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 
 export default async function DirectorReviewDetailPage({
@@ -63,6 +63,8 @@ export default async function DirectorReviewDetailPage({
     createdAt: v.createdAt.toISOString(),
     telopText: v.telopText ?? null,
     telopExtractedAt: v.telopExtractedAt?.toISOString() ?? null,
+    audioText: v.audioText ?? null,
+    audioExtractedAt: v.audioExtractedAt?.toISOString() ?? null,
   }));
 
   const serializedFeedbacks = video.feedbacks.map((f) => ({
@@ -105,64 +107,33 @@ export default async function DirectorReviewDetailPage({
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
         {/* Left: Video Player + Version selector */}
         <div className="space-y-4 xl:col-span-3">
-          {/* Video Player */}
-          <Card className="overflow-hidden">
-            <div className="bg-black">
-              {latestVersion?.googleDriveUrl ? (
-                <div className="aspect-video">
-                  {toGoogleDriveEmbedUrl(latestVersion.googleDriveUrl) ? (
-                    <iframe
-                      src={toGoogleDriveEmbedUrl(latestVersion.googleDriveUrl)!}
-                      className="w-full h-full"
-                      allow="autoplay; encrypted-media"
-                      allowFullScreen
-                    />
-                  ) : (
-                    <video
-                      src={latestVersion.googleDriveUrl}
-                      controls
-                      className="w-full h-full"
-                      preload="metadata"
-                    >
-                      お使いのブラウザは動画の再生に対応していません。
-                    </video>
-                  )}
-                </div>
-              ) : (
+          {/* Video Player + Transcription */}
+          {latestVersion?.googleDriveUrl ? (
+            <VideoWithTranscription
+              videoId={video.id}
+              version={{
+                id: latestVersion.id,
+                versionNumber: latestVersion.versionNumber,
+                fileName: latestVersion.fileName,
+                fileSize: Number(latestVersion.fileSize),
+                googleDriveUrl: latestVersion.googleDriveUrl,
+                telopText: latestVersion.telopText ?? null,
+                telopExtractedAt: latestVersion.telopExtractedAt?.toISOString() ?? null,
+                audioText: latestVersion.audioText ?? null,
+                audioExtractedAt: latestVersion.audioExtractedAt?.toISOString() ?? null,
+              }}
+            />
+          ) : (
+            <Card className="overflow-hidden">
+              <div className="bg-black">
                 <div className="aspect-video flex items-center justify-center">
                   <p className="text-gray-400 text-sm">
                     動画がまだアップロードされていません
                   </p>
                 </div>
-              )}
-            </div>
-            {latestVersion && (
-              <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-t border-gray-100">
-                <div className="flex items-center gap-3 text-sm">
-                  <span className="font-medium text-gray-700">
-                    v{latestVersion.versionNumber}
-                  </span>
-                  <span className="text-gray-400">|</span>
-                  <span className="text-gray-500">{latestVersion.fileName}</span>
-                  <span className="text-gray-400">|</span>
-                  <span className="text-gray-500">
-                    {formatFileSize(latestVersion.fileSize)}
-                  </span>
-                </div>
-                {latestVersion.googleDriveUrl && (
-                  <a
-                    href={latestVersion.googleDriveUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Google Drive
-                  </a>
-                )}
               </div>
-            )}
-          </Card>
+            </Card>
+          )}
 
           {/* Version History */}
           {video.versions.length > 1 && (
@@ -241,16 +212,6 @@ export default async function DirectorReviewDetailPage({
               </CardContent>
             </Card>
           )}
-
-          {/* Telop Section */}
-          {latestVersion && (
-            <TelopSection
-              videoId={video.id}
-              versionId={latestVersion.id}
-              initialTelopText={latestVersion.telopText ?? null}
-              initialTelopExtractedAt={latestVersion.telopExtractedAt?.toISOString() ?? null}
-            />
-          )}
         </div>
 
         {/* Right: Feedback form + Actions + History */}
@@ -273,28 +234,4 @@ export default async function DirectorReviewDetailPage({
       </div>
     </PageContainer>
   );
-}
-
-/** Convert a Google Drive URL to its embeddable /preview form. Returns null for non-Drive URLs. */
-function toGoogleDriveEmbedUrl(url: string): string | null {
-  // Format: https://drive.google.com/file/d/{FILE_ID}/view...
-  const fileMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
-  if (fileMatch) {
-    return `https://drive.google.com/file/d/${fileMatch[1]}/preview`;
-  }
-  // Format: https://drive.google.com/open?id={FILE_ID}
-  const openMatch = url.match(/drive\.google\.com\/open\?id=([^&]+)/);
-  if (openMatch) {
-    return `https://drive.google.com/file/d/${openMatch[1]}/preview`;
-  }
-  return null;
-}
-
-function formatFileSize(bytes: bigint): string {
-  const size = Number(bytes);
-  if (size < 1024) return `${size} B`;
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-  if (size < 1024 * 1024 * 1024)
-    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
