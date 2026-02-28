@@ -132,6 +132,7 @@ export default async function DirectorReviewDetailPage({
           {latestVersion?.googleDriveUrl ? (
             <VideoWithTranscription
               videoId={video.id}
+              directStreamUrl={directStreamUrl}
               version={{
                 id: latestVersion.id,
                 versionNumber: latestVersion.versionNumber,
