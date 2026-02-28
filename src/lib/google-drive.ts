@@ -1,9 +1,24 @@
 import { google } from "googleapis";
+import { prisma } from "@/lib/db";
 
 const SCOPES = ["https://www.googleapis.com/auth/drive"];
 
-function getAuth() {
-  const key = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+/**
+ * Get the active GoogleDriveSetting from DB (cached per request).
+ */
+async function getActiveDriveSetting() {
+  const setting = await prisma.googleDriveSetting.findFirst({
+    where: { isActive: true },
+  });
+  return setting;
+}
+
+/**
+ * Build GoogleAuth — DB serviceAccountKey preferred, env fallback.
+ */
+async function getAuth() {
+  const setting = await getActiveDriveSetting();
+  const key = setting?.serviceAccountKey || process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
   if (!key) {
     throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY is not configured");
   }
@@ -16,8 +31,20 @@ function getAuth() {
   });
 }
 
-function getDrive() {
-  return google.drive({ version: "v3", auth: getAuth() });
+async function getDrive() {
+  return google.drive({ version: "v3", auth: await getAuth() });
+}
+
+/**
+ * Get the root folder ID — DB preferred, env fallback.
+ */
+export async function getRootFolderId(): Promise<string> {
+  const setting = await getActiveDriveSetting();
+  const id = setting?.rootFolderId || process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
+  if (!id) {
+    throw new Error("GOOGLE_DRIVE_ROOT_FOLDER_ID is not configured");
+  }
+  return id;
 }
 
 /**
@@ -27,7 +54,7 @@ export async function findOrCreateFolder(
   name: string,
   parentFolderId: string
 ): Promise<string> {
-  const drive = getDrive();
+  const drive = await getDrive();
 
   // Search for existing folder
   const res = await drive.files.list({
@@ -65,7 +92,7 @@ export async function uploadFileToDrive(options: {
   buffer: Buffer;
   parentFolderId: string;
 }): Promise<{ fileId: string; webViewLink: string }> {
-  const drive = getDrive();
+  const drive = await getDrive();
   const { Readable } = await import("stream");
 
   const res = await drive.files.create({
@@ -88,12 +115,16 @@ export async function uploadFileToDrive(options: {
 }
 
 /**
- * Get the root folder ID from environment or DB setting.
+ * Download a file from Google Drive by fileId.
+ * Returns the file content as a Buffer.
  */
-export function getRootFolderId(): string {
-  const id = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
-  if (!id) {
-    throw new Error("GOOGLE_DRIVE_ROOT_FOLDER_ID is not configured");
-  }
-  return id;
+export async function downloadFileFromDrive(fileId: string): Promise<Buffer> {
+  const drive = await getDrive();
+
+  const res = await drive.files.get(
+    { fileId, alt: "media", supportsAllDrives: true },
+    { responseType: "arraybuffer" }
+  );
+
+  return Buffer.from(res.data as ArrayBuffer);
 }
