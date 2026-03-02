@@ -75,13 +75,12 @@ export async function POST(
       const reqHeaders = await getHeaders();
       const host = reqHeaders.get("host") || "localhost:3000";
       const proto = reqHeaders.get("x-forwarded-proto") || "https";
-      const cookie = reqHeaders.get("cookie") || "";
-      const copyUrl = `${proto}://${host}/api/internal/copy-to-blob`;
-      fetch(copyUrl, {
+      const warmToken = process.env.JWT_SECRET || "";
+      fetch(`${proto}://${host}/api/internal/copy-to-blob`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Cookie: cookie,
+          "X-Warm-Token": warmToken,
         },
         body: JSON.stringify({
           versionId: version.id,
