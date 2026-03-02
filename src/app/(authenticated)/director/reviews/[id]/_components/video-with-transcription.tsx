@@ -14,6 +14,8 @@ interface VersionInfo {
   blobUrl?: string | null;
   /** Server-side generated direct Google Drive URL (bypasses proxy) */
   directDriveUrl?: string | null;
+  /** Google Drive file ID for triggering blob copy */
+  googleDriveFileId?: string | null;
   telopText: string | null;
   telopExtractedAt: string | null;
   audioText: string | null;
@@ -55,15 +57,51 @@ export function VideoWithTranscription({
 }: VideoWithTranscriptionProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeBlobUrl, setActiveBlobUrl] = useState<string | null>(
+    version.blobUrl ?? null
+  );
 
   // Priority: Blob CDN (instant) → direct Drive URL (no proxy) → proxy stream → raw Drive URL
-  const streamUrl = version.blobUrl
+  const streamUrl = activeBlobUrl
     || version.directDriveUrl
     || (version.googleDriveUrl
       ? toStreamUrl(version.googleDriveUrl) || version.googleDriveUrl
       : null);
 
-  const isBlobUrl = !!version.blobUrl;
+  const isBlobUrl = !!activeBlobUrl;
+
+  // If no blobUrl, trigger background copy and poll for it
+  useEffect(() => {
+    if (activeBlobUrl) return;
+    const fileId =
+      version.googleDriveFileId ||
+      (version.googleDriveUrl ? extractDriveFileId(version.googleDriveUrl) : null);
+    if (!fileId) return;
+
+    let cancelled = false;
+
+    // Trigger copy (fire-and-forget)
+    fetch("/api/internal/copy-to-blob", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        versionId: version.id,
+        googleDriveFileId: fileId,
+        fileName: version.fileName,
+        mimeType: "video/mp4",
+      }),
+      keepalive: true,
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && data?.data?.blobUrl) {
+          setActiveBlobUrl(data.data.blobUrl);
+        }
+      })
+      .catch(() => {});
+
+    return () => { cancelled = true; };
+  }, [activeBlobUrl, version.id, version.googleDriveFileId, version.googleDriveUrl, version.fileName]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -88,6 +126,7 @@ export function VideoWithTranscription({
                   <Loader2 className="h-8 w-8 text-white/70 animate-spin" />
                 </div>
               )}
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
               <video
                 ref={videoRef}
                 src={streamUrl}
@@ -96,6 +135,8 @@ export function VideoWithTranscription({
                 className="w-full h-full"
                 preload="auto"
                 crossOrigin={isBlobUrl ? "anonymous" : undefined}
+                // @ts-expect-error fetchPriority is valid but not yet in React types
+                fetchPriority="high"
                 onLoadedData={() => setIsLoading(false)}
                 onCanPlay={() => setIsLoading(false)}
               >
