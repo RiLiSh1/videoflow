@@ -9,6 +9,7 @@ import { formatDate } from "@/lib/utils/format-date";
 import { ReviewClient } from "./_components/review-client";
 import { VideoWithTranscription } from "./_components/video-with-transcription";
 import { ArrowLeft, ExternalLink } from "lucide-react";
+import { getAccessTokenLite } from "@/lib/google-auth-lite";
 
 export default async function DirectorReviewDetailPage({
   params,
