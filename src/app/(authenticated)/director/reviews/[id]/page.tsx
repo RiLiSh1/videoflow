@@ -154,6 +154,7 @@ export default async function DirectorReviewDetailPage({
                 fileSize: Number(latestVersion.fileSize),
                 googleDriveUrl: latestVersion.googleDriveUrl,
                 blobUrl: latestVersion.blobUrl ?? null,
+                directDriveUrl,
                 telopText: latestVersion.telopText ?? null,
                 telopExtractedAt: latestVersion.telopExtractedAt?.toISOString() ?? null,
                 audioText: latestVersion.audioText ?? null,
