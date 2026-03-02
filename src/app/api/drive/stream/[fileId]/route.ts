@@ -1,6 +1,8 @@
 import { getSession } from "@/lib/auth/session";
 import { getAccessTokenLite } from "@/lib/google-auth-lite";
 
+export const runtime = "edge";
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ fileId: string }> }
