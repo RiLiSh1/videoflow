@@ -6,6 +6,9 @@
     },
     "src/app/api/internal/copy-to-blob/route.ts": {
       "maxDuration": 60
+    },
+    "src/app/api/internal/backfill-blob/route.ts": {
+      "maxDuration": 300
     }
   }
 }
