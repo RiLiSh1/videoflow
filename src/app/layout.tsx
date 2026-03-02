@@ -17,8 +17,8 @@ export default function RootLayout({
         <link rel="preconnect" href="https://www.googleapis.com" />
         <link rel="dns-prefetch" href="https://www.googleapis.com" />
         {/* Vercel Blob CDN — preconnect for instant video delivery */}
-        <link rel="preconnect" href="https://blob.vercel-storage.com" />
-        <link rel="dns-prefetch" href="https://blob.vercel-storage.com" />
+        <link rel="preconnect" href="https://x0yko9ls9ueq2ftr.public.blob.vercel-storage.com" />
+        <link rel="dns-prefetch" href="https://x0yko9ls9ueq2ftr.public.blob.vercel-storage.com" />
         <link
           href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
           rel="stylesheet"
