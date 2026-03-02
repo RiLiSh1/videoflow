@@ -4,12 +4,6 @@
     "src/app/api/upload/route.ts": {
       "maxDuration": 60
     },
-    "src/app/api/drive/stream/[fileId]/route.ts": {
-      "maxDuration": 30
-    },
-    "src/app/api/drive/stream-url/[fileId]/route.ts": {
-      "maxDuration": 10
-    },
     "src/app/api/internal/copy-to-blob/route.ts": {
       "maxDuration": 60
     }
