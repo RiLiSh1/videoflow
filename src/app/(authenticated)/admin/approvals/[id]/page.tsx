@@ -52,8 +52,24 @@ export default async function AdminApprovalDetailPage({
 
   const latestVersion = video.versions[0] ?? null;
 
-  // Video preload URL: prefer Blob CDN (instant), fall back to proxy
+  // Generate direct Google Drive URL (bypasses proxy) when Blob is not available
+  let directDriveUrl: string | null = null;
+  if (latestVersion && !latestVersion.blobUrl && latestVersion.googleDriveUrl) {
+    const fileId = latestVersion.googleDriveUrl.match(/drive\.google\.com\/file\/d\/([^/]+)/)?.[1]
+      || latestVersion.googleDriveUrl.match(/drive\.google\.com\/open\?id=([^&]+)/)?.[1];
+    if (fileId) {
+      try {
+        const accessToken = await getAccessTokenLite();
+        directDriveUrl = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true&access_token=${accessToken}`;
+      } catch {
+        // Fall back to proxy
+      }
+    }
+  }
+
+  // Video preload URL: prefer Blob CDN (instant) → direct Drive URL → proxy
   const videoPreloadUrl = latestVersion?.blobUrl
+    ?? directDriveUrl
     ?? (latestVersion?.googleDriveUrl
       ? (() => {
           const fileId = latestVersion.googleDriveUrl!.match(/drive\.google\.com\/file\/d\/([^/]+)/)?.[1]
