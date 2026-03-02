@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { TranscriptionSection } from "@/components/domain/transcription-section";
-import { ExternalLink, Clock } from "lucide-react";
+import { ExternalLink, Clock, Loader2 } from "lucide-react";
 
 interface VersionInfo {
   id: string;
@@ -12,6 +12,8 @@ interface VersionInfo {
   fileSize: number;
   googleDriveUrl: string | null;
   blobUrl?: string | null;
+  /** Server-side generated direct Google Drive URL (bypasses proxy) */
+  directDriveUrl?: string | null;
   telopText: string | null;
   telopExtractedAt: string | null;
   audioText: string | null;
@@ -52,12 +54,20 @@ export function VideoWithTranscription({
   version,
 }: VideoWithTranscriptionProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Prefer Blob CDN URL (instant) → proxy stream (slower) → raw Drive URL
+  // Priority: Blob CDN (instant) → direct Drive URL (no proxy) → proxy stream → raw Drive URL
   const streamUrl = version.blobUrl
+    || version.directDriveUrl
     || (version.googleDriveUrl
       ? toStreamUrl(version.googleDriveUrl) || version.googleDriveUrl
       : null);
+
+  const isBlobUrl = !!version.blobUrl;
+
+  useEffect(() => {
+    setIsLoading(true);
+  }, [streamUrl]);
 
   const handleSeek = useCallback((seconds: number) => {
     if (videoRef.current) {
@@ -72,13 +82,22 @@ export function VideoWithTranscription({
       <Card className="overflow-hidden">
         <div className="bg-black">
           {streamUrl ? (
-            <div className="aspect-video">
+            <div className="aspect-video relative">
+              {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center z-10">
+                  <Loader2 className="h-8 w-8 text-white/70 animate-spin" />
+                </div>
+              )}
               <video
                 ref={videoRef}
                 src={streamUrl}
                 controls
+                playsInline
                 className="w-full h-full"
                 preload="auto"
+                crossOrigin={isBlobUrl ? "anonymous" : undefined}
+                onLoadedData={() => setIsLoading(false)}
+                onCanPlay={() => setIsLoading(false)}
               >
                 お使いのブラウザは動画の再生に対応していません。
               </video>
