@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { getAccessTokenLite } from "@/lib/google-auth-lite";
 
+export const runtime = "edge";
+
 /**
  * Returns a direct Google Drive URL with embedded access token.
  * The client can use this URL as video.src to stream directly from
