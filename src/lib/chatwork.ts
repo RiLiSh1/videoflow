@@ -41,3 +41,47 @@ export async function sendChatworkMessage(
     return { success: false, error: String(err) };
   }
 }
+
+export async function uploadChatworkFile(
+  roomId: string,
+  fileBuffer: Buffer | Uint8Array,
+  fileName: string,
+  message?: string
+): Promise<ChatworkFileResult> {
+  const token = process.env.CHATWORK_API_TOKEN;
+  if (!token) {
+    return { success: false, error: "CHATWORK_API_TOKEN is not set" };
+  }
+
+  try {
+    const formData = new FormData();
+    const blob = new Blob([fileBuffer], { type: "application/pdf" });
+    formData.append("file", blob, fileName);
+    if (message) {
+      formData.append("message", message);
+    }
+
+    const res = await fetch(
+      `https://api.chatwork.com/v2/rooms/${roomId}/files`,
+      {
+        method: "POST",
+        headers: {
+          "X-ChatWorkToken": token,
+        },
+        body: formData,
+      }
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(`Chatwork file upload error: ${res.status} ${text}`);
+      return { success: false, error: `${res.status} ${text}` };
+    }
+
+    const data = await res.json();
+    return { success: true, fileId: String(data.file_id) };
+  } catch (err) {
+    console.error("Chatwork file upload failed:", err);
+    return { success: false, error: String(err) };
+  }
+}
