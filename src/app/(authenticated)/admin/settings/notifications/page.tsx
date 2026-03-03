@@ -177,7 +177,7 @@ export default function AdminNotificationSettingsPage() {
             <p className="text-xs text-slate-500 mb-3">
               各通知のメッセージ内容を編集したり、通知の有効/無効を切り替えられます。無効にした通知はChatworkに送信されません。
             </p>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
               <div className="flex items-center gap-1.5">
                 <Info className="h-3.5 w-3.5 text-slate-400" />
                 <span className="text-xs text-slate-500">利用可能な変数:</span>
@@ -190,6 +190,32 @@ export default function AdminNotificationSettingsPage() {
                 {"{triggeredByName}"}
               </code>
               <span className="text-xs text-slate-400">操作ユーザー名</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+              <div className="flex items-center gap-1.5">
+                <Info className="h-3.5 w-3.5 text-slate-400" />
+                <span className="text-xs text-slate-500">支払通知書用:</span>
+              </div>
+              <code className="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded font-mono text-slate-700">
+                {"{year}"}
+              </code>
+              <span className="text-xs text-slate-400">年</span>
+              <code className="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded font-mono text-slate-700">
+                {"{month}"}
+              </code>
+              <span className="text-xs text-slate-400">月</span>
+              <code className="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded font-mono text-slate-700">
+                {"{subtotal}"}
+              </code>
+              <span className="text-xs text-slate-400">報酬(税抜)</span>
+              <code className="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded font-mono text-slate-700">
+                {"{netAmount}"}
+              </code>
+              <span className="text-xs text-slate-400">振込額</span>
+              <code className="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded font-mono text-slate-700">
+                {"{videoDetails}"}
+              </code>
+              <span className="text-xs text-slate-400">対象動画一覧</span>
             </div>
           </div>
         </div>
