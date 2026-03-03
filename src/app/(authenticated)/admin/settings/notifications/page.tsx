@@ -496,7 +496,7 @@ function TemplateEditDialog({
             <label className="block text-xs font-medium text-gray-500">
               プレビュー
             </label>
-            <div className="rounded-md bg-gray-50 border border-gray-200 px-3 py-2 text-sm text-gray-700">
+            <div className="rounded-md bg-gray-50 border border-gray-200 px-3 py-2 text-sm text-gray-700 whitespace-pre-wrap">
               {preview}
             </div>
           </div>
