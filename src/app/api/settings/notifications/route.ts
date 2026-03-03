@@ -33,6 +33,12 @@ const DEFAULT_TEMPLATES = [
     title: "新しいフィードバック",
     messageTemplate: "「{videoTitle}」に新しいフィードバックがあります",
   },
+  {
+    type: "PAYMENT_APPROVED",
+    title: "支払通知書発行",
+    messageTemplate:
+      "{year}年{month}月分の支払通知書が発行されました。\n振込額: {netAmount}\n{videoDetails}",
+  },
 ];
 
 async function ensureTable() {
