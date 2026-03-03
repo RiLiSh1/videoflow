@@ -18,6 +18,7 @@ const FALLBACK_TITLES: Record<string, string> = {
   VIDEO_COMPLETED: "最終承認完了",
   VIDEO_FINAL_REVIEW: "最終確認依頼",
   NEW_FEEDBACK: "新しいフィードバック",
+  PAYMENT_APPROVED: "支払通知書発行",
 };
 
 function applyTemplate(
