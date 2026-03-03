@@ -161,6 +161,21 @@ export async function POST(request: Request) {
       },
     });
 
+    // Fire-and-forget Chatwork notification
+    sendPaymentApprovalChatwork({
+      userId,
+      year: Number(year),
+      month: Number(month),
+      subtotal,
+      netAmount,
+      lineItems: lineItems as LineItem[],
+      triggeredByName: auth.name || "管理者",
+      notificationId: notification.id,
+      withholdingTax,
+    }).catch((err) =>
+      console.error("Chatwork payment notification error:", err)
+    );
+
     return NextResponse.json({ success: true, data: notification });
   } catch (error) {
     console.error("Generate payment notification error:", error);
