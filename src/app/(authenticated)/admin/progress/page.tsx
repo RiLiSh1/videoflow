@@ -169,6 +169,7 @@ const getProgressData = unstable_cache(
         projectCode: v.project.projectCode,
         creatorName: v.creator.name,
         directorName: v.director?.name || null,
+        firstUploadDate: v.versions[0]?.createdAt?.toISOString() ?? null,
       });
     }
 
