@@ -46,6 +46,10 @@ const getPaymentData = unstable_cache(
         id: true,
         creatorId: true,
         directorId: true,
+        videoCode: true,
+        title: true,
+        status: true,
+        project: { select: { name: true } },
         versions: {
           where: { versionNumber: 1 },
           select: { createdAt: true },
