@@ -893,7 +893,22 @@ function PaymentTable({
                         </td>
                         {/* 本数 */}
                         <td className="px-2 py-3 text-center text-gray-700">
-                          {row.videoCount}
+                          {row.videos.length > 0 ? (
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors"
+                              onClick={() => toggleExpand(row.userId)}
+                            >
+                              {row.videoCount}
+                              {expandedRows.has(row.userId) ? (
+                                <ChevronUp className="h-3.5 w-3.5" />
+                              ) : (
+                                <ChevronDown className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                          ) : (
+                            row.videoCount
+                          )}
                         </td>
                         {/* 報酬（税抜） */}
                         <td className="px-2 py-3 text-right text-gray-700">
