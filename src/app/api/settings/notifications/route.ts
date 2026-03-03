@@ -37,7 +37,7 @@ const DEFAULT_TEMPLATES = [
     type: "PAYMENT_APPROVED",
     title: "支払通知書発行",
     messageTemplate:
-      "{year}年{month}月分の支払通知書が発行されました。\n振込額: {netAmount}\n{videoDetails}",
+      "対象期間: {year}年{month}月\n\n{videoDetails}\n\n報酬（税抜）: {subtotal}\n消費税(10%): {tax}\n小計: {subtotalWithTax}\n源泉徴収税(10.21%): ▲{withholdingTax}\n━━━━━━━━━━━━━\n振込額: {netAmount}",
   },
 ];
 
