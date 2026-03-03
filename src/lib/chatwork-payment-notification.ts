@@ -26,7 +26,10 @@ function formatYen(amount: number): string {
 
 function buildVideoDetailsText(lineItems: LineItem[]): string {
   return lineItems
-    .map((item) => `・${item.projectName} / ${item.videoTitle}`)
+    .map(
+      (item) =>
+        `${item.no}. ${item.projectName} / ${item.videoTitle} (${item.videoCode})  ${formatYen(item.amount)}`
+    )
     .join("\n");
 }
 
