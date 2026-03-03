@@ -30,24 +30,33 @@ export async function POST(request: Request) {
         select: {
           videoCode: true,
           googleDriveFolderId: true,
+          creator: {
+            select: { id: true, name: true, googleDriveFolderId: true },
+          },
           project: {
-            select: { projectCode: true, googleDriveFolderId: true },
+            select: { projectCode: true },
           },
         },
       });
 
       if (video) {
-        // Find or create project folder
-        const projectFolderId =
-          video.project.googleDriveFolderId ||
-          (await findOrCreateFolder(video.project.projectCode, rootFolderId));
+        // Find or create creator folder
+        const creatorFolderId =
+          video.creator.googleDriveFolderId ||
+          (await findOrCreateFolder(video.creator.name, rootFolderId));
 
-        if (!video.project.googleDriveFolderId) {
-          await prisma.project.updateMany({
-            where: { projectCode: video.project.projectCode },
-            data: { googleDriveFolderId: projectFolderId },
+        if (!video.creator.googleDriveFolderId) {
+          await prisma.user.update({
+            where: { id: video.creator.id },
+            data: { googleDriveFolderId: creatorFolderId },
           });
         }
+
+        // Find or create project folder under creator folder
+        const projectFolderId = await findOrCreateFolder(
+          video.project.projectCode,
+          creatorFolderId
+        );
 
         // Find or create video folder
         targetFolderId =
