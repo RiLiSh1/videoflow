@@ -27,6 +27,7 @@ type VideoRow = {
   projectCode: string;
   creatorName: string;
   directorName: string | null;
+  firstUploadDate: string | null;
 };
 
 type DirectorStat = {
