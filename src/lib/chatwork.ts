@@ -44,7 +44,7 @@ export async function sendChatworkMessage(
 
 export async function uploadChatworkFile(
   roomId: string,
-  fileBuffer: Buffer | Uint8Array,
+  fileBuffer: Uint8Array,
   fileName: string,
   message?: string
 ): Promise<ChatworkFileResult> {
@@ -55,7 +55,7 @@ export async function uploadChatworkFile(
 
   try {
     const formData = new FormData();
-    const blob = new Blob([fileBuffer], { type: "application/pdf" });
+    const blob = new Blob([fileBuffer.buffer], { type: "application/pdf" });
     formData.append("file", blob, fileName);
     if (message) {
       formData.append("message", message);
