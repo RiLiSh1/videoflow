@@ -673,6 +673,17 @@ function PaymentTable({
   approvingInvoice: string | null;
   emptyMessage: string;
 }) {
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleExpand = useCallback((userId: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
+  }, []);
+
   const totals = useMemo(() => {
     return data.reduce(
       (acc, d) => {
