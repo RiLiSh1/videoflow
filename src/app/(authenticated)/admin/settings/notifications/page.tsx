@@ -483,6 +483,9 @@ function TemplateEditDialog({
             <code className="bg-gray-100 px-1 rounded">{"{year}"}</code>{" "}
             <code className="bg-gray-100 px-1 rounded">{"{month}"}</code>{" "}
             <code className="bg-gray-100 px-1 rounded">{"{subtotal}"}</code>{" "}
+            <code className="bg-gray-100 px-1 rounded">{"{tax}"}</code>{" "}
+            <code className="bg-gray-100 px-1 rounded">{"{subtotalWithTax}"}</code>{" "}
+            <code className="bg-gray-100 px-1 rounded">{"{withholdingTax}"}</code>{" "}
             <code className="bg-gray-100 px-1 rounded">{"{netAmount}"}</code>{" "}
             <code className="bg-gray-100 px-1 rounded">{"{videoDetails}"}</code>
           </p>
