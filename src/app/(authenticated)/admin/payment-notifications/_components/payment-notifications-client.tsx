@@ -813,6 +813,7 @@ function PaymentTable({
                     const transferAmount = subtotalWithTax - row.withholdingTax;
 
                     return (
+                      <React.Fragment key={row.userId}>
                       <tr
                         key={row.userId}
                         className={`hover:bg-gray-50 ${
