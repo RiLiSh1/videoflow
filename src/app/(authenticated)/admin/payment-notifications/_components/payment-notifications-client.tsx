@@ -16,7 +16,11 @@ import {
   AlertTriangle,
   CheckCircle2,
   FileCheck,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
+import { StatusBadge } from "@/components/domain/status-badge";
+import { formatDate } from "@/lib/utils/format-date";
 import { ENTITY_TYPE_LABELS } from "@/lib/constants/entity-type";
 
 // ---------- Types ----------
