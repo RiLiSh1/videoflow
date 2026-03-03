@@ -377,7 +377,12 @@ function TemplateEditDialog({
   const watchMessage = watch("messageTemplate");
   const preview = watchMessage
     ?.replace("{videoTitle}", "春キャンペーン動画")
-    ?.replace("{triggeredByName}", "田中太郎");
+    ?.replace("{triggeredByName}", "田中太郎")
+    ?.replace("{year}", "2026")
+    ?.replace("{month}", "2")
+    ?.replace("{subtotal}", "¥3,000")
+    ?.replace("{netAmount}", "¥2,994")
+    ?.replace("{videoDetails}", "・案件A / 動画タイトル1");
 
   const onSubmit = async (data: TemplateInput) => {
     setError("");
