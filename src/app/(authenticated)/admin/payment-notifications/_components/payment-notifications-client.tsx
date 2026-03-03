@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { EntityType, CompensationType, VideoStatus } from "@prisma/client";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
