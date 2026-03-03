@@ -62,9 +62,13 @@ async function ensureTable() {
 
 async function ensureTemplates() {
   await ensureTable();
-  const count = await prisma.notificationTemplate.count();
-  if (count === 0) {
-    await prisma.notificationTemplate.createMany({ data: DEFAULT_TEMPLATES });
+  const existing = await prisma.notificationTemplate.findMany({
+    select: { type: true },
+  });
+  const existingTypes = new Set(existing.map((t) => t.type));
+  const missing = DEFAULT_TEMPLATES.filter((t) => !existingTypes.has(t.type));
+  if (missing.length > 0) {
+    await prisma.notificationTemplate.createMany({ data: missing });
   }
 }
 
