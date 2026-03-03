@@ -302,7 +302,7 @@ export default function AdminNotificationSettingsPage() {
                       <p className="text-xs text-gray-400 mb-2">
                         {meta.description}
                       </p>
-                      <div className="bg-gray-50 rounded-md px-3 py-2 text-sm text-gray-700 font-mono">
+                      <div className="bg-gray-50 rounded-md px-3 py-2 text-sm text-gray-700 font-mono whitespace-pre-wrap">
                         {template.messageTemplate}
                       </div>
                     </div>
