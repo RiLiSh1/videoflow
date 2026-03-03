@@ -1031,6 +1031,7 @@ function PaymentTable({
                           </td>
                         </tr>
                       )}
+                      </React.Fragment>
                     );
                   })}
                   {/* Totals row */}
