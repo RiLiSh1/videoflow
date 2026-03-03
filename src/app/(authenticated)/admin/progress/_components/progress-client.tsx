@@ -306,6 +306,18 @@ const videoColumns: ColumnDef<VideoRow, unknown>[] = [
     },
   },
   {
+    accessorKey: "firstUploadDate",
+    header: "初回アップロード日",
+    cell: ({ getValue }) => {
+      const date = getValue<string | null>();
+      return date ? (
+        <span className="text-xs text-gray-600">{formatDate(date)}</span>
+      ) : (
+        <span className="text-xs text-gray-300">未提出</span>
+      );
+    },
+  },
+  {
     accessorKey: "status",
     header: "進捗",
     cell: ({ getValue }) => {
