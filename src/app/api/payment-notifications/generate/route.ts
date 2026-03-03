@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth, isSessionUser } from "@/lib/auth/require-auth";
 import { calculateWithholdingTax } from "@/lib/utils/withholding-tax";
+import { sendPaymentApprovalChatwork } from "@/lib/chatwork-payment-notification";
+import type { LineItem } from "@/lib/pdf/payment-notification-template";
 
 export async function POST(request: Request) {
   const auth = await requireAuth(["ADMIN"]);
