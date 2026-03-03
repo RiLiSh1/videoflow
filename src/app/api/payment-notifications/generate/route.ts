@@ -167,7 +167,7 @@ export async function POST(request: Request) {
       month: Number(month),
       subtotal,
       netAmount,
-      lineItems: lineItems as LineItem[],
+      lineItems,
       triggeredByName: auth.name || "管理者",
       notificationId: notification.id,
       withholdingTax,
