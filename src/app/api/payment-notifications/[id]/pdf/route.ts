@@ -74,16 +74,25 @@ export async function GET(
     bankAccountHolder: profile?.bankAccountHolder,
   };
 
-  const buffer = await renderToBuffer(
-    PaymentNotificationDocument({ data: pdfData })
-  );
+  try {
+    const buffer = await renderToBuffer(
+      PaymentNotificationDocument({ data: pdfData })
+    );
 
-  const fileName = `支払通知書_${notification.creator.name}_${notification.year}年${String(notification.month).padStart(2, "0")}月.pdf`;
+    const fileName = `支払通知書_${notification.creator.name}_${notification.year}年${String(notification.month).padStart(2, "0")}月.pdf`;
 
-  return new NextResponse(new Uint8Array(buffer), {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
-    },
-  });
+    return new NextResponse(new Uint8Array(buffer), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+      },
+    });
+  } catch (error) {
+    console.error("PDF render error:", error);
+    const message = error instanceof Error ? error.message : "PDF生成に失敗しました";
+    return NextResponse.json(
+      { success: false, error: message },
+      { status: 500 }
+    );
+  }
 }
