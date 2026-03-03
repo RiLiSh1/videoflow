@@ -66,21 +66,39 @@ export async function sendPaymentApprovalChatwork(
 
     if (template && !template.isActive) return;
 
+    const tax = Math.floor(params.subtotal * 0.1);
+    const subtotalWithTax = params.subtotal + tax;
+
     const variables: Record<string, string> = {
       year: String(params.year),
       month: String(params.month),
       subtotal: formatYen(params.subtotal),
+      tax: formatYen(tax),
+      subtotalWithTax: formatYen(subtotalWithTax),
+      withholdingTax: formatYen(params.withholdingTax),
       netAmount: formatYen(params.netAmount),
       triggeredByName: params.triggeredByName,
+      videoDetails: buildVideoDetailsText(params.lineItems),
     };
 
-    const videoDetails = buildVideoDetailsText(params.lineItems);
-    variables.videoDetails = videoDetails;
-
     const title = template?.title || "支払通知書発行";
+    const fallbackMessage = [
+      `対象期間: ${params.year}年${params.month}月`,
+      "",
+      variables.videoDetails,
+      "",
+      `報酬（税抜）: ${variables.subtotal}`,
+      `消費税(10%): ${variables.tax}`,
+      `小計: ${variables.subtotalWithTax}`,
+      ...(params.withholdingTax > 0
+        ? [`源泉徴収税(10.21%): ▲${variables.withholdingTax}`]
+        : []),
+      `━━━━━━━━━━━━━`,
+      `振込額: ${variables.netAmount}`,
+    ].join("\n");
     const messageBody = template
       ? applyTemplate(template.messageTemplate, variables)
-      : `${params.year}年${params.month}月分の支払通知書が発行されました。\n振込額: ${formatYen(params.netAmount)}\n${videoDetails}`;
+      : fallbackMessage;
 
     const chatworkMessage = `[To:${user.chatworkId}]${user.name}さん\n[info][title]${title}[/title]${messageBody}[/info]`;
 
