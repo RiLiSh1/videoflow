@@ -617,6 +617,7 @@ type FilteredRow = {
   notificationId: string | null;
   invoiceStatus: string | null;
   invoiceId: string | null;
+  videos: VideoDetail[];
 };
 
 function isRowApprovable(row: FilteredRow): boolean {
