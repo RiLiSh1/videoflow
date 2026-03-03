@@ -140,6 +140,7 @@ export function PaymentNotificationsClient({
             0
           );
           const totalNet = u.months.reduce((sum, m) => sum + m.netAmount, 0);
+          const allVideos = u.months.flatMap((m) => m.videos);
           return {
             ...u,
             videoCount: totalVideoCount,
@@ -149,6 +150,7 @@ export function PaymentNotificationsClient({
             notificationId: null as string | null,
             invoiceStatus: null as string | null,
             invoiceId: null as string | null,
+            videos: allVideos,
           };
         });
       }
@@ -165,6 +167,7 @@ export function PaymentNotificationsClient({
           notificationId: md?.notificationId || null,
           invoiceStatus: md?.invoiceStatus ?? null,
           invoiceId: md?.invoiceId ?? null,
+          videos: md?.videos || [],
         };
       });
     },
