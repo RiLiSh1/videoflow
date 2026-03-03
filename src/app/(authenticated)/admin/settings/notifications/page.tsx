@@ -64,6 +64,12 @@ const TYPE_META: Record<
     icon: <MessageCircle className="h-5 w-5" />,
     color: "text-teal-600 bg-teal-50",
   },
+  PAYMENT_APPROVED: {
+    label: "支払通知書発行",
+    description: "支払通知書を承認した時にクリエイター/ディレクターへ通知",
+    icon: <Banknote className="h-5 w-5" />,
+    color: "text-emerald-600 bg-emerald-50",
+  },
 };
 
 const templateSchema = z.object({
