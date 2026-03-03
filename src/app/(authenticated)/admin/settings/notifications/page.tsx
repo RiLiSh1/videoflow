@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   MessageCircle,
   Bell,
+  Banknote,
 } from "lucide-react";
 
 const TYPE_META: Record<
