@@ -13,7 +13,7 @@ import {
   AlertTriangle,
   UserCheck,
 } from "lucide-react";
-import { formatRelative } from "@/lib/utils/format-date";
+import { formatDate, formatRelative } from "@/lib/utils/format-date";
 
 // ---------- Types ----------
 
