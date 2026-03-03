@@ -1,12 +1,10 @@
 import { prisma } from "@/lib/db";
-import { unstable_cache } from "next/cache";
 import { PageContainer } from "@/components/layout/page-container";
 import { calculateWithholdingTax } from "@/lib/utils/withholding-tax";
 import { PaymentNotificationsClient } from "./_components/payment-notifications-client";
 import type { EntityType, CompensationType, VideoStatus } from "@prisma/client";
 
-const getPaymentData = unstable_cache(
-  async () => {
+async function getPaymentData() {
     // 1. All CREATOR/DIRECTOR users with compensation + profile
     const users = await prisma.user.findMany({
       where: {
