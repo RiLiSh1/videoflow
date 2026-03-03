@@ -25,6 +25,14 @@ import { ENTITY_TYPE_LABELS } from "@/lib/constants/entity-type";
 
 // ---------- Types ----------
 
+type VideoDetail = {
+  videoCode: string;
+  title: string;
+  projectName: string;
+  status: VideoStatus;
+  firstUploadDate: string | null;
+};
+
 type MonthData = {
   year: number;
   month: number;
@@ -35,6 +43,7 @@ type MonthData = {
   notificationId: string | null;
   invoiceStatus: string | null;
   invoiceId: string | null;
+  videos: VideoDetail[];
 };
 
 type UserPaymentRow = {
