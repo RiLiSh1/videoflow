@@ -2,6 +2,10 @@ type ChatworkSendResult =
   | { success: true; messageId: string }
   | { success: false; error?: string };
 
+type ChatworkFileResult =
+  | { success: true; fileId: string }
+  | { success: false; error?: string };
+
 export async function sendChatworkMessage(
   roomId: string,
   message: string
