@@ -393,8 +393,14 @@ function TemplateEditDialog({
     ?.replace("{year}", "2026")
     ?.replace("{month}", "2")
     ?.replace("{subtotal}", "¥3,000")
+    ?.replace("{tax}", "¥300")
+    ?.replace("{subtotalWithTax}", "¥3,300")
+    ?.replace("{withholdingTax}", "¥306")
     ?.replace("{netAmount}", "¥2,994")
-    ?.replace("{videoDetails}", "・案件A / 動画タイトル1");
+    ?.replace(
+      "{videoDetails}",
+      "1. florasKIN / テスト3 (001-V007)  ¥1,000\n2. florasKIN / 001-V008 (001-V008)  ¥1,000\n3. florasKIN / テスト5 (001-V009)  ¥1,000"
+    );
 
   const onSubmit = async (data: TemplateInput) => {
     setError("");
