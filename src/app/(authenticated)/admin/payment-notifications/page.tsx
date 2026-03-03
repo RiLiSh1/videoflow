@@ -100,8 +100,16 @@ const getPaymentData = unstable_cache(
       });
     }
 
-    // 4. Single pass: count videos per user per month
+    // 4. Single pass: count videos per user per month + collect video details
     const videoCountMap = new Map<string, number>();
+    type VideoDetail = {
+      videoCode: string;
+      title: string;
+      projectName: string;
+      status: VideoStatus;
+      firstUploadDate: string | null;
+    };
+    const videoDetailsMap = new Map<string, VideoDetail[]>();
     const allMonths = new Set<string>(); // "YYYY-MM"
 
     for (const v of videos) {
@@ -113,15 +121,29 @@ const getPaymentData = unstable_cache(
       const monthKey = `${year}-${String(month).padStart(2, "0")}`;
       allMonths.add(monthKey);
 
-      // Count for creator
+      const detail: VideoDetail = {
+        videoCode: v.videoCode,
+        title: v.title,
+        projectName: v.project.name,
+        status: v.status,
+        firstUploadDate: d.toISOString(),
+      };
+
+      // Count + details for creator
       if (v.creatorId) {
         const key = `${v.creatorId}-${year}-${month}`;
         videoCountMap.set(key, (videoCountMap.get(key) || 0) + 1);
+        const list = videoDetailsMap.get(key) || [];
+        list.push(detail);
+        videoDetailsMap.set(key, list);
       }
-      // Count for director
+      // Count + details for director
       if (v.directorId) {
         const key = `${v.directorId}-${year}-${month}`;
         videoCountMap.set(key, (videoCountMap.get(key) || 0) + 1);
+        const list = videoDetailsMap.get(key) || [];
+        list.push(detail);
+        videoDetailsMap.set(key, list);
       }
     }
 
