@@ -17,6 +17,11 @@ const getProgressData = unstable_cache(
         project: { select: { id: true, projectCode: true, name: true } },
         creator: { select: { id: true, name: true } },
         director: { select: { id: true, name: true } },
+        versions: {
+          where: { versionNumber: 1 },
+          select: { createdAt: true },
+          take: 1,
+        },
       },
       orderBy: { updatedAt: "desc" },
     });
