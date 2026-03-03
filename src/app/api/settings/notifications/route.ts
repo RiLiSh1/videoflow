@@ -60,15 +60,37 @@ async function ensureTable() {
   `);
 }
 
+// 旧テンプレートを検出して新フォーマットに更新するためのマッピング
+const OLD_TEMPLATES_TO_MIGRATE: Record<string, string[]> = {
+  PAYMENT_APPROVED: [
+    "{year}年{month}月分の支払通知書が発行されました。\n振込額: {netAmount}\n{videoDetails}",
+  ],
+};
+
 async function ensureTemplates() {
   await ensureTable();
   const existing = await prisma.notificationTemplate.findMany({
-    select: { type: true },
+    select: { type: true, messageTemplate: true },
   });
   const existingTypes = new Set(existing.map((t) => t.type));
   const missing = DEFAULT_TEMPLATES.filter((t) => !existingTypes.has(t.type));
   if (missing.length > 0) {
     await prisma.notificationTemplate.createMany({ data: missing });
+  }
+
+  // 旧テンプレートを新フォーマットに更新
+  for (const tmpl of existing) {
+    const oldPatterns = OLD_TEMPLATES_TO_MIGRATE[tmpl.type];
+    if (!oldPatterns) continue;
+    if (oldPatterns.includes(tmpl.messageTemplate)) {
+      const newDefault = DEFAULT_TEMPLATES.find((d) => d.type === tmpl.type);
+      if (newDefault) {
+        await prisma.notificationTemplate.update({
+          where: { type: tmpl.type },
+          data: { messageTemplate: newDefault.messageTemplate },
+        });
+      }
+    }
   }
 }
 
