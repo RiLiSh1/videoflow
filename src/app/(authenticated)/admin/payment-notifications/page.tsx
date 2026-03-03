@@ -275,7 +275,7 @@ const getPaymentData = unstable_cache(
 
     return { userPayments, availableYears };
   },
-  ["admin-payment-notifications"],
+  ["admin-payment-notifications-v2"],
   { revalidate: 30 }
 );
 
