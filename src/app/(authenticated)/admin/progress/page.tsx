@@ -271,7 +271,7 @@ const getProgressData = unstable_cache(
       projects,
     };
   },
-  ["admin-progress"],
+  ["admin-progress-v2"],
   { revalidate: 30 }
 );
 
