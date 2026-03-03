@@ -245,6 +245,7 @@ const getPaymentData = unstable_cache(
             notificationId: existing?.id || null,
             invoiceStatus: existing?.invoiceStatus ?? null,
             invoiceId: existing?.invoiceId ?? null,
+            videos: videoDetailsMap.get(`${u.id}-${year}-${month}`) || [],
           });
         }
       }
