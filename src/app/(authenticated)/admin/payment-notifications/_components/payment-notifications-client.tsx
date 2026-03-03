@@ -996,6 +996,41 @@ function PaymentTable({
                           </td>
                         )}
                       </tr>
+                      {/* Expanded video details */}
+                      {expandedRows.has(row.userId) && row.videos.length > 0 && (
+                        <tr>
+                          <td colSpan={colCount} className="bg-gray-50/80 px-4 py-3">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="text-gray-500">
+                                  <th className="px-2 py-1.5 text-left font-medium w-10">No.</th>
+                                  <th className="px-2 py-1.5 text-left font-medium">動画コード</th>
+                                  <th className="px-2 py-1.5 text-left font-medium">タイトル</th>
+                                  <th className="px-2 py-1.5 text-left font-medium">案件名</th>
+                                  <th className="px-2 py-1.5 text-center font-medium">ステータス</th>
+                                  <th className="px-2 py-1.5 text-left font-medium">初回アップロード日</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100">
+                                {row.videos.map((video, idx) => (
+                                  <tr key={video.videoCode} className="hover:bg-white/60">
+                                    <td className="px-2 py-1.5 text-gray-400">{idx + 1}</td>
+                                    <td className="px-2 py-1.5 font-mono text-gray-500">{video.videoCode}</td>
+                                    <td className="px-2 py-1.5 text-gray-700">{video.title}</td>
+                                    <td className="px-2 py-1.5 text-gray-600">{video.projectName}</td>
+                                    <td className="px-2 py-1.5 text-center">
+                                      <StatusBadge status={video.status} showIcon={false} />
+                                    </td>
+                                    <td className="px-2 py-1.5 text-gray-500">
+                                      {video.firstUploadDate ? formatDate(video.firstUploadDate) : "-"}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      )}
                     );
                   })}
                   {/* Totals row */}
