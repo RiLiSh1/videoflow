@@ -55,7 +55,8 @@ export async function uploadChatworkFile(
 
   try {
     const formData = new FormData();
-    const blob = new Blob([fileBuffer.buffer], { type: "application/pdf" });
+    const bytes = new Uint8Array(fileBuffer);
+    const blob = new Blob([bytes], { type: "application/pdf" });
     formData.append("file", blob, fileName);
     if (message) {
       formData.append("message", message);
