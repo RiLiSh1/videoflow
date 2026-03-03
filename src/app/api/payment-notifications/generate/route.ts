@@ -83,7 +83,7 @@ export async function POST(request: Request) {
         amount: compensation.customAmount || 0,
       });
     } else {
-      // PER_VIDEO: find completed videos for this month
+      // PER_VIDEO: 初稿（v1）が対象月にアップロードされた動画を取得（ステータス不問）
       // CREATOR → creatorId, DIRECTOR → directorId
       const videoWhere =
         user.role === "DIRECTOR"
@@ -93,7 +93,6 @@ export async function POST(request: Request) {
       const videos = await prisma.video.findMany({
         where: {
           ...videoWhere,
-          status: "COMPLETED",
           versions: {
             some: {
               versionNumber: 1,
