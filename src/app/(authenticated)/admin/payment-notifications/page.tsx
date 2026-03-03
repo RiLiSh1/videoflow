@@ -272,10 +272,7 @@ async function getPaymentData() {
     const availableYears = Array.from(yearSet).sort((a, b) => b - a);
 
     return { userPayments, availableYears };
-  },
-  ["admin-payment-notifications-v2"],
-  { revalidate: 30 }
-);
+}
 
 export default async function AdminPaymentNotificationsPage() {
   const { userPayments, availableYears } = await getPaymentData();
