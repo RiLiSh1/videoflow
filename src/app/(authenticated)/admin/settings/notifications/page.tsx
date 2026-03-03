@@ -458,11 +458,15 @@ function TemplateEditDialog({
           )}
           <p className="text-xs text-gray-400 mt-1">
             <code className="bg-gray-100 px-1 rounded">{"{videoTitle}"}</code>{" "}
-            と{" "}
             <code className="bg-gray-100 px-1 rounded">
               {"{triggeredByName}"}
             </code>{" "}
-            が利用できます
+            が利用できます。支払通知書用:{" "}
+            <code className="bg-gray-100 px-1 rounded">{"{year}"}</code>{" "}
+            <code className="bg-gray-100 px-1 rounded">{"{month}"}</code>{" "}
+            <code className="bg-gray-100 px-1 rounded">{"{subtotal}"}</code>{" "}
+            <code className="bg-gray-100 px-1 rounded">{"{netAmount}"}</code>{" "}
+            <code className="bg-gray-100 px-1 rounded">{"{videoDetails}"}</code>
           </p>
         </div>
 
