@@ -77,6 +77,7 @@ const getProgressData = unstable_cache(
       projectCode: string;
       creatorName: string;
       directorName: string | null;
+      firstUploadDate: string | null;
     }[] = [];
 
     for (const v of videos) {
