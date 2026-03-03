@@ -464,7 +464,7 @@ function TemplateEditDialog({
           </label>
           <textarea
             id="template-message"
-            rows={3}
+            rows={8}
             className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             placeholder="「{videoTitle}」が提出されました"
             {...register("messageTemplate")}
