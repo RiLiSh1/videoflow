@@ -37,9 +37,11 @@ const getPaymentData = unstable_cache(
       orderBy: { name: "asc" },
     });
 
-    // 2. All COMPLETED videos with version 1 createdAt
+    // 2. All videos with version 1 createdAt (初稿ベースでカウント — ステータス不問)
     const videos = await prisma.video.findMany({
-      where: { status: "COMPLETED" },
+      where: {
+        versions: { some: { versionNumber: 1 } },
+      },
       select: {
         id: true,
         creatorId: true,
