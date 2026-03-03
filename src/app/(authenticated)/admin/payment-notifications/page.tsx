@@ -174,6 +174,13 @@ const getPaymentData = unstable_cache(
         notificationId: string | null;
         invoiceStatus: string | null;
         invoiceId: string | null;
+        videos: {
+          videoCode: string;
+          title: string;
+          projectName: string;
+          status: VideoStatus;
+          firstUploadDate: string | null;
+        }[];
       }[];
     };
 
