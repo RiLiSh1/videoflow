@@ -815,7 +815,6 @@ function PaymentTable({
                     return (
                       <React.Fragment key={row.userId}>
                       <tr
-                        key={row.userId}
                         className={`hover:bg-gray-50 ${
                           !row.hasCompensation ? "bg-amber-50/50" : ""
                         }`}
