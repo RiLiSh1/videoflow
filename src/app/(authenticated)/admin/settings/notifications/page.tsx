@@ -209,13 +209,25 @@ export default function AdminNotificationSettingsPage() {
               </code>
               <span className="text-xs text-slate-400">報酬(税抜)</span>
               <code className="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded font-mono text-slate-700">
+                {"{tax}"}
+              </code>
+              <span className="text-xs text-slate-400">消費税</span>
+              <code className="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded font-mono text-slate-700">
+                {"{subtotalWithTax}"}
+              </code>
+              <span className="text-xs text-slate-400">小計</span>
+              <code className="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded font-mono text-slate-700">
+                {"{withholdingTax}"}
+              </code>
+              <span className="text-xs text-slate-400">源泉徴収税</span>
+              <code className="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded font-mono text-slate-700">
                 {"{netAmount}"}
               </code>
               <span className="text-xs text-slate-400">振込額</span>
               <code className="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded font-mono text-slate-700">
                 {"{videoDetails}"}
               </code>
-              <span className="text-xs text-slate-400">対象動画一覧</span>
+              <span className="text-xs text-slate-400">対象動画明細</span>
             </div>
           </div>
         </div>
