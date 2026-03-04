@@ -64,6 +64,7 @@ async function getPaymentData() {
         year: true,
         month: true,
         subtotal: true,
+        consumptionTax: true,
         withholdingTax: true,
         netAmount: true,
         invoice: {
@@ -222,7 +223,8 @@ async function getPaymentData() {
         const withholdingTax = comp
           ? calculateWithholdingTax(subtotal, entityType)
           : 0;
-        const netAmount = subtotal - withholdingTax;
+        const consumptionTax = Math.floor(subtotal * 0.1);
+        const netAmount = subtotal + consumptionTax - withholdingTax;
 
         // Check if notification already generated
         const existing = notificationMap.get(`${u.id}-${year}-${month}`);

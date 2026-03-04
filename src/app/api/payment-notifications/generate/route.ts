@@ -125,8 +125,9 @@ export async function POST(request: Request) {
     }
 
     const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
+    const consumptionTax = Math.floor(subtotal * 0.1);
     const withholdingTax = calculateWithholdingTax(subtotal, entityType);
-    const netAmount = subtotal - withholdingTax;
+    const netAmount = subtotal + consumptionTax - withholdingTax;
 
     // Upsert payment notification (creatorId field stores the user id)
     const notification = await prisma.paymentNotification.upsert({
@@ -142,6 +143,7 @@ export async function POST(request: Request) {
         year: Number(year),
         month: Number(month),
         subtotal,
+        consumptionTax,
         withholdingTax,
         netAmount,
         lineItemsJson: lineItems,
@@ -149,6 +151,7 @@ export async function POST(request: Request) {
       },
       update: {
         subtotal,
+        consumptionTax,
         withholdingTax,
         netAmount,
         lineItemsJson: lineItems,

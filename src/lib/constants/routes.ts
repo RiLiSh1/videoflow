@@ -11,7 +11,8 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
   CREATOR: [
     { label: "マイ動画", href: "/creator/videos", icon: "Video" },
     { label: "アップロード", href: "/creator/upload", icon: "Upload" },
-    { label: "支払通知書", href: "/creator/payment-notifications", icon: "FileText" },
+    { label: "支払通知書", href: "/creator/payment-notifications", icon: "FileText", group: "請求関連" },
+    { label: "プロフィール", href: "/creator/profile", icon: "Users", group: "請求関連" },
   ],
   DIRECTOR: [
     { label: "ダッシュボード", href: "/director/dashboard", icon: "LayoutDashboard" },

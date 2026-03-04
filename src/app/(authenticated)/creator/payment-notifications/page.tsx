@@ -31,6 +31,7 @@ export default async function CreatorPaymentNotificationsPage() {
     year: n.year,
     month: n.month,
     subtotal: n.subtotal,
+    consumptionTax: n.consumptionTax,
     withholdingTax: n.withholdingTax,
     netAmount: n.netAmount,
     invoice: n.invoice

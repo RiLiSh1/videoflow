@@ -1,95 +1,106 @@
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 import { NextResponse } from "next/server";
 import { requireAuth, isSessionUser } from "@/lib/auth/require-auth";
 import { prisma } from "@/lib/db";
 import { extractInvoiceAmounts } from "@/lib/claude/extract-invoice";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { saveInvoiceFile } from "@/lib/invoice-storage";
 
-const UPLOAD_DIR = path.join(process.cwd(), "uploads");
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 export async function POST(request: Request) {
   const auth = await requireAuth(["CREATOR", "DIRECTOR"]);
   if (!isSessionUser(auth)) return auth;
 
+  // 1. Parse form data
+  let formData: FormData;
   try {
-    const formData = await request.formData();
-    const file = formData.get("file") as File | null;
-    const paymentNotificationId = formData.get("paymentNotificationId") as string | null;
+    formData = await request.formData();
+  } catch {
+    return NextResponse.json(
+      { success: false, error: "リクエストの解析に失敗しました" },
+      { status: 400 }
+    );
+  }
 
-    if (!file || !paymentNotificationId) {
-      return NextResponse.json(
-        { success: false, error: "ファイルと支払通知書IDが必要です" },
-        { status: 400 }
-      );
-    }
+  const file = formData.get("file") as File | null;
+  const paymentNotificationId = formData.get("paymentNotificationId") as string | null;
 
-    // PDF validation
-    const ext = path.extname(file.name).toLowerCase();
-    if (ext !== ".pdf" || file.type !== "application/pdf") {
-      return NextResponse.json(
-        { success: false, error: "PDFファイルのみアップロード可能です" },
-        { status: 400 }
-      );
-    }
+  if (!file || !paymentNotificationId) {
+    return NextResponse.json(
+      { success: false, error: "ファイルと支払通知書IDが必要です" },
+      { status: 400 }
+    );
+  }
 
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { success: false, error: "ファイルサイズは20MB以下にしてください" },
-        { status: 400 }
-      );
-    }
+  // 2. Validate file
+  if (file.type !== "application/pdf") {
+    return NextResponse.json(
+      { success: false, error: "PDFファイルのみアップロード可能です" },
+      { status: 400 }
+    );
+  }
 
-    // Verify ownership
-    const notification = await prisma.paymentNotification.findUnique({
-      where: { id: paymentNotificationId },
-      select: { id: true, creatorId: true, subtotal: true, withholdingTax: true, netAmount: true },
-    });
+  if (file.size > MAX_FILE_SIZE) {
+    return NextResponse.json(
+      { success: false, error: "ファイルサイズは20MB以下にしてください" },
+      { status: 400 }
+    );
+  }
 
-    if (!notification) {
-      return NextResponse.json(
-        { success: false, error: "支払通知書が見つかりません" },
-        { status: 404 }
-      );
-    }
+  // 3. Verify ownership
+  const notification = await prisma.paymentNotification.findUnique({
+    where: { id: paymentNotificationId },
+    select: { id: true, creatorId: true, subtotal: true, withholdingTax: true, netAmount: true },
+  });
 
-    if (notification.creatorId !== auth.id) {
-      return NextResponse.json(
-        { success: false, error: "この支払通知書にアクセスする権限がありません" },
-        { status: 403 }
-      );
-    }
+  if (!notification) {
+    return NextResponse.json(
+      { success: false, error: "支払通知書が見つかりません" },
+      { status: 404 }
+    );
+  }
 
-    // Save file
-    const uploadDir = path.join(UPLOAD_DIR, "invoices", paymentNotificationId);
-    await mkdir(uploadDir, { recursive: true });
+  if (notification.creatorId !== auth.id) {
+    return NextResponse.json(
+      { success: false, error: "この支払通知書にアクセスする権限がありません" },
+      { status: 403 }
+    );
+  }
 
-    const timestamp = Date.now();
-    const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const uniqueFileName = `${timestamp}_${sanitizedName}`;
-    const filePath = path.join(uploadDir, uniqueFileName);
-
+  // 4. Save file
+  let stored;
+  let buffer: Buffer;
+  try {
     const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
+    buffer = Buffer.from(bytes);
+    stored = await saveInvoiceFile(paymentNotificationId, file.name, buffer);
+  } catch (error) {
+    console.error("Invoice upload - file save error:", error);
+    return NextResponse.json(
+      { success: false, error: "ファイルの保存に失敗しました" },
+      { status: 500 }
+    );
+  }
 
-    const relativePath = `invoices/${paymentNotificationId}/${uniqueFileName}`;
-
-    // Upsert CreatorInvoice
-    const invoice = await prisma.creatorInvoice.upsert({
+  // 5. Upsert CreatorInvoice
+  let invoice;
+  try {
+    invoice = await prisma.creatorInvoice.upsert({
       where: { paymentNotificationId },
       create: {
         paymentNotificationId,
         uploadedBy: auth.id,
-        filePath: relativePath,
+        filePath: stored.filePath,
         fileName: file.name,
-        fileSize: file.size,
+        fileSize: stored.fileSize,
       },
       update: {
         uploadedBy: auth.id,
-        filePath: relativePath,
+        filePath: stored.filePath,
         fileName: file.name,
-        fileSize: file.size,
+        fileSize: stored.fileSize,
         verificationStatus: "PENDING",
         extractedSubtotal: null,
         extractedWithholding: null,
@@ -99,25 +110,46 @@ export async function POST(request: Request) {
         approvedAt: null,
       },
     });
+  } catch (error) {
+    console.error("Invoice upload - DB upsert error:", error);
+    return NextResponse.json(
+      { success: false, error: "データベースの更新に失敗しました" },
+      { status: 500 }
+    );
+  }
 
-    // Extract amounts via Claude API
+  // 6. Extract amounts via Claude API (if it fails, leave as PENDING)
+  let verificationStatus: "PENDING" | "MATCHED" | "MISMATCHED" = "PENDING";
+  let extractedSubtotal: number | null = null;
+  let extractedWithholding: number | null = null;
+  let extractedNetAmount: number | null = null;
+
+  try {
     const extracted = await extractInvoiceAmounts(buffer);
+    extractedSubtotal = extracted.subtotal;
+    extractedWithholding = extracted.withholding;
+    extractedNetAmount = extracted.netAmount;
 
-    // Compare with notification amounts
-    const subtotalMatch = extracted.subtotal === notification.subtotal;
-    const withholdingMatch = extracted.withholding === notification.withholdingTax;
-    const netAmountMatch = extracted.netAmount === notification.netAmount;
-    const allMatch = subtotalMatch && withholdingMatch && netAmountMatch;
+    const isClose = (a: number | null, b: number) =>
+      a !== null && Math.abs(a - b) <= 1;
+    const allMatch =
+      isClose(extracted.subtotal, notification.subtotal) &&
+      isClose(extracted.withholding, notification.withholdingTax) &&
+      isClose(extracted.netAmount, notification.netAmount);
 
-    const verificationStatus = allMatch ? "MATCHED" : "MISMATCHED";
+    verificationStatus = allMatch ? "MATCHED" : "MISMATCHED";
+  } catch (error) {
+    console.error("Invoice upload - Claude extraction error:", error);
+  }
 
-    // Update invoice with extraction results
+  // 7. Update invoice with extraction results
+  try {
     const updatedInvoice = await prisma.creatorInvoice.update({
       where: { id: invoice.id },
       data: {
-        extractedSubtotal: extracted.subtotal,
-        extractedWithholding: extracted.withholding,
-        extractedNetAmount: extracted.netAmount,
+        extractedSubtotal,
+        extractedWithholding,
+        extractedNetAmount,
         verificationStatus,
         verifiedAt: new Date(),
       },
@@ -134,10 +166,16 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Invoice upload error:", error);
-    return NextResponse.json(
-      { success: false, error: "請求書のアップロードに失敗しました" },
-      { status: 500 }
-    );
+    console.error("Invoice upload - update error:", error);
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: invoice.id,
+        verificationStatus: "PENDING",
+        extractedSubtotal: null,
+        extractedWithholding: null,
+        extractedNetAmount: null,
+      },
+    });
   }
 }

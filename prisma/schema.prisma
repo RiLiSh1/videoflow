@@ -313,17 +313,18 @@ model CreatorProfile {
 }
 
 model PaymentNotification {
-  id             String   @id @default(cuid())
-  creatorId      String   @map("creator_id")
-  year           Int
-  month          Int
-  subtotal       Int
-  withholdingTax Int      @map("withholding_tax")
-  netAmount      Int      @map("net_amount")
-  lineItemsJson  Json     @map("line_items_json")
-  generatedBy    String   @map("generated_by")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(cuid())
+  creatorId       String   @map("creator_id")
+  year            Int
+  month           Int
+  subtotal        Int
+  consumptionTax  Int      @default(0) @map("consumption_tax")
+  withholdingTax  Int      @map("withholding_tax")
+  netAmount       Int      @map("net_amount")
+  lineItemsJson   Json     @map("line_items_json")
+  generatedBy     String   @map("generated_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   creator   User @relation("PaymentNotificationCreator", fields: [creatorId], references: [id])
   generator User @relation("PaymentNotificationGenerator", fields: [generatedBy], references: [id])

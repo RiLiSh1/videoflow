@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const maxDuration = 30;
+
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth, isSessionUser } from "@/lib/auth/require-auth";
@@ -7,10 +10,7 @@ import {
   type InvoicePdfData,
   type InvoiceLineItem,
 } from "@/lib/pdf/invoice-template";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-
-const UPLOAD_DIR = path.join(process.cwd(), "uploads");
+import { saveInvoiceFile } from "@/lib/invoice-storage";
 
 export async function POST(
   _request: Request,
@@ -19,11 +19,13 @@ export async function POST(
   const auth = await requireAuth(["CREATOR", "DIRECTOR"]);
   if (!isSessionUser(auth)) return auth;
 
-  try {
-    const { id } = await params;
+  const { id } = await params;
 
-    const notification = await prisma.paymentNotification.findUnique({
-      where: { id: id },
+  // 1. Fetch notification
+  let notification;
+  try {
+    notification = await prisma.paymentNotification.findUnique({
+      where: { id },
       include: {
         creator: {
           select: {
@@ -34,81 +36,103 @@ export async function POST(
         },
       },
     });
+  } catch (error) {
+    console.error("Invoice generate - DB query error:", error);
+    return NextResponse.json(
+      { success: false, error: "データベースエラーが発生しました" },
+      { status: 500 }
+    );
+  }
 
-    if (!notification) {
-      return NextResponse.json(
-        { success: false, error: "支払通知書が見つかりません" },
-        { status: 404 }
-      );
-    }
+  if (!notification) {
+    return NextResponse.json(
+      { success: false, error: "支払通知書が見つかりません" },
+      { status: 404 }
+    );
+  }
 
-    if (notification.creatorId !== auth.id) {
-      return NextResponse.json(
-        { success: false, error: "アクセス権限がありません" },
-        { status: 403 }
-      );
-    }
+  if (notification.creatorId !== auth.id) {
+    return NextResponse.json(
+      { success: false, error: "アクセス権限がありません" },
+      { status: 403 }
+    );
+  }
 
-    const companySettings = await prisma.companySettings.findFirst();
-    const profile = notification.creator.profile;
-    const isIndividual = (profile?.entityType || "INDIVIDUAL") === "INDIVIDUAL";
+  // 2. Gather data
+  let companySettings;
+  try {
+    companySettings = await prisma.companySettings.findFirst();
+  } catch (error) {
+    console.error("Invoice generate - company settings error:", error);
+  }
 
-    const invoiceNumber = `INV-${notification.year}-${String(notification.month).padStart(2, "0")}-${notification.id.slice(-3)}`;
+  const profile = notification.creator.profile;
+  const isIndividual = (profile?.entityType || "INDIVIDUAL") === "INDIVIDUAL";
 
-    const now = new Date();
-    const issueDate = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
+  const invoiceNumber = `INV-${notification.year}-${String(notification.month).padStart(2, "0")}-${notification.id.slice(-3)}`;
 
-    const pdfData: InvoicePdfData = {
-      invoiceNumber,
-      issueDate,
-      year: notification.year,
-      month: notification.month,
-      creatorName: notification.creator.name,
-      businessName: profile?.businessName,
-      creatorPostalCode: profile?.postalCode,
-      creatorAddress: profile?.address,
-      creatorInvoiceNumber: profile?.invoiceNumber,
-      companyName: companySettings?.companyName || "（未設定）",
-      companyPostalCode: companySettings?.postalCode,
-      companyAddress: companySettings?.address,
-      companyTel: companySettings?.tel,
-      companyInvoiceNumber: companySettings?.invoiceNumber,
-      lineItems: notification.lineItemsJson as unknown as InvoiceLineItem[],
-      subtotal: notification.subtotal,
-      withholdingTax: notification.withholdingTax,
-      netAmount: notification.netAmount,
-      isIndividual,
-      bankName: profile?.bankName,
-      bankBranch: profile?.bankBranch,
-      bankAccountType: profile?.bankAccountType,
-      bankAccountNumber: profile?.bankAccountNumber,
-      bankAccountHolder: profile?.bankAccountHolder,
-    };
+  const now = new Date();
+  const issueDate = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
 
-    const buffer = await renderToBuffer(InvoiceDocument({ data: pdfData }));
+  const lineItems = (notification.lineItemsJson as unknown as InvoiceLineItem[]) || [];
 
-    const fileName = `請求書_${notification.creator.name}_${notification.year}年${String(notification.month).padStart(2, "0")}月.pdf`;
+  const pdfData: InvoicePdfData = {
+    invoiceNumber,
+    issueDate,
+    year: notification.year,
+    month: notification.month,
+    creatorName: notification.creator.name,
+    businessName: profile?.businessName,
+    creatorPostalCode: profile?.postalCode,
+    creatorAddress: profile?.address,
+    creatorInvoiceNumber: profile?.invoiceNumber,
+    companyName: companySettings?.companyName || "（未設定）",
+    companyPostalCode: companySettings?.postalCode,
+    companyAddress: companySettings?.address,
+    companyTel: companySettings?.tel,
+    companyInvoiceNumber: companySettings?.invoiceNumber,
+    lineItems,
+    subtotal: notification.subtotal,
+    withholdingTax: notification.withholdingTax,
+    netAmount: notification.netAmount,
+    isIndividual,
+    bankName: profile?.bankName,
+    bankBranch: profile?.bankBranch,
+    bankAccountType: profile?.bankAccountType,
+    bankAccountNumber: profile?.bankAccountNumber,
+    bankAccountHolder: profile?.bankAccountHolder,
+  };
 
-    // Save to disk and create CreatorInvoice record
-    const uploadDir = path.join(UPLOAD_DIR, "invoices", id);
-    await mkdir(uploadDir, { recursive: true });
+  // 3. Render PDF
+  let buffer: Buffer;
+  try {
+    const rawBuffer = await renderToBuffer(InvoiceDocument({ data: pdfData }));
+    buffer = Buffer.from(rawBuffer);
+  } catch (error) {
+    console.error("Invoice generate - PDF render error:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "PDFの生成に失敗しました。管理者に連絡してください。",
+      },
+      { status: 500 }
+    );
+  }
 
-    const timestamp = Date.now();
-    const diskFileName = `${timestamp}_invoice.pdf`;
-    const filePath = path.join(uploadDir, diskFileName);
-    await writeFile(filePath, new Uint8Array(buffer));
+  const fileName = `請求書_${notification.creator.name}_${notification.year}年${String(notification.month).padStart(2, "0")}月.pdf`;
 
-    const relativePath = `invoices/${id}/${diskFileName}`;
+  // 4. Save file and create DB record
+  try {
+    const stored = await saveInvoiceFile(id, "invoice.pdf", buffer);
 
-    // Upsert invoice record — generated invoices auto-match
     await prisma.creatorInvoice.upsert({
       where: { paymentNotificationId: id },
       create: {
         paymentNotificationId: id,
         uploadedBy: auth.id,
-        filePath: relativePath,
+        filePath: stored.filePath,
         fileName,
-        fileSize: buffer.byteLength,
+        fileSize: stored.fileSize,
         extractedSubtotal: notification.subtotal,
         extractedWithholding: notification.withholdingTax,
         extractedNetAmount: notification.netAmount,
@@ -117,9 +141,9 @@ export async function POST(
       },
       update: {
         uploadedBy: auth.id,
-        filePath: relativePath,
+        filePath: stored.filePath,
         fileName,
-        fileSize: buffer.byteLength,
+        fileSize: stored.fileSize,
         extractedSubtotal: notification.subtotal,
         extractedWithholding: notification.withholdingTax,
         extractedNetAmount: notification.netAmount,
@@ -129,18 +153,18 @@ export async function POST(
         approvedAt: null,
       },
     });
-
-    return new NextResponse(new Uint8Array(buffer), {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
-      },
-    });
   } catch (error) {
-    console.error("Invoice generate error:", error);
+    console.error("Invoice generate - save error:", error);
     return NextResponse.json(
-      { success: false, error: "請求書の生成に失敗しました" },
+      { success: false, error: "請求書の保存に失敗しました" },
       { status: 500 }
     );
   }
+
+  return new NextResponse(new Uint8Array(buffer), {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+    },
+  });
 }
