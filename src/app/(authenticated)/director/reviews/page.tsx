@@ -12,7 +12,10 @@ export default async function DirectorReviewsPage() {
 
   const videos = await prisma.video.findMany({
     where: {
-      directorId: session.id,
+      OR: [
+        { directorId: session.id },
+        { directorId: null, status: "SUBMITTED" },
+      ],
     },
     include: {
       project: { select: { id: true, projectCode: true, name: true } },

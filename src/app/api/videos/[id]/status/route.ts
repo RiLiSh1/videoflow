@@ -135,9 +135,19 @@ export async function PATCH(
       }
     }
 
+    // Auto-assign director when moving to IN_REVIEW
+    const updateData: { status: typeof status; directorId?: string } = { status };
+    if (
+      status === "IN_REVIEW" &&
+      auth.role === "DIRECTOR" &&
+      !video.directorId
+    ) {
+      updateData.directorId = auth.id;
+    }
+
     const updated = await prisma.video.update({
       where: { id },
-      data: { status },
+      data: updateData,
       include: {
         project: { select: { id: true, projectCode: true, name: true } },
         creator: { select: { id: true, name: true } },

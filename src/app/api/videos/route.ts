@@ -35,7 +35,10 @@ export async function GET(request: Request) {
   if (auth.role === "CREATOR") {
     where.creatorId = auth.id;
   } else if (auth.role === "DIRECTOR") {
-    where.directorId = auth.id;
+    where.OR = [
+      { directorId: auth.id },
+      { directorId: null, status: "SUBMITTED" },
+    ];
   }
 
   const take = limitParam ? Math.min(parseInt(limitParam, 10), 100) : undefined;
