@@ -26,12 +26,37 @@ export async function POST(
 
     const updated = await prisma.creatorInvoice.update({
       where: { id },
+      include: {
+        paymentNotification: {
+          select: { id: true },
+        },
+      },
       data: {
         verificationStatus: "APPROVED",
         approvedBy: auth.id,
         approvedAt: new Date(),
       },
     });
+
+    // Record history
+    try {
+      await prisma.invoiceHistory.create({
+        data: {
+          paymentNotificationId: updated.paymentNotification.id,
+          actionType: "APPROVE",
+          actorId: auth.id,
+          filePath: updated.filePath,
+          fileName: updated.fileName,
+          fileSize: updated.fileSize,
+          extractedSubtotal: updated.extractedSubtotal,
+          extractedWithholding: updated.extractedWithholding,
+          extractedNetAmount: updated.extractedNetAmount,
+          verificationStatus: "APPROVED",
+        },
+      });
+    } catch (historyError) {
+      console.error("Invoice approve - history record error:", historyError);
+    }
 
     return NextResponse.json({
       success: true,

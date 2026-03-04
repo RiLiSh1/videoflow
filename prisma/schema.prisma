@@ -70,6 +70,14 @@ enum InvoiceVerificationStatus {
   @@map("invoice_verification_status")
 }
 
+enum InvoiceActionType {
+  UPLOAD
+  GENERATE
+  APPROVE
+
+  @@map("invoice_action_type")
+}
+
 // ============================================================
 // Models
 // ============================================================
@@ -103,6 +111,7 @@ model User {
   generatedNotifications  PaymentNotification[]  @relation("PaymentNotificationGenerator")
   uploadedInvoices   CreatorInvoice[] @relation("InvoiceUploader")
   approvedInvoices   CreatorInvoice[] @relation("InvoiceApprover")
+  invoiceHistoryActions InvoiceHistory[] @relation("InvoiceHistoryActor")
 
   @@map("users")
 }
@@ -329,6 +338,7 @@ model PaymentNotification {
   creator   User @relation("PaymentNotificationCreator", fields: [creatorId], references: [id])
   generator User @relation("PaymentNotificationGenerator", fields: [generatedBy], references: [id])
   invoice   CreatorInvoice?
+  history   InvoiceHistory[]
 
   @@unique([creatorId, year, month])
   @@map("payment_notifications")
@@ -382,4 +392,25 @@ model CreatorInvoice {
   approver            User?               @relation("InvoiceApprover", fields: [approvedBy], references: [id])
 
   @@map("creator_invoices")
+}
+
+model InvoiceHistory {
+  id                    String                     @id @default(cuid())
+  paymentNotificationId String                     @map("payment_notification_id")
+  actionType            InvoiceActionType          @map("action_type")
+  actorId               String                     @map("actor_id")
+  filePath              String?                    @map("file_path")
+  fileName              String?                    @map("file_name")
+  fileSize              Int?                       @map("file_size")
+  extractedSubtotal     Int?                       @map("extracted_subtotal")
+  extractedWithholding  Int?                       @map("extracted_withholding")
+  extractedNetAmount    Int?                       @map("extracted_net_amount")
+  verificationStatus    InvoiceVerificationStatus? @map("verification_status")
+  createdAt             DateTime                   @default(now()) @map("created_at")
+
+  paymentNotification PaymentNotification @relation(fields: [paymentNotificationId], references: [id], onDelete: Cascade)
+  actor               User                @relation("InvoiceHistoryActor", fields: [actorId], references: [id])
+
+  @@index([paymentNotificationId, createdAt])
+  @@map("invoice_history")
 }

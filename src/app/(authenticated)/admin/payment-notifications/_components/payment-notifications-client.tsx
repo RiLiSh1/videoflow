@@ -18,8 +18,11 @@ import {
   FileCheck,
   ChevronDown,
   ChevronUp,
+  History,
+  RefreshCw,
 } from "lucide-react";
 import { StatusBadge } from "@/components/domain/status-badge";
+import { InvoiceHistoryDialog } from "@/components/domain/invoice-history-dialog";
 import { formatDate } from "@/lib/utils/format-date";
 import { ENTITY_TYPE_LABELS } from "@/lib/constants/entity-type";
 
@@ -674,6 +677,7 @@ function PaymentTable({
   emptyMessage: string;
 }) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [historyNotificationId, setHistoryNotificationId] = useState<string | null>(null);
 
   const toggleExpand = useCallback((userId: string) => {
     setExpandedRows((prev) => {
@@ -959,6 +963,15 @@ function PaymentTable({
                                 >
                                   <Download className="h-4 w-4" />
                                 </button>
+                                <button
+                                  type="button"
+                                  className="inline-flex items-center rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-blue-600 disabled:opacity-50"
+                                  onClick={() => onApprove(row.userId)}
+                                  disabled={approvingRow === row.userId}
+                                  title="再承認（金額を再計算して通知を再送）"
+                                >
+                                  <RefreshCw className={`h-4 w-4 ${approvingRow === row.userId ? "animate-spin" : ""}`} />
+                                </button>
                               </div>
                             ) : canApprove ? (
                               <Button
@@ -991,6 +1004,16 @@ function PaymentTable({
                                 >
                                   <FileCheck className="h-4 w-4" />
                                 </Button>
+                              )}
+                              {row.notificationId && row.invoiceStatus && (
+                                <button
+                                  type="button"
+                                  className="inline-flex items-center rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                                  onClick={() => setHistoryNotificationId(row.notificationId)}
+                                  title="請求書履歴"
+                                >
+                                  <History className="h-4 w-4" />
+                                </button>
                               )}
                             </div>
                           </td>
@@ -1076,6 +1099,13 @@ function PaymentTable({
           </table>
         </div>
       </CardContent>
+      {historyNotificationId && (
+        <InvoiceHistoryDialog
+          paymentNotificationId={historyNotificationId}
+          open={true}
+          onClose={() => setHistoryNotificationId(null)}
+        />
+      )}
     </Card>
   );
 }

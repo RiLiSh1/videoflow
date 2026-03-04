@@ -163,8 +163,8 @@ export async function POST(request: Request) {
       },
     });
 
-    // Fire-and-forget Chatwork notification
-    sendPaymentApprovalChatwork({
+    // Send Chatwork notification (awaited for Vercel serverless)
+    await sendPaymentApprovalChatwork({
       userId,
       year: Number(year),
       month: Number(month),
@@ -174,9 +174,7 @@ export async function POST(request: Request) {
       triggeredByName: auth.name || "管理者",
       notificationId: notification.id,
       withholdingTax,
-    }).catch((err) =>
-      console.error("Chatwork payment notification error:", err)
-    );
+    });
 
     return NextResponse.json({ success: true, data: notification });
   } catch (error) {

@@ -14,7 +14,9 @@ import {
   FilePlus2,
   Download,
   AlertCircle,
+  History,
 } from "lucide-react";
+import { InvoiceHistoryDialog } from "@/components/domain/invoice-history-dialog";
 
 type InvoiceData = {
   id: string;
@@ -94,6 +96,7 @@ function NotificationCard({ notification }: { notification: NotificationData }) 
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const handleUpload = async (file: File) => {
     setUploading(true);
@@ -292,14 +295,23 @@ function NotificationCard({ notification }: { notification: NotificationData }) 
                   <FileText className="h-4 w-4" />
                   <span className="truncate max-w-[180px]">{inv.fileName}</span>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleDownload}
-                  className="shrink-0"
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setHistoryOpen(true)}
+                    title="履歴"
+                  >
+                    <History className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDownload}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
 
               {inv.verificationStatus !== "APPROVED" && (
@@ -361,6 +373,13 @@ function NotificationCard({ notification }: { notification: NotificationData }) 
           )}
         </div>
       </CardContent>
+      {inv && (
+        <InvoiceHistoryDialog
+          paymentNotificationId={notification.id}
+          open={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+        />
+      )}
     </Card>
   );
 }
