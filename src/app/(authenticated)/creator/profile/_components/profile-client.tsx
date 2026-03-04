@@ -15,11 +15,6 @@ type ProfileFormData = {
   postalCode: string;
   address: string;
   invoiceNumber: string;
-  bankName: string;
-  bankBranch: string;
-  bankAccountType: string;
-  bankAccountNumber: string;
-  bankAccountHolder: string;
 };
 
 interface Props {
@@ -29,12 +24,6 @@ interface Props {
 const entityTypeOptions = [
   { value: "INDIVIDUAL", label: "個人" },
   { value: "CORPORATION", label: "法人" },
-];
-
-const accountTypeOptions = [
-  { value: "", label: "選択してください" },
-  { value: "普通", label: "普通" },
-  { value: "当座", label: "当座" },
 ];
 
 export function ProfileClient({ profile }: Props) {
@@ -49,11 +38,6 @@ export function ProfileClient({ profile }: Props) {
       postalCode: "",
       address: "",
       invoiceNumber: "",
-      bankName: "",
-      bankBranch: "",
-      bankAccountType: "",
-      bankAccountNumber: "",
-      bankAccountHolder: "",
     },
   });
 
@@ -73,7 +57,7 @@ export function ProfileClient({ profile }: Props) {
         setMessage({ type: "error", text: json.error || "保存に失敗しました" });
         return;
       }
-      setMessage({ type: "success", text: "プロフィールを保存しました" });
+      setMessage({ type: "success", text: "保存しました" });
       router.refresh();
     } catch {
       setMessage({ type: "error", text: "保存に失敗しました。ネットワークを確認してください。" });
@@ -84,6 +68,10 @@ export function ProfileClient({ profile }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
+      <p className="text-sm text-gray-500">
+        請求書の「請求元」欄に表示される情報です。
+      </p>
+
       {message && (
         <div
           className={`flex items-center gap-2 rounded-md p-3 text-sm ${
@@ -101,7 +89,6 @@ export function ProfileClient({ profile }: Props) {
         </div>
       )}
 
-      {/* Business Info */}
       <Card>
         <CardHeader>
           <h2 className="text-base font-semibold text-gray-900">事業者情報</h2>
@@ -137,47 +124,6 @@ export function ProfileClient({ profile }: Props) {
               label="インボイス登録番号（任意）"
               placeholder="T1234567890123"
               {...register("invoiceNumber")}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Bank Info */}
-      <Card>
-        <CardHeader>
-          <h2 className="text-base font-semibold text-gray-900">振込先口座</h2>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Input
-              id="bankName"
-              label="銀行名"
-              placeholder="三菱UFJ銀行"
-              {...register("bankName")}
-            />
-            <Input
-              id="bankBranch"
-              label="支店名"
-              placeholder="渋谷支店"
-              {...register("bankBranch")}
-            />
-            <Select
-              id="bankAccountType"
-              label="口座種別"
-              options={accountTypeOptions}
-              {...register("bankAccountType")}
-            />
-            <Input
-              id="bankAccountNumber"
-              label="口座番号"
-              placeholder="1234567"
-              {...register("bankAccountNumber")}
-            />
-            <Input
-              id="bankAccountHolder"
-              label="口座名義（カナ）"
-              placeholder="タナカ タロウ"
-              {...register("bankAccountHolder")}
             />
           </div>
         </CardContent>

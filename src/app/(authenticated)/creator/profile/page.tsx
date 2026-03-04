@@ -13,7 +13,7 @@ export default async function CreatorProfilePage() {
   });
 
   return (
-    <PageContainer title="プロフィール設定">
+    <PageContainer title="請求元情報">
       <ProfileClient
         profile={
           profile
@@ -23,11 +23,6 @@ export default async function CreatorProfilePage() {
                 postalCode: profile.postalCode || "",
                 address: profile.address || "",
                 invoiceNumber: profile.invoiceNumber || "",
-                bankName: profile.bankName || "",
-                bankBranch: profile.bankBranch || "",
-                bankAccountType: profile.bankAccountType || "",
-                bankAccountNumber: profile.bankAccountNumber || "",
-                bankAccountHolder: profile.bankAccountHolder || "",
               }
             : null
         }

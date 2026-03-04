@@ -17,6 +17,7 @@ import {
   Building2,
   MessageSquare,
   CircleCheckBig,
+  Landmark,
 } from "lucide-react";
 import type { Role } from "@prisma/client";
 import { NAV_ITEMS } from "@/lib/constants/routes";
@@ -37,6 +38,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Building2,
   MessageSquare,
   CircleCheckBig,
+  Landmark,
 };
 
 interface SidebarProps {

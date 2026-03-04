@@ -12,7 +12,8 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
     { label: "マイ動画", href: "/creator/videos", icon: "Video" },
     { label: "アップロード", href: "/creator/upload", icon: "Upload" },
     { label: "支払通知書", href: "/creator/payment-notifications", icon: "FileText", group: "請求関連" },
-    { label: "プロフィール", href: "/creator/profile", icon: "Users", group: "請求関連" },
+    { label: "請求元情報", href: "/creator/profile", icon: "Users", group: "請求関連" },
+    { label: "銀行口座設定", href: "/creator/bank-account", icon: "Landmark", group: "請求関連" },
   ],
   DIRECTOR: [
     { label: "ダッシュボード", href: "/director/dashboard", icon: "LayoutDashboard" },

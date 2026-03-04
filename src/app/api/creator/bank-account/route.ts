@@ -3,24 +3,13 @@ import { requireAuth, isSessionUser } from "@/lib/auth/require-auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
-const profileSchema = z.object({
-  entityType: z.enum(["INDIVIDUAL", "CORPORATION"]),
-  businessName: z.string().optional(),
-  postalCode: z.string().optional(),
-  address: z.string().optional(),
-  invoiceNumber: z.string().optional(),
+const bankAccountSchema = z.object({
+  bankName: z.string().optional(),
+  bankBranch: z.string().optional(),
+  bankAccountType: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
+  bankAccountHolder: z.string().optional(),
 });
-
-export async function GET() {
-  const auth = await requireAuth(["CREATOR", "DIRECTOR"]);
-  if (!isSessionUser(auth)) return auth;
-
-  const profile = await prisma.creatorProfile.findUnique({
-    where: { userId: auth.id },
-  });
-
-  return NextResponse.json({ success: true, data: profile });
-}
 
 export async function PUT(request: Request) {
   const auth = await requireAuth(["CREATOR", "DIRECTOR"]);
@@ -28,7 +17,7 @@ export async function PUT(request: Request) {
 
   try {
     const body = await request.json();
-    const parsed = profileSchema.parse(body);
+    const parsed = bankAccountSchema.parse(body);
 
     const profile = await prisma.creatorProfile.upsert({
       where: { userId: auth.id },
@@ -47,9 +36,9 @@ export async function PUT(request: Request) {
         { status: 400 }
       );
     }
-    console.error("Profile update error:", error);
+    console.error("Bank account update error:", error);
     return NextResponse.json(
-      { success: false, error: "プロフィールの更新に失敗しました" },
+      { success: false, error: "銀行口座情報の更新に失敗しました" },
       { status: 500 }
     );
   }
