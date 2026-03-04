@@ -183,16 +183,39 @@ export async function PATCH(
       skipMention?: boolean;
     }[] = [];
 
-    if (status === "SUBMITTED" && updated.directorId) {
-      // Creator submitted → notify director (no mention, sent to director's room)
-      notifications.push({
-        type: "VIDEO_SUBMITTED",
-        videoId: id,
-        triggeredBy: auth.id,
-        targetUserId: updated.directorId,
-        message: `「${updated.title}」が提出されました`,
-        skipMention: true,
+    if (status === "SUBMITTED") {
+      // Creator submitted → notify all directors (no mention, sent to director's shared room)
+      const directors = await prisma.user.findMany({
+        where: { role: "DIRECTOR", isActive: true },
+        select: { id: true },
       });
+
+      const directorNotifs = directors
+        .filter((d) => d.id !== auth.id)
+        .map((d) => ({
+          type: "VIDEO_SUBMITTED",
+          videoId: id,
+          triggeredBy: auth.id,
+          targetUserId: d.id,
+          message: `「${updated.title}」が提出されました`,
+        }));
+
+      if (directorNotifs.length > 0) {
+        const created = await prisma.$transaction(
+          directorNotifs.map((n) => prisma.notification.create({ data: n }))
+        );
+
+        await sendChatworkGroupNotification({
+          notificationIds: created.map((n) => n.id),
+          type: "VIDEO_SUBMITTED",
+          targetUserIds: created.map((n) => n.targetUserId),
+          message: `「${updated.title}」が提出されました`,
+          videoTitle: updated.title,
+          triggeredByName: auth.name,
+          videoId: id,
+          skipMention: true,
+        });
+      }
     } else if (status === "REVISION_REQUESTED") {
       // Revision requested → notify creator + director (if admin is requesting)
       notifications.push({

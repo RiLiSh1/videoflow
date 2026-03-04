@@ -158,6 +158,7 @@ export interface GroupNotificationContext {
   videoTitle?: string;
   triggeredByName?: string;
   videoId?: string | null;
+  skipMention?: boolean;
 }
 
 export async function sendChatworkGroupNotification(
@@ -200,17 +201,21 @@ export async function sendChatworkGroupNotification(
       ? applyTemplate(template.messageTemplate, variables)
       : ctx.message;
 
-    // Build [To:id1][To:id2]... prefix
-    const toTags = usersWithChatwork
-      .map((u) => `[To:${u.chatworkId}]${u.name}さん`)
-      .join("\n");
-
     const link = buildRoleLink(
       usersWithChatwork[0].role,
       ctx.videoId ?? null
     );
 
-    let body = `${toTags}\n[info][title]${title}[/title]${messageBody}`;
+    let body: string;
+    if (ctx.skipMention) {
+      body = `[info][title]${title}[/title]${messageBody}`;
+    } else {
+      // Build [To:id1][To:id2]... prefix
+      const toTags = usersWithChatwork
+        .map((u) => `[To:${u.chatworkId}]${u.name}さん`)
+        .join("\n");
+      body = `${toTags}\n[info][title]${title}[/title]${messageBody}`;
+    }
     if (ctx.triggeredByName) {
       body += `\n担当: ${ctx.triggeredByName}`;
     }
