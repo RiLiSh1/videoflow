@@ -22,6 +22,7 @@ import {
   MessageCircle,
   Bell,
   Banknote,
+  Upload,
 } from "lucide-react";
 
 const TYPE_META: Record<
@@ -69,6 +70,13 @@ const TYPE_META: Record<
     description: "支払通知書を承認した時にクリエイター/ディレクターへ通知",
     icon: <Banknote className="h-5 w-5" />,
     color: "text-emerald-600 bg-emerald-50",
+  },
+  INVOICE_UPLOADED: {
+    label: "請求書アップロード",
+    description:
+      "クリエイター/ディレクターが請求書をアップロードした時に管理者へ通知",
+    icon: <Upload className="h-5 w-5" />,
+    color: "text-rose-600 bg-rose-50",
   },
 };
 
@@ -194,8 +202,12 @@ export default function AdminNotificationSettingsPage() {
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
               <div className="flex items-center gap-1.5">
                 <Info className="h-3.5 w-3.5 text-slate-400" />
-                <span className="text-xs text-slate-500">支払通知書用:</span>
+                <span className="text-xs text-slate-500">請求書・支払通知書用:</span>
               </div>
+              <code className="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded font-mono text-slate-700">
+                {"{creatorName}"}
+              </code>
+              <span className="text-xs text-slate-400">クリエイター名</span>
               <code className="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded font-mono text-slate-700">
                 {"{year}"}
               </code>
@@ -388,6 +400,7 @@ function TemplateEditDialog({
 
   const watchMessage = watch("messageTemplate");
   const preview = watchMessage
+    ?.replace("{creatorName}", "山田花子")
     ?.replace("{videoTitle}", "春キャンペーン動画")
     ?.replace("{triggeredByName}", "田中太郎")
     ?.replace("{year}", "2026")
@@ -479,7 +492,8 @@ function TemplateEditDialog({
             <code className="bg-gray-100 px-1 rounded">
               {"{triggeredByName}"}
             </code>{" "}
-            が利用できます。支払通知書用:{" "}
+            が利用できます。請求書・支払通知書用:{" "}
+            <code className="bg-gray-100 px-1 rounded">{"{creatorName}"}</code>{" "}
             <code className="bg-gray-100 px-1 rounded">{"{year}"}</code>{" "}
             <code className="bg-gray-100 px-1 rounded">{"{month}"}</code>{" "}
             <code className="bg-gray-100 px-1 rounded">{"{subtotal}"}</code>{" "}

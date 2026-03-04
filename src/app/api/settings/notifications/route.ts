@@ -39,6 +39,12 @@ const DEFAULT_TEMPLATES = [
     messageTemplate:
       "対象期間: {year}年{month}月\n\n{videoDetails}\n\n報酬（税抜）: {subtotal}\n消費税(10%): {tax}\n小計: {subtotalWithTax}\n源泉徴収税(10.21%): ▲{withholdingTax}\n━━━━━━━━━━━━━\n振込額: {netAmount}",
   },
+  {
+    type: "INVOICE_UPLOADED",
+    title: "請求書アップロード",
+    messageTemplate:
+      "{creatorName}さんが{year}年{month}月の請求書をアップロードしました",
+  },
 ];
 
 async function ensureTable() {

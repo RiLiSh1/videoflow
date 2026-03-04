@@ -9,6 +9,8 @@ export interface NotificationContext {
   message: string;
   videoTitle?: string;
   triggeredByName?: string;
+  skipMention?: boolean;
+  overrideRoomUserId?: string;
 }
 
 const FALLBACK_TITLES: Record<string, string> = {
@@ -19,6 +21,7 @@ const FALLBACK_TITLES: Record<string, string> = {
   VIDEO_FINAL_REVIEW: "最終確認依頼",
   NEW_FEEDBACK: "新しいフィードバック",
   PAYMENT_APPROVED: "支払通知書発行",
+  INVOICE_UPLOADED: "請求書アップロード",
 };
 
 function applyTemplate(
@@ -54,9 +57,12 @@ function buildChatworkMessage(
   title: string,
   message: string,
   triggeredByName: string | undefined,
-  link: string
+  link: string,
+  skipMention?: boolean
 ): string {
-  let body = `[To:${chatworkId}]${userName}さん\n[info][title]${title}[/title]${message}`;
+  let body = skipMention
+    ? `[info][title]${title}[/title]${message}`
+    : `[To:${chatworkId}]${userName}さん\n[info][title]${title}[/title]${message}`;
   if (triggeredByName) {
     body += `\n担当: ${triggeredByName}`;
   }
@@ -88,6 +94,18 @@ export async function sendChatworkNotification(
 
     if (!user?.chatworkId || !user?.chatworkRoomId) return;
 
+    // Determine which room to send to
+    let roomId = user.chatworkRoomId;
+    if (ctx.overrideRoomUserId) {
+      const roomUser = await prisma.user.findUnique({
+        where: { id: ctx.overrideRoomUserId },
+        select: { chatworkRoomId: true },
+      });
+      if (roomUser?.chatworkRoomId) {
+        roomId = roomUser.chatworkRoomId;
+      }
+    }
+
     const variables: Record<string, string> = {};
     if (ctx.videoTitle) variables.videoTitle = ctx.videoTitle;
     if (ctx.triggeredByName) variables.triggeredByName = ctx.triggeredByName;
@@ -105,10 +123,11 @@ export async function sendChatworkNotification(
       title,
       messageBody,
       ctx.triggeredByName,
-      link
+      link,
+      ctx.skipMention
     );
 
-    const result = await sendChatworkMessage(user.chatworkRoomId, message);
+    const result = await sendChatworkMessage(roomId, message);
 
     if (result.success) {
       await prisma.notification.update({
@@ -128,5 +147,84 @@ export async function sendChatworkNotifications(
     await Promise.allSettled(contexts.map(sendChatworkNotification));
   } catch (err) {
     console.error("Chatwork notifications failed:", err);
+  }
+}
+
+export interface GroupNotificationContext {
+  notificationIds: string[];
+  type: string;
+  targetUserIds: string[];
+  message: string;
+  videoTitle?: string;
+  triggeredByName?: string;
+  videoId?: string | null;
+}
+
+export async function sendChatworkGroupNotification(
+  ctx: GroupNotificationContext
+): Promise<void> {
+  try {
+    // Fetch template from DB
+    const template = await prisma.notificationTemplate.findUnique({
+      where: { type: ctx.type },
+    });
+
+    if (template && !template.isActive) return;
+
+    // Fetch all target users' Chatwork info
+    const users = await prisma.user.findMany({
+      where: { id: { in: ctx.targetUserIds } },
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        chatworkId: true,
+        chatworkRoomId: true,
+      },
+    });
+
+    const usersWithChatwork = users.filter(
+      (u) => u.chatworkId && u.chatworkRoomId
+    );
+    if (usersWithChatwork.length === 0) return;
+
+    // Use first user's room (all share the same room)
+    const roomId = usersWithChatwork[0].chatworkRoomId!;
+
+    const variables: Record<string, string> = {};
+    if (ctx.videoTitle) variables.videoTitle = ctx.videoTitle;
+    if (ctx.triggeredByName) variables.triggeredByName = ctx.triggeredByName;
+
+    const title = template?.title || FALLBACK_TITLES[ctx.type] || ctx.type;
+    const messageBody = template
+      ? applyTemplate(template.messageTemplate, variables)
+      : ctx.message;
+
+    // Build [To:id1][To:id2]... prefix
+    const toTags = usersWithChatwork
+      .map((u) => `[To:${u.chatworkId}]${u.name}さん`)
+      .join("\n");
+
+    const link = buildRoleLink(
+      usersWithChatwork[0].role,
+      ctx.videoId ?? null
+    );
+
+    let body = `${toTags}\n[info][title]${title}[/title]${messageBody}`;
+    if (ctx.triggeredByName) {
+      body += `\n担当: ${ctx.triggeredByName}`;
+    }
+    body += `\n${link}[/info]`;
+
+    const result = await sendChatworkMessage(roomId, body);
+
+    if (result.success) {
+      await prisma.notification.updateMany({
+        where: { id: { in: ctx.notificationIds } },
+        data: { chatworkSent: true },
+      });
+    }
+  } catch (err) {
+    console.error("Chatwork group notification failed:", err);
   }
 }

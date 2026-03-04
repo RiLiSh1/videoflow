@@ -6,6 +6,7 @@ import { requireAuth, isSessionUser } from "@/lib/auth/require-auth";
 import { prisma } from "@/lib/db";
 import { extractInvoiceAmounts } from "@/lib/claude/extract-invoice";
 import { saveInvoiceFile } from "@/lib/invoice-storage";
+import { sendChatworkGroupNotification } from "@/lib/chatwork-notification";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
   // 3. Verify ownership
   const notification = await prisma.paymentNotification.findUnique({
     where: { id: paymentNotificationId },
-    select: { id: true, creatorId: true, subtotal: true, withholdingTax: true, netAmount: true },
+    select: { id: true, creatorId: true, subtotal: true, withholdingTax: true, netAmount: true, year: true, month: true },
   });
 
   if (!notification) {
@@ -154,6 +155,61 @@ export async function POST(request: Request) {
         verifiedAt: new Date(),
       },
     });
+
+    // 8. Record history
+    try {
+      await prisma.invoiceHistory.create({
+        data: {
+          paymentNotificationId,
+          actionType: "UPLOAD",
+          actorId: auth.id,
+          filePath: stored.filePath,
+          fileName: file.name,
+          fileSize: stored.fileSize,
+          extractedSubtotal,
+          extractedWithholding,
+          extractedNetAmount,
+          verificationStatus,
+        },
+      });
+    } catch (historyError) {
+      console.error("Invoice upload - history record error:", historyError);
+    }
+
+    // 9. Notify all admins about the invoice upload
+    try {
+      const admins = await prisma.user.findMany({
+        where: { role: "ADMIN", isActive: true },
+        select: { id: true },
+      });
+
+      if (admins.length > 0) {
+        const notifMessage = `「${auth.name}」が${notification.year}年${notification.month}月の請求書をアップロードしました`;
+        const created = await prisma.$transaction(
+          admins.map((admin) =>
+            prisma.notification.create({
+              data: {
+                type: "INVOICE_UPLOADED",
+                videoId: null,
+                triggeredBy: auth.id,
+                targetUserId: admin.id,
+                message: notifMessage,
+              },
+            })
+          )
+        );
+
+        sendChatworkGroupNotification({
+          notificationIds: created.map((n) => n.id),
+          type: "INVOICE_UPLOADED",
+          targetUserIds: admins.map((a) => a.id),
+          message: notifMessage,
+          triggeredByName: auth.name,
+        });
+      }
+    } catch (notifError) {
+      console.error("Invoice upload - notification error:", notifError);
+    }
 
     return NextResponse.json({
       success: true,

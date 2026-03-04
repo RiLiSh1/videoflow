@@ -5,6 +5,7 @@ import { requireAuth, isSessionUser } from "@/lib/auth/require-auth";
 import type { VideoStatus } from "@prisma/client";
 import {
   sendChatworkNotifications,
+  sendChatworkGroupNotification,
   type NotificationContext,
 } from "@/lib/chatwork-notification";
 
@@ -84,16 +85,15 @@ export async function PATCH(
           notificationData.map((n) => prisma.notification.create({ data: n }))
         );
 
-        const cwContexts: NotificationContext[] = created.map((n) => ({
-          notificationId: n.id,
-          type: n.type,
-          videoId: n.videoId,
-          targetUserId: n.targetUserId,
-          message: n.message,
+        sendChatworkGroupNotification({
+          notificationIds: created.map((n) => n.id),
+          type: "VIDEO_FINAL_REVIEW",
+          targetUserIds: created.map((n) => n.targetUserId),
+          message: `「${updated.title}」がディレクターに承認されました。最終確認をお願いします`,
           videoTitle: updated.title,
           triggeredByName: auth.name,
-        }));
-        sendChatworkNotifications(cwContexts);
+          videoId: id,
+        });
       }
 
       return NextResponse.json({ success: true, data: updated });
@@ -180,16 +180,18 @@ export async function PATCH(
       triggeredBy: string;
       targetUserId: string;
       message: string;
+      skipMention?: boolean;
     }[] = [];
 
     if (status === "SUBMITTED" && updated.directorId) {
-      // Creator submitted → notify director
+      // Creator submitted → notify director (no mention, sent to director's room)
       notifications.push({
         type: "VIDEO_SUBMITTED",
         videoId: id,
         triggeredBy: auth.id,
         targetUserId: updated.directorId,
         message: `「${updated.title}」が提出されました`,
+        skipMention: true,
       });
     } else if (status === "REVISION_REQUESTED") {
       // Revision requested → notify creator + director (if admin is requesting)
@@ -214,22 +216,14 @@ export async function PATCH(
         });
       }
     } else if (status === "COMPLETED") {
-      // Admin approved (COMPLETED) → notify director + creator
-      if (updated.directorId && updated.directorId !== auth.id) {
-        notifications.push({
-          type: "VIDEO_COMPLETED",
-          videoId: id,
-          triggeredBy: auth.id,
-          targetUserId: updated.directorId,
-          message: `「${updated.title}」が最終承認されました`,
-        });
-      }
+      // Admin approved (COMPLETED) → notify creator only (no mention, sent to creator's room)
       notifications.push({
         type: "VIDEO_COMPLETED",
         videoId: id,
         triggeredBy: auth.id,
         targetUserId: updated.creator.id,
         message: `「${updated.title}」が最終承認されました`,
+        skipMention: true,
       });
     } else if (status === "REVISED" && updated.directorId) {
       // Creator resubmitted after revision → notify director
@@ -248,10 +242,20 @@ export async function PATCH(
     );
     if (validNotifications.length > 0) {
       const created = await prisma.$transaction(
-        validNotifications.map((n) => prisma.notification.create({ data: n }))
+        validNotifications.map((n) =>
+          prisma.notification.create({
+            data: {
+              type: n.type,
+              videoId: n.videoId,
+              triggeredBy: n.triggeredBy,
+              targetUserId: n.targetUserId,
+              message: n.message,
+            },
+          })
+        )
       );
 
-      const cwContexts: NotificationContext[] = created.map((n) => ({
+      const cwContexts: NotificationContext[] = created.map((n, i) => ({
         notificationId: n.id,
         type: n.type,
         videoId: n.videoId,
@@ -259,6 +263,7 @@ export async function PATCH(
         message: n.message,
         videoTitle: updated.title,
         triggeredByName: auth.name,
+        skipMention: validNotifications[i].skipMention,
       }));
       sendChatworkNotifications(cwContexts);
     }

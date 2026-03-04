@@ -11,6 +11,7 @@ import {
   type InvoiceLineItem,
 } from "@/lib/pdf/invoice-template";
 import { saveInvoiceFile } from "@/lib/invoice-storage";
+import { sendChatworkGroupNotification } from "@/lib/chatwork-notification";
 
 export async function POST(
   _request: Request,
@@ -122,8 +123,9 @@ export async function POST(
   const fileName = `請求書_${notification.creator.name}_${notification.year}年${String(notification.month).padStart(2, "0")}月.pdf`;
 
   // 4. Save file and create DB record
+  let stored;
   try {
-    const stored = await saveInvoiceFile(id, "invoice.pdf", buffer);
+    stored = await saveInvoiceFile(id, "invoice.pdf", buffer);
 
     await prisma.creatorInvoice.upsert({
       where: { paymentNotificationId: id },
@@ -159,6 +161,61 @@ export async function POST(
       { success: false, error: "請求書の保存に失敗しました" },
       { status: 500 }
     );
+  }
+
+  // 5. Record history
+  try {
+    await prisma.invoiceHistory.create({
+      data: {
+        paymentNotificationId: id,
+        actionType: "GENERATE",
+        actorId: auth.id,
+        filePath: stored.filePath,
+        fileName,
+        fileSize: stored.fileSize,
+        extractedSubtotal: notification.subtotal,
+        extractedWithholding: notification.withholdingTax,
+        extractedNetAmount: notification.netAmount,
+        verificationStatus: "MATCHED",
+      },
+    });
+  } catch (historyError) {
+    console.error("Invoice generate - history record error:", historyError);
+  }
+
+  // 6. Notify all admins about the invoice
+  try {
+    const admins = await prisma.user.findMany({
+      where: { role: "ADMIN", isActive: true },
+      select: { id: true },
+    });
+
+    if (admins.length > 0) {
+      const notifMessage = `「${notification.creator.name}」が${notification.year}年${notification.month}月の請求書をアップロードしました`;
+      const created = await prisma.$transaction(
+        admins.map((admin) =>
+          prisma.notification.create({
+            data: {
+              type: "INVOICE_UPLOADED",
+              videoId: null,
+              triggeredBy: auth.id,
+              targetUserId: admin.id,
+              message: notifMessage,
+            },
+          })
+        )
+      );
+
+      sendChatworkGroupNotification({
+        notificationIds: created.map((n) => n.id),
+        type: "INVOICE_UPLOADED",
+        targetUserIds: admins.map((a) => a.id),
+        message: notifMessage,
+        triggeredByName: auth.name,
+      });
+    }
+  } catch (notifError) {
+    console.error("Invoice generate - notification error:", notifError);
   }
 
   return new NextResponse(new Uint8Array(buffer), {

@@ -71,6 +71,7 @@ export async function POST(
           message: notification.message,
           videoTitle: video.title,
           triggeredByName: auth.name,
+          overrideRoomUserId: video.creatorId,
         });
       }
     }
