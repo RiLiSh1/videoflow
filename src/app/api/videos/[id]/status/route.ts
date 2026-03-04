@@ -85,7 +85,7 @@ export async function PATCH(
           notificationData.map((n) => prisma.notification.create({ data: n }))
         );
 
-        sendChatworkGroupNotification({
+        await sendChatworkGroupNotification({
           notificationIds: created.map((n) => n.id),
           type: "VIDEO_FINAL_REVIEW",
           targetUserIds: created.map((n) => n.targetUserId),
@@ -265,7 +265,7 @@ export async function PATCH(
         triggeredByName: auth.name,
         skipMention: validNotifications[i].skipMention,
       }));
-      sendChatworkNotifications(cwContexts);
+      await sendChatworkNotifications(cwContexts);
     }
 
     return NextResponse.json({ success: true, data: updated });

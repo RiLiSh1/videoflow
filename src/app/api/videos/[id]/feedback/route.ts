@@ -63,7 +63,7 @@ export async function POST(
           },
         });
 
-        sendChatworkNotification({
+        await sendChatworkNotification({
           notificationId: notification.id,
           type: notification.type,
           videoId: notification.videoId,

@@ -199,7 +199,7 @@ export async function POST(request: Request) {
           )
         );
 
-        sendChatworkGroupNotification({
+        await sendChatworkGroupNotification({
           notificationIds: created.map((n) => n.id),
           type: "INVOICE_UPLOADED",
           targetUserIds: admins.map((a) => a.id),
