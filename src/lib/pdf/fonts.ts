@@ -1,5 +1,5 @@
 import { Font } from "@react-pdf/renderer";
-import { existsSync, readFileSync } from "fs";
+import { existsSync } from "fs";
 import { join } from "path";
 
 let fontsRegistered = false;
