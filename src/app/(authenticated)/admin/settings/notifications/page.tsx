@@ -198,6 +198,18 @@ export default function AdminNotificationSettingsPage() {
                 {"{triggeredByName}"}
               </code>
               <span className="text-xs text-slate-400">操作ユーザー名</span>
+              <code className="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded font-mono text-slate-700">
+                {"{creatorName}"}
+              </code>
+              <span className="text-xs text-slate-400">クリエイター名</span>
+              <code className="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded font-mono text-slate-700">
+                {"{videoId}"}
+              </code>
+              <span className="text-xs text-slate-400">動画ID</span>
+              <code className="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded font-mono text-slate-700">
+                {"{link}"}
+              </code>
+              <span className="text-xs text-slate-400">動画リンク</span>
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
               <div className="flex items-center gap-1.5">
@@ -403,6 +415,8 @@ function TemplateEditDialog({
     ?.replace("{creatorName}", "山田花子")
     ?.replace("{videoTitle}", "春キャンペーン動画")
     ?.replace("{triggeredByName}", "田中太郎")
+    ?.replace("{videoId}", "abc123")
+    ?.replace("{link}", "https://videoflow-one.vercel.app/director/reviews/abc123")
     ?.replace("{year}", "2026")
     ?.replace("{month}", "2")
     ?.replace("{subtotal}", "¥3,000")
@@ -488,12 +502,13 @@ function TemplateEditDialog({
             </p>
           )}
           <p className="text-xs text-gray-400 mt-1">
+            共通:{" "}
             <code className="bg-gray-100 px-1 rounded">{"{videoTitle}"}</code>{" "}
-            <code className="bg-gray-100 px-1 rounded">
-              {"{triggeredByName}"}
-            </code>{" "}
-            が利用できます。請求書・支払通知書用:{" "}
+            <code className="bg-gray-100 px-1 rounded">{"{triggeredByName}"}</code>{" "}
             <code className="bg-gray-100 px-1 rounded">{"{creatorName}"}</code>{" "}
+            <code className="bg-gray-100 px-1 rounded">{"{videoId}"}</code>{" "}
+            <code className="bg-gray-100 px-1 rounded">{"{link}"}</code>
+            。支払通知書用:{" "}
             <code className="bg-gray-100 px-1 rounded">{"{year}"}</code>{" "}
             <code className="bg-gray-100 px-1 rounded">{"{month}"}</code>{" "}
             <code className="bg-gray-100 px-1 rounded">{"{subtotal}"}</code>{" "}
@@ -502,6 +517,7 @@ function TemplateEditDialog({
             <code className="bg-gray-100 px-1 rounded">{"{withholdingTax}"}</code>{" "}
             <code className="bg-gray-100 px-1 rounded">{"{netAmount}"}</code>{" "}
             <code className="bg-gray-100 px-1 rounded">{"{videoDetails}"}</code>
+            。テンプレートに[info]を含めると自動ラッピングがスキップされます。
           </p>
         </div>
 

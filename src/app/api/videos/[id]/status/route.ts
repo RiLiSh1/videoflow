@@ -92,6 +92,7 @@ export async function PATCH(
           message: `「${updated.title}」がディレクターに承認されました。最終確認をお願いします`,
           videoTitle: updated.title,
           triggeredByName: auth.name,
+          creatorName: updated.creator.name,
           videoId: id,
         });
       }
@@ -222,6 +223,7 @@ export async function PATCH(
           message: `「${updated.title}」が提出されました`,
           videoTitle: updated.title,
           triggeredByName: auth.name,
+          creatorName: updated.creator.name,
           videoId: id,
           skipMention: true,
         });
@@ -296,6 +298,7 @@ export async function PATCH(
         message: n.message,
         videoTitle: updated.title,
         triggeredByName: auth.name,
+        creatorName: updated.creator.name,
         skipMention: validNotifications[i].skipMention,
       }));
       await sendChatworkNotifications(cwContexts);

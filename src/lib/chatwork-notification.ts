@@ -9,6 +9,7 @@ export interface NotificationContext {
   message: string;
   videoTitle?: string;
   triggeredByName?: string;
+  creatorName?: string;
   skipMention?: boolean;
   overrideRoomUserId?: string;
 }
@@ -106,9 +107,13 @@ export async function sendChatworkNotification(
       }
     }
 
+    const link = buildRoleLink(user.role, ctx.videoId);
     const variables: Record<string, string> = {};
     if (ctx.videoTitle) variables.videoTitle = ctx.videoTitle;
     if (ctx.triggeredByName) variables.triggeredByName = ctx.triggeredByName;
+    if (ctx.creatorName) variables.creatorName = ctx.creatorName;
+    if (ctx.videoId) variables.videoId = ctx.videoId;
+    variables.link = link;
 
     // Use template from DB, fall back to hardcoded values
     const title = template?.title || FALLBACK_TITLES[ctx.type] || ctx.type;
@@ -116,16 +121,24 @@ export async function sendChatworkNotification(
       ? applyTemplate(template.messageTemplate, variables)
       : ctx.message;
 
-    const link = buildRoleLink(user.role, ctx.videoId);
-    const message = buildChatworkMessage(
-      user.chatworkId,
-      user.name,
-      title,
-      messageBody,
-      ctx.triggeredByName,
-      link,
-      ctx.skipMention
-    );
+    // If template contains [info], treat as full-body (skip auto-wrapping)
+    let message: string;
+    if (messageBody.includes("[info]")) {
+      const mention = ctx.skipMention
+        ? ""
+        : `[To:${user.chatworkId}]${user.name}さん\n`;
+      message = mention + messageBody;
+    } else {
+      message = buildChatworkMessage(
+        user.chatworkId,
+        user.name,
+        title,
+        messageBody,
+        ctx.triggeredByName,
+        link,
+        ctx.skipMention
+      );
+    }
 
     const result = await sendChatworkMessage(roomId, message);
 
@@ -157,6 +170,7 @@ export interface GroupNotificationContext {
   message: string;
   videoTitle?: string;
   triggeredByName?: string;
+  creatorName?: string;
   videoId?: string | null;
   skipMention?: boolean;
 }
@@ -192,34 +206,47 @@ export async function sendChatworkGroupNotification(
     // Use first user's room (all share the same room)
     const roomId = usersWithChatwork[0].chatworkRoomId!;
 
+    const link = buildRoleLink(
+      usersWithChatwork[0].role,
+      ctx.videoId ?? null
+    );
     const variables: Record<string, string> = {};
     if (ctx.videoTitle) variables.videoTitle = ctx.videoTitle;
     if (ctx.triggeredByName) variables.triggeredByName = ctx.triggeredByName;
+    if (ctx.creatorName) variables.creatorName = ctx.creatorName;
+    if (ctx.videoId) variables.videoId = ctx.videoId;
+    variables.link = link;
 
     const title = template?.title || FALLBACK_TITLES[ctx.type] || ctx.type;
     const messageBody = template
       ? applyTemplate(template.messageTemplate, variables)
       : ctx.message;
 
-    const link = buildRoleLink(
-      usersWithChatwork[0].role,
-      ctx.videoId ?? null
-    );
-
+    // If template contains [info], treat as full-body (skip auto-wrapping)
     let body: string;
-    if (ctx.skipMention) {
-      body = `[info][title]${title}[/title]${messageBody}`;
+    if (messageBody.includes("[info]")) {
+      if (ctx.skipMention) {
+        body = messageBody;
+      } else {
+        const toTags = usersWithChatwork
+          .map((u) => `[To:${u.chatworkId}]${u.name}さん`)
+          .join("\n");
+        body = `${toTags}\n${messageBody}`;
+      }
     } else {
-      // Build [To:id1][To:id2]... prefix
-      const toTags = usersWithChatwork
-        .map((u) => `[To:${u.chatworkId}]${u.name}さん`)
-        .join("\n");
-      body = `${toTags}\n[info][title]${title}[/title]${messageBody}`;
+      if (ctx.skipMention) {
+        body = `[info][title]${title}[/title]${messageBody}`;
+      } else {
+        const toTags = usersWithChatwork
+          .map((u) => `[To:${u.chatworkId}]${u.name}さん`)
+          .join("\n");
+        body = `${toTags}\n[info][title]${title}[/title]${messageBody}`;
+      }
+      if (ctx.triggeredByName) {
+        body += `\n担当: ${ctx.triggeredByName}`;
+      }
+      body += `\n${link}[/info]`;
     }
-    if (ctx.triggeredByName) {
-      body += `\n担当: ${ctx.triggeredByName}`;
-    }
-    body += `\n${link}[/info]`;
 
     const result = await sendChatworkMessage(roomId, body);
 
