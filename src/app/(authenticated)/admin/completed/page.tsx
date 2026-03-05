@@ -30,6 +30,8 @@ async function getCompletedData() {
       deliveryScope: v.deliveryScope,
       deliveryClientId: v.deliveryClientId,
       deliveryClientName: v.deliveryClient?.name ?? null,
+      menuCategory: v.menuCategory,
+      menuCategoryNote: v.menuCategoryNote,
       updatedAt: v.updatedAt.toISOString(),
       project: v.project,
       creator: v.creator,

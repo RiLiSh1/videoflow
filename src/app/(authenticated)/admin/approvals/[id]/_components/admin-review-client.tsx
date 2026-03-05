@@ -80,6 +80,8 @@ export function AdminReviewClient({
   const [showAllFeedbacks, setShowAllFeedbacks] = useState(false);
   const [deliveryScope, setDeliveryScope] = useState<string>("");
   const [deliveryClientId, setDeliveryClientId] = useState<string>("");
+  const [menuCategory, setMenuCategory] = useState<string>("");
+  const [menuCategoryNote, setMenuCategoryNote] = useState<string>("");
 
   // Listen for timestamp events from video player
   const handleTimestampEvent = useCallback((e: Event) => {
@@ -151,7 +153,7 @@ export function AdminReviewClient({
     targetStatus: VideoStatus,
     label: string
   ) => {
-    // COMPLETED時はdeliveryScope必須チェック
+    // COMPLETED時はdeliveryScope + menuCategory必須チェック
     if (targetStatus === "COMPLETED") {
       if (!deliveryScope) {
         setError("納品区分を選択してください");
@@ -159,6 +161,14 @@ export function AdminReviewClient({
       }
       if (deliveryScope === "SELECTED_STORES" && !deliveryClientId) {
         setError("店舗を選択してください");
+        return;
+      }
+      if (!menuCategory) {
+        setError("メニューカテゴリを選択してください");
+        return;
+      }
+      if (menuCategory === "OTHER" && !menuCategoryNote.trim()) {
+        setError("「その他」の場合はコメントを入力してください");
         return;
       }
     }
@@ -187,6 +197,10 @@ export function AdminReviewClient({
         payload.deliveryScope = deliveryScope;
         if (deliveryScope === "SELECTED_STORES") {
           payload.deliveryClientId = deliveryClientId;
+        }
+        payload.menuCategory = menuCategory;
+        if (menuCategory === "OTHER") {
+          payload.menuCategoryNote = menuCategoryNote;
         }
       }
 
@@ -393,6 +407,51 @@ export function AdminReviewClient({
                           ))}
                         </select>
                       </div>
+                    )}
+                  </div>
+
+                  {/* メニューカテゴリの選択（必須） */}
+                  <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <p className="text-xs font-semibold text-gray-600">
+                      メニューカテゴリ <span className="text-red-500">*</span>
+                    </p>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { value: "PORE_CLEANSING", label: "毛穴洗浄" },
+                        { value: "SKIN_IMPROVEMENT", label: "肌質改善" },
+                        { value: "WAX", label: "ワックス" },
+                        { value: "PEELING", label: "ピーリング" },
+                        { value: "OTHER", label: "その他" },
+                      ].map((cat) => (
+                        <button
+                          key={cat.value}
+                          type="button"
+                          onClick={() => {
+                            setMenuCategory(cat.value);
+                            if (cat.value !== "OTHER") setMenuCategoryNote("");
+                            setError(null);
+                          }}
+                          className={`rounded-md border px-2 py-1.5 text-xs font-medium transition-colors ${
+                            menuCategory === cat.value
+                              ? "border-teal-500 bg-teal-50 text-teal-700"
+                              : "border-gray-200 bg-white text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          {cat.label}
+                        </button>
+                      ))}
+                    </div>
+                    {menuCategory === "OTHER" && (
+                      <input
+                        type="text"
+                        placeholder="カテゴリの詳細を入力..."
+                        value={menuCategoryNote}
+                        onChange={(e) => {
+                          setMenuCategoryNote(e.target.value);
+                          setError(null);
+                        }}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
                     )}
                   </div>
 

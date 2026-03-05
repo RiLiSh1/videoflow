@@ -7,6 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
 
+const MENU_CATEGORY_LABELS: Record<string, string> = {
+  PORE_CLEANSING: "毛穴洗浄",
+  SKIN_IMPROVEMENT: "肌質改善",
+  WAX: "ワックス",
+  PEELING: "ピーリング",
+  OTHER: "その他",
+};
+
 type VideoStock = {
   id: string;
   title: string;
@@ -20,6 +28,8 @@ type VideoStock = {
   note: string | null;
   sourceVideoId: string | null;
   deliveryScope: "ALL_STORES" | "SELECTED_STORES" | null;
+  menuCategory: string | null;
+  menuCategoryNote: string | null;
   createdAt: string;
   client: { id: string; name: string } | null;
   sourceVideo: { id: string; videoCode: string; project: { projectCode: string } } | null;
@@ -415,6 +425,9 @@ export function StocksClient() {
                   納品区分
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  メニュー
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   連携元
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -439,6 +452,18 @@ export function StocksClient() {
                   </td>
                   <td className="px-4 py-3 text-sm">
                     <InlineScopeEdit stock={stock} clients={clients} onSaved={fetchAll} />
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {stock.menuCategory ? (
+                      <span className="inline-block rounded px-2 py-0.5 text-xs font-medium bg-teal-100 text-teal-700">
+                        {MENU_CATEGORY_LABELS[stock.menuCategory] || stock.menuCategory}
+                        {stock.menuCategory === "OTHER" && stock.menuCategoryNote
+                          ? `（${stock.menuCategoryNote}）`
+                          : ""}
+                      </span>
+                    ) : (
+                      <span className="text-gray-300 text-xs">-</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-sm">
                     {stock.sourceVideo ? (

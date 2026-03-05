@@ -82,6 +82,16 @@ enum InvoiceActionType {
 // LM動画納品システム Enums
 // ============================================================
 
+enum MenuCategory {
+  PORE_CLEANSING    // 毛穴洗浄
+  SKIN_IMPROVEMENT  // 肌質改善
+  WAX               // ワックス
+  PEELING           // ピーリング
+  OTHER             // その他
+
+  @@map("menu_category")
+}
+
 enum DeliveryScope {
   ALL_STORES
   SELECTED_STORES
@@ -199,6 +209,8 @@ model Video {
   deadline            DateTime?
   deliveryScope       DeliveryScope? @map("delivery_scope")
   deliveryClientId    String?        @map("delivery_client_id")
+  menuCategory        MenuCategory?  @map("menu_category")
+  menuCategoryNote    String?        @map("menu_category_note")
   createdAt           DateTime    @default(now()) @map("created_at")
   updatedAt           DateTime    @updatedAt @map("updated_at")
 
@@ -511,6 +523,8 @@ model VideoStock {
   usedAt            DateTime? @map("used_at")
   note              String?   @db.Text
   deliveryScope     DeliveryScope? @map("delivery_scope")
+  menuCategory      MenuCategory?  @map("menu_category")
+  menuCategoryNote  String?        @map("menu_category_note")
   sourceVideoId     String?   @unique @map("source_video_id") // 動画システムからの連携元
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")

@@ -59,7 +59,7 @@ export async function PUT(
 
   try {
     const body = await request.json();
-    const { title, directorId, deadline, videoType, videoTypeOther, deliveryScope, deliveryClientId } = body;
+    const { title, directorId, deadline, videoType, videoTypeOther, deliveryScope, deliveryClientId, menuCategory, menuCategoryNote } = body;
 
     const updateData: Record<string, unknown> = {};
     if (title !== undefined) updateData.title = title;
@@ -72,18 +72,30 @@ export async function PUT(
     if (deliveryScope !== undefined) {
       updateData.deliveryScope = deliveryScope;
       updateData.deliveryClientId = deliveryScope === "SELECTED_STORES" ? (deliveryClientId || null) : null;
+    }
+    if (menuCategory !== undefined) {
+      updateData.menuCategory = menuCategory;
+      updateData.menuCategoryNote = menuCategory === "OTHER" ? (menuCategoryNote || null) : null;
+    }
 
-      // VideoStockも同期更新
+    // VideoStockも同期更新
+    if (deliveryScope !== undefined || menuCategory !== undefined) {
       const existingStock = await prisma.videoStock.findUnique({
         where: { sourceVideoId: id },
       });
       if (existingStock) {
+        const stockUpdate: Record<string, unknown> = {};
+        if (deliveryScope !== undefined) {
+          stockUpdate.deliveryScope = deliveryScope;
+          stockUpdate.clientId = deliveryScope === "SELECTED_STORES" ? (deliveryClientId || null) : null;
+        }
+        if (menuCategory !== undefined) {
+          stockUpdate.menuCategory = menuCategory;
+          stockUpdate.menuCategoryNote = menuCategory === "OTHER" ? (menuCategoryNote || null) : null;
+        }
         await prisma.videoStock.update({
           where: { sourceVideoId: id },
-          data: {
-            deliveryScope: deliveryScope,
-            clientId: deliveryScope === "SELECTED_STORES" ? (deliveryClientId || null) : null,
-          },
+          data: stockUpdate,
         });
       }
     }

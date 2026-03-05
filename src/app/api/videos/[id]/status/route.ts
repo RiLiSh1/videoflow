@@ -31,10 +31,12 @@ export async function PATCH(
 
   try {
     const body = await request.json();
-    const { status, deliveryScope, deliveryClientId } = body as {
+    const { status, deliveryScope, deliveryClientId, menuCategory, menuCategoryNote } = body as {
       status: VideoStatus;
       deliveryScope?: string;
       deliveryClientId?: string;
+      menuCategory?: string;
+      menuCategoryNote?: string;
     };
 
     const video = await prisma.video.findUnique({
@@ -140,7 +142,7 @@ export async function PATCH(
       }
     }
 
-    // COMPLETED時は deliveryScope 必須
+    // COMPLETED時は deliveryScope + menuCategory 必須
     if (status === "COMPLETED") {
       if (!deliveryScope || !["ALL_STORES", "SELECTED_STORES"].includes(deliveryScope)) {
         return NextResponse.json(
@@ -151,6 +153,19 @@ export async function PATCH(
       if (deliveryScope === "SELECTED_STORES" && !deliveryClientId) {
         return NextResponse.json(
           { success: false, error: "店舗を選択してください" },
+          { status: 400 }
+        );
+      }
+      const validCategories = ["PORE_CLEANSING", "SKIN_IMPROVEMENT", "WAX", "PEELING", "OTHER"];
+      if (!menuCategory || !validCategories.includes(menuCategory)) {
+        return NextResponse.json(
+          { success: false, error: "メニューカテゴリを選択してください" },
+          { status: 400 }
+        );
+      }
+      if (menuCategory === "OTHER" && !menuCategoryNote?.trim()) {
+        return NextResponse.json(
+          { success: false, error: "「その他」の場合はコメントを入力してください" },
           { status: 400 }
         );
       }
@@ -168,6 +183,8 @@ export async function PATCH(
     if (status === "COMPLETED" && deliveryScope) {
       updateData.deliveryScope = deliveryScope;
       updateData.deliveryClientId = deliveryScope === "SELECTED_STORES" ? deliveryClientId : null;
+      updateData.menuCategory = menuCategory;
+      updateData.menuCategoryNote = menuCategory === "OTHER" ? (menuCategoryNote || null) : null;
     }
 
     const updated = await prisma.video.update({
@@ -312,6 +329,8 @@ export async function PATCH(
                 sourceVideoId: id,
                 deliveryScope: deliveryScope as "ALL_STORES" | "SELECTED_STORES" | undefined,
                 clientId: deliveryScope === "SELECTED_STORES" ? deliveryClientId : null,
+                menuCategory: menuCategory as "PORE_CLEANSING" | "SKIN_IMPROVEMENT" | "WAX" | "PEELING" | "OTHER" | undefined,
+                menuCategoryNote: menuCategory === "OTHER" ? (menuCategoryNote || null) : null,
                 note: `動画システムから自動連携（${updated.project.projectCode}）`,
               },
             });

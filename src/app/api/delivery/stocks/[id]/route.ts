@@ -35,7 +35,7 @@ export async function PUT(
   if (!isSessionUser(auth)) return auth;
 
   const body = await request.json();
-  const { title, fileName, googleDriveFileId, googleDriveUrl, blobUrl, clientId, note, deliveryScope } = body;
+  const { title, fileName, googleDriveFileId, googleDriveUrl, blobUrl, clientId, note, deliveryScope, menuCategory, menuCategoryNote } = body;
 
   const data: Record<string, unknown> = {};
   if (title !== undefined) data.title = title;
@@ -46,6 +46,10 @@ export async function PUT(
   if (clientId !== undefined) data.clientId = clientId;
   if (note !== undefined) data.note = note;
   if (deliveryScope !== undefined) data.deliveryScope = deliveryScope;
+  if (menuCategory !== undefined) {
+    data.menuCategory = menuCategory;
+    data.menuCategoryNote = menuCategory === "OTHER" ? (menuCategoryNote || null) : null;
+  }
 
   const stock = await prisma.videoStock.update({
     where: { id: params.id },
