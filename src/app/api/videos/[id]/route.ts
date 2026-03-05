@@ -59,7 +59,7 @@ export async function PUT(
 
   try {
     const body = await request.json();
-    const { title, directorId, deadline, videoType, videoTypeOther } = body;
+    const { title, directorId, deadline, videoType, videoTypeOther, deliveryScope, deliveryClientId } = body;
 
     const updateData: Record<string, unknown> = {};
     if (title !== undefined) updateData.title = title;
@@ -68,6 +68,24 @@ export async function PUT(
     if (videoType !== undefined) {
       updateData.videoType = videoType;
       updateData.videoTypeOther = videoType === "OTHER" ? (videoTypeOther || null) : null;
+    }
+    if (deliveryScope !== undefined) {
+      updateData.deliveryScope = deliveryScope;
+      updateData.deliveryClientId = deliveryScope === "SELECTED_STORES" ? (deliveryClientId || null) : null;
+
+      // VideoStockも同期更新
+      const existingStock = await prisma.videoStock.findUnique({
+        where: { sourceVideoId: id },
+      });
+      if (existingStock) {
+        await prisma.videoStock.update({
+          where: { sourceVideoId: id },
+          data: {
+            deliveryScope: deliveryScope,
+            clientId: deliveryScope === "SELECTED_STORES" ? (deliveryClientId || null) : null,
+          },
+        });
+      }
     }
 
     const video = await prisma.video.update({
