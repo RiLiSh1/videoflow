@@ -112,18 +112,6 @@ function daysUntil(endDate: string | null): number | null {
   return Math.ceil((end.getTime() - now.getTime()) / 86400000);
 }
 
-/** 契約開始日から今が何ヶ月目か */
-function currentContractMonth(startDate: string | null): number | null {
-  if (!startDate) return null;
-  const start = new Date(startDate);
-  const now = new Date();
-  const months =
-    (now.getFullYear() - start.getFullYear()) * 12 +
-    (now.getMonth() - start.getMonth()) +
-    1;
-  return months > 0 ? months : 1;
-}
-
 /** 契約開始日と期間から、納品対象の月リストを生成 */
 function deliveryMonthLabels(
   startDate: string | null,
@@ -141,6 +129,18 @@ function deliveryMonthLabels(
   return labels;
 }
 
+/** 契約開始日から現在が何ヶ月目かを返す */
+function currentContractMonth(startDate: string | null): number | null {
+  if (!startDate) return null;
+  const start = new Date(startDate);
+  const now = new Date();
+  const diff =
+    (now.getFullYear() - start.getFullYear()) * 12 +
+    (now.getMonth() - start.getMonth()) +
+    1;
+  return diff < 1 ? null : diff;
+}
+
 function calcEndDate(startDate: string, months: string): string {
   if (!startDate || !months) return "";
   const d = new Date(startDate);
@@ -150,48 +150,6 @@ function calcEndDate(startDate: string, months: string): string {
 }
 
 // ─── Sub-components ─────────────────────────────────
-
-function ExpiryBadge({ days }: { days: number | null }) {
-  if (days === null) return <span className="text-gray-300">-</span>;
-  if (days <= 0)
-    return (
-      <span className="text-xs font-semibold text-red-700 bg-red-50 px-2 py-0.5 rounded-full">
-        {Math.abs(days)}日超過
-      </span>
-    );
-  if (days <= 30)
-    return (
-      <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
-        残{days}日
-      </span>
-    );
-  return <span className="text-xs text-gray-500">残{days}日</span>;
-}
-
-function ContractProgress({
-  current,
-  total,
-}: {
-  current: number | null;
-  total: number | null;
-}) {
-  if (current === null || !total) return <span className="text-gray-300">-</span>;
-  const clamped = Math.min(current, total);
-  const pct = Math.round((clamped / total) * 100);
-  return (
-    <div className="flex items-center gap-2">
-      <div className="w-20 h-2 rounded-full bg-gray-100 overflow-hidden">
-        <div
-          className={`h-full rounded-full ${pct >= 90 ? "bg-red-400" : pct >= 70 ? "bg-amber-400" : "bg-green-400"}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <span className="text-xs font-medium text-gray-700 whitespace-nowrap">
-        {clamped}/{total}ヶ月目
-      </span>
-    </div>
-  );
-}
 
 function DeliveryMonthsDisplay({
   startDate,
@@ -527,10 +485,8 @@ export function ClientsClient() {
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">クライアント</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">契約状態</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">契約進捗</th>
                 <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">月/本数</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">契約終了</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">残日数</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">契約期間</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">納品月</th>
                 <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">操作</th>
               </tr>
@@ -538,13 +494,9 @@ export function ClientsClient() {
             <tbody className="divide-y divide-gray-200">
               {clients.map((c) => {
                 const st = CONTRACT_STATUS[c.contractStatus] || CONTRACT_STATUS.ACTIVE;
-                const days = daysUntil(c.contractEndDate);
-                const isExpired = days !== null && days <= 0;
-                const isExpiring = days !== null && days <= 30 && days > 0;
-                const curMonth = currentContractMonth(c.contractStartDate);
 
                 return (
-                  <tr key={c.id} className={`hover:bg-gray-50 ${isExpired ? "bg-red-50/40" : isExpiring ? "bg-amber-50/40" : ""}`}>
+                  <tr key={c.id} className="hover:bg-gray-50">
                     {/* クライアント */}
                     <td className="px-4 py-3">
                       <div className="text-sm font-medium text-gray-900">{c.name}</div>
@@ -555,19 +507,17 @@ export function ClientsClient() {
                       <Badge className={st.className}>{st.label}</Badge>
                       {!c.isActive && <Badge className="ml-1 bg-gray-100 text-gray-500">無効</Badge>}
                     </td>
-                    {/* 契約進捗 */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <ContractProgress current={curMonth} total={c.contractMonths} />
-                    </td>
                     {/* 月/本数 */}
                     <td className="px-4 py-3 text-center whitespace-nowrap">
                       <span className="text-sm font-semibold text-gray-900">{c.monthlyDeliveryCount}</span>
                       <span className="text-xs text-gray-400">本/月</span>
                     </td>
-                    {/* 契約終了 */}
-                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{fmtDate(c.contractEndDate)}</td>
-                    {/* 残日数 */}
-                    <td className="px-4 py-3 whitespace-nowrap"><ExpiryBadge days={days} /></td>
+                    {/* 契約期間 */}
+                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                      {c.contractStartDate && c.contractEndDate
+                        ? `${fmtDate(c.contractStartDate)} 〜 ${fmtDate(c.contractEndDate)}`
+                        : c.contractMonths ? `${c.contractMonths}ヶ月` : "-"}
+                    </td>
                     {/* 納品月 */}
                     <td className="px-4 py-3">
                       <DeliveryMonthsDisplay startDate={c.contractStartDate} contractMonths={c.contractMonths} />
@@ -575,8 +525,8 @@ export function ClientsClient() {
                     {/* 操作 */}
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       <div className="flex justify-end gap-1">
-                        {(isExpiring || isExpired) && c.contractStatus !== "RENEWED" && c.contractStatus !== "CANCELLED" && (
-                          <Button variant="primary" size="sm" onClick={() => openRenew(c)}><RefreshCw className="h-3.5 w-3.5" /></Button>
+                        {c.contractStatus !== "CANCELLED" && (
+                          <Button variant="ghost" size="sm" onClick={() => openRenew(c)} title="契約更新"><RefreshCw className="h-3.5 w-3.5" /></Button>
                         )}
                         <Button variant="ghost" size="sm" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="sm" onClick={() => handleDelete(c.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
@@ -593,31 +543,28 @@ export function ClientsClient() {
         <div className="space-y-2">
           {clients.map((c) => {
             const st = CONTRACT_STATUS[c.contractStatus] || CONTRACT_STATUS.ACTIVE;
-            const days = daysUntil(c.contractEndDate);
             const isExpanded = expandedId === c.id;
-            const isExpiring = days !== null && days <= 30 && days > 0;
-            const isExpired = days !== null && days <= 0;
-            const curMonth = currentContractMonth(c.contractStartDate);
 
             return (
-              <Card key={c.id} className={isExpired ? "border-red-200" : isExpiring ? "border-amber-200" : ""}>
+              <Card key={c.id}>
                 <div className="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-gray-50" onClick={() => setExpandedId(isExpanded ? null : c.id)}>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-semibold text-gray-900">{c.name}</span>
                       <Badge className={st.className}>{st.label}</Badge>
                       {!c.isActive && <Badge className="bg-gray-100 text-gray-500">無効</Badge>}
-                      <ExpiryBadge days={days} />
                     </div>
                     <div className="flex items-center gap-4 mt-1 text-xs text-gray-500 flex-wrap">
                       <span>{c.monthlyDeliveryCount}本/月</span>
-                      <ContractProgress current={curMonth} total={c.contractMonths} />
-                      {c.contractEndDate && <span>終了: {fmtDate(c.contractEndDate)}</span>}
+                      {c.contractMonths && <span>{c.contractMonths}ヶ月契約</span>}
+                      {c.contractStartDate && c.contractEndDate && (
+                        <span>{fmtDate(c.contractStartDate)} 〜 {fmtDate(c.contractEndDate)}</span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-                    {(isExpiring || isExpired) && c.contractStatus !== "RENEWED" && c.contractStatus !== "CANCELLED" && (
-                      <Button variant="primary" size="sm" onClick={(e) => { e.stopPropagation(); openRenew(c); }}>
+                    {c.contractStatus !== "CANCELLED" && (
+                      <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openRenew(c); }}>
                         <RefreshCw className="h-3.5 w-3.5 mr-1" />更新
                       </Button>
                     )}
