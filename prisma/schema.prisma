@@ -201,6 +201,7 @@ model Video {
   versions      Version[]
   feedbacks     Feedback[]
   notifications Notification[]
+  videoStock    VideoStock?
 
   @@index([status])
   @@index([creatorId])
@@ -498,11 +499,13 @@ model VideoStock {
   isUsed            Boolean   @default(false) @map("is_used")
   usedAt            DateTime? @map("used_at")
   note              String?   @db.Text
+  sourceVideoId     String?   @unique @map("source_video_id") // 動画システムからの連携元
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
   // Relations
   client            DeliveryClient?    @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  sourceVideo       Video?             @relation(fields: [sourceVideoId], references: [id], onDelete: SetNull)
   deliverySchedules DeliverySchedule[]
 
   @@index([clientId])

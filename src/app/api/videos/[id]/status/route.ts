@@ -260,6 +260,41 @@ export async function PATCH(
         message: `「${updated.title}」が最終承認されました`,
         skipMention: true,
       });
+
+      // 納品システム連携: 完了した動画を動画ストックに自動追加
+      try {
+        const existingStock = await prisma.videoStock.findUnique({
+          where: { sourceVideoId: id },
+        });
+        if (!existingStock) {
+          const latestVersion = await prisma.version.findFirst({
+            where: { videoId: id },
+            orderBy: { versionNumber: "desc" },
+            select: {
+              fileName: true,
+              googleDriveFileId: true,
+              googleDriveUrl: true,
+              blobUrl: true,
+            },
+          });
+          if (latestVersion) {
+            await prisma.videoStock.create({
+              data: {
+                title: updated.title,
+                fileName: latestVersion.fileName,
+                googleDriveFileId: latestVersion.googleDriveFileId,
+                googleDriveUrl: latestVersion.googleDriveUrl,
+                blobUrl: latestVersion.blobUrl,
+                sourceVideoId: id,
+                note: `動画システムから自動連携（${updated.project.projectCode}）`,
+              },
+            });
+          }
+        }
+      } catch (stockError) {
+        console.error("VideoStock auto-create error:", stockError);
+        // ストック作成失敗でもステータス更新は成功させる
+      }
     } else if (status === "REVISED" && updated.directorId) {
       // Creator resubmitted after revision → notify director
       notifications.push({

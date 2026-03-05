@@ -18,8 +18,10 @@ type VideoStock = {
   isUsed: boolean;
   usedAt: string | null;
   note: string | null;
+  sourceVideoId: string | null;
   createdAt: string;
   client: { id: string; name: string } | null;
+  sourceVideo: { id: string; videoCode: string; project: { projectCode: string } } | null;
 };
 
 type DeliveryClient = {
@@ -271,6 +273,9 @@ export function StocksClient() {
                   ファイル名
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  連携元
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   クライアント
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -289,6 +294,15 @@ export function StocksClient() {
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-500">
                     {stock.fileName}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {stock.sourceVideo ? (
+                      <span className="inline-flex items-center gap-1 rounded bg-teal-50 px-2 py-0.5 text-xs text-teal-700">
+                        {stock.sourceVideo.project.projectCode}/{stock.sourceVideo.videoCode}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 text-xs">手動登録</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-500">
                     {stock.client?.name || "-"}

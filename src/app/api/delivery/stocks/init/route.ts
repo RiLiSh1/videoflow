@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
       include: {
         client: { select: { id: true, name: true } },
+        sourceVideo: { select: { id: true, videoCode: true, project: { select: { projectCode: true } } } },
       },
     }),
     prisma.deliveryClient.findMany({
