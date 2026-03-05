@@ -41,16 +41,46 @@ export async function PUT(
   if (!isSessionUser(auth)) return auth;
 
   const body = await request.json();
-  const { name, lineGroupId, googleDriveFolderId, contactName, contactEmail, note, isActive } = body;
+  const {
+    name,
+    lineGroupId,
+    googleDriveFolderId,
+    contactName,
+    contactEmail,
+    note,
+    isActive,
+    contractStartDate,
+    contractEndDate,
+    contractMonths,
+    contractStatus,
+    renewalNote,
+    lastRenewedAt,
+  } = body;
+
+  const data: Record<string, unknown> = {};
+  if (name !== undefined) data.name = name;
+  if (lineGroupId !== undefined) data.lineGroupId = lineGroupId || null;
+  if (googleDriveFolderId !== undefined) data.googleDriveFolderId = googleDriveFolderId || null;
+  if (contactName !== undefined) data.contactName = contactName || null;
+  if (contactEmail !== undefined) data.contactEmail = contactEmail || null;
+  if (note !== undefined) data.note = note || null;
+  if (isActive !== undefined) data.isActive = isActive;
+  if (contractStartDate !== undefined) data.contractStartDate = contractStartDate ? new Date(contractStartDate) : null;
+  if (contractEndDate !== undefined) data.contractEndDate = contractEndDate ? new Date(contractEndDate) : null;
+  if (contractMonths !== undefined) data.contractMonths = contractMonths ? parseInt(String(contractMonths), 10) : null;
+  if (contractStatus !== undefined) data.contractStatus = contractStatus;
+  if (renewalNote !== undefined) data.renewalNote = renewalNote || null;
+  if (lastRenewedAt !== undefined) data.lastRenewedAt = lastRenewedAt ? new Date(lastRenewedAt) : null;
 
   const client = await prisma.deliveryClient.update({
     where: { id: params.id },
-    data: { name, lineGroupId, googleDriveFolderId, contactName, contactEmail, note, isActive },
+    data,
   });
 
   return NextResponse.json({ success: true, data: client });
 }
 
+// PUT: 契約更新（専用エンドポイントは /renew で別途）
 // DELETE: クライアント削除
 export async function DELETE(
   _request: NextRequest,
