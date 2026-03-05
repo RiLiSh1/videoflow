@@ -467,12 +467,13 @@ model DeliveryClient {
   isActive        Boolean  @default(true) @map("is_active")
 
   // 契約管理
-  contractStartDate  DateTime?       @map("contract_start_date")
-  contractEndDate    DateTime?       @map("contract_end_date")
-  contractMonths     Int?            @map("contract_months") // 契約期間（月数）
-  contractStatus     ContractStatus  @default(ACTIVE) @map("contract_status")
-  renewalNote        String?         @map("renewal_note") @db.Text
-  lastRenewedAt      DateTime?       @map("last_renewed_at")
+  contractStartDate    DateTime?       @map("contract_start_date")
+  contractEndDate      DateTime?       @map("contract_end_date")
+  contractMonths       Int?            @map("contract_months") // 契約期間（月数）
+  monthlyDeliveryCount Int             @default(1) @map("monthly_delivery_count") // 月の納品本数
+  contractStatus       ContractStatus  @default(ACTIVE) @map("contract_status")
+  renewalNote          String?         @map("renewal_note") @db.Text
+  lastRenewedAt        DateTime?       @map("last_renewed_at")
 
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")

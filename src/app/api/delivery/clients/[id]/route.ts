@@ -52,6 +52,7 @@ export async function PUT(
     contractStartDate,
     contractEndDate,
     contractMonths,
+    monthlyDeliveryCount,
     contractStatus,
     renewalNote,
     lastRenewedAt,
@@ -68,6 +69,7 @@ export async function PUT(
   if (contractStartDate !== undefined) data.contractStartDate = contractStartDate ? new Date(contractStartDate) : null;
   if (contractEndDate !== undefined) data.contractEndDate = contractEndDate ? new Date(contractEndDate) : null;
   if (contractMonths !== undefined) data.contractMonths = contractMonths ? parseInt(String(contractMonths), 10) : null;
+  if (monthlyDeliveryCount !== undefined) data.monthlyDeliveryCount = monthlyDeliveryCount ? parseInt(String(monthlyDeliveryCount), 10) : 1;
   if (contractStatus !== undefined) data.contractStatus = contractStatus;
   if (renewalNote !== undefined) data.renewalNote = renewalNote || null;
   if (lastRenewedAt !== undefined) data.lastRenewedAt = lastRenewedAt ? new Date(lastRenewedAt) : null;

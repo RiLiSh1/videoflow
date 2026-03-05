@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
     contractStartDate,
     contractEndDate,
     contractMonths,
+    monthlyDeliveryCount,
     contractStatus,
     renewalNote,
   } = body;
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
       contractStartDate: contractStartDate ? new Date(contractStartDate) : null,
       contractEndDate: contractEndDate ? new Date(contractEndDate) : null,
       contractMonths: contractMonths ? parseInt(contractMonths, 10) : null,
+      monthlyDeliveryCount: monthlyDeliveryCount ? parseInt(monthlyDeliveryCount, 10) : 1,
       contractStatus: contractStatus || "ACTIVE",
       renewalNote: renewalNote || null,
     },
