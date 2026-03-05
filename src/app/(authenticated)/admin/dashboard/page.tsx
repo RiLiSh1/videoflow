@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/db";
 import { PageContainer } from "@/components/layout/page-container";
+
+export const revalidate = 30;
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/domain/status-badge";
 import { VIDEO_STATUS_ORDER } from "@/lib/constants/video-status";

@@ -3,6 +3,8 @@ import { PageContainer } from "@/components/layout/page-container";
 import { Card, CardContent } from "@/components/ui/card";
 import { Building2, Film, CalendarDays, Send } from "lucide-react";
 
+export const revalidate = 30; // 30秒キャッシュ
+
 async function getDeliveryDashboardData() {
   const [
     activeClients,

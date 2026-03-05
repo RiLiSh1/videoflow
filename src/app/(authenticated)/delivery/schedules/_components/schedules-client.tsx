@@ -61,33 +61,23 @@ export function SchedulesClient() {
   >([{ clientId: "", videoStockId: "" }]);
   const [batchSubmitting, setBatchSubmitting] = useState(false);
 
-  const fetchSchedules = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
     if (filterStatus) params.set("status", filterStatus);
-    const res = await fetch(`/api/delivery/schedules?${params}`);
+    const res = await fetch(`/api/delivery/schedules/init?${params}`);
     const json = await res.json();
-    if (json.success) setSchedules(json.data);
+    if (json.success) {
+      setSchedules(json.data.schedules);
+      setClients(json.data.clients);
+      setAvailableStocks(json.data.availableStocks);
+    }
     setLoading(false);
   }, [filterStatus]);
 
-  const fetchClients = useCallback(async () => {
-    const res = await fetch("/api/delivery/clients");
-    const json = await res.json();
-    if (json.success) setClients(json.data);
-  }, []);
-
-  const fetchAvailableStocks = useCallback(async () => {
-    const res = await fetch("/api/delivery/stocks?isUsed=false");
-    const json = await res.json();
-    if (json.success) setAvailableStocks(json.data);
-  }, []);
-
   useEffect(() => {
-    fetchSchedules();
-    fetchClients();
-    fetchAvailableStocks();
-  }, [fetchSchedules, fetchClients, fetchAvailableStocks]);
+    fetchAll();
+  }, [fetchAll]);
 
   function openCreate() {
     setEditingId(null);
@@ -113,8 +103,7 @@ export function SchedulesClient() {
     }
 
     setShowForm(false);
-    fetchSchedules();
-    fetchAvailableStocks();
+    fetchAll();
   }
 
   async function handleApprove(id: string) {
@@ -126,7 +115,7 @@ export function SchedulesClient() {
       alert(json.error);
       return;
     }
-    fetchSchedules();
+    fetchAll();
   }
 
   async function handleRequestApproval(id: string) {
@@ -135,7 +124,7 @@ export function SchedulesClient() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "PENDING_APPROVAL" }),
     });
-    fetchSchedules();
+    fetchAll();
   }
 
   async function handleManualSend(id: string) {
@@ -151,8 +140,7 @@ export function SchedulesClient() {
       return;
     }
     alert("送信が完了しました");
-    fetchSchedules();
-    fetchAvailableStocks();
+    fetchAll();
   }
 
   async function handleDelete(id: string) {
@@ -165,7 +153,7 @@ export function SchedulesClient() {
       alert(json.error);
       return;
     }
-    fetchSchedules();
+    fetchAll();
   }
 
   function openBatchCreate() {
@@ -219,8 +207,7 @@ export function SchedulesClient() {
 
     alert(json.message);
     setShowBatchForm(false);
-    fetchSchedules();
-    fetchAvailableStocks();
+    fetchAll();
   }
 
   // 一括作成フォームで選択済みの動画IDを取得（重複選択防止）

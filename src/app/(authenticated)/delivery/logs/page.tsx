@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { formatDateTime } from "@/lib/utils/format-date";
 import Link from "next/link";
 
+export const revalidate = 15; // 15秒キャッシュ
+
 const ACTION_LABELS: Record<string, { label: string; className: string }> = {
   CREATE: { label: "作成", className: "bg-green-100 text-green-800" },
   UPDATE: { label: "更新", className: "bg-yellow-100 text-yellow-800" },

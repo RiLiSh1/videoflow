@@ -512,6 +512,8 @@ model DeliverySchedule {
   @@index([weekStart])
   @@index([status])
   @@index([weekStart, status])
+  @@index([status, scheduledSendAt])
+  @@index([clientId, status])
   @@map("delivery_schedules")
 }
 
@@ -545,5 +547,6 @@ model DeliveryChangeLog {
   @@index([scheduleId])
   @@index([actorId])
   @@index([createdAt])
+  @@index([scheduleId, createdAt])
   @@map("delivery_change_logs")
 }

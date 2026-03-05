@@ -54,26 +54,22 @@ export function StocksClient() {
   const [form, setForm] = useState<FormData>(emptyForm);
   const [filterUsed, setFilterUsed] = useState<string>("");
 
-  const fetchStocks = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
     if (filterUsed) params.set("isUsed", filterUsed);
-    const res = await fetch(`/api/delivery/stocks?${params}`);
+    const res = await fetch(`/api/delivery/stocks/init?${params}`);
     const json = await res.json();
-    if (json.success) setStocks(json.data);
+    if (json.success) {
+      setStocks(json.data.stocks);
+      setClients(json.data.clients);
+    }
     setLoading(false);
   }, [filterUsed]);
 
-  const fetchClients = useCallback(async () => {
-    const res = await fetch("/api/delivery/clients");
-    const json = await res.json();
-    if (json.success) setClients(json.data);
-  }, []);
-
   useEffect(() => {
-    fetchStocks();
-    fetchClients();
-  }, [fetchStocks, fetchClients]);
+    fetchAll();
+  }, [fetchAll]);
 
   function openCreate() {
     setEditingId(null);
@@ -119,7 +115,7 @@ export function StocksClient() {
     }
 
     setShowForm(false);
-    fetchStocks();
+    fetchAll();
   }
 
   async function handleDelete(id: string) {
@@ -130,7 +126,7 @@ export function StocksClient() {
       alert(json.error);
       return;
     }
-    fetchStocks();
+    fetchAll();
   }
 
   return (
