@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
 
 type VideoStock = {
   id: string;
@@ -47,6 +47,144 @@ const emptyForm: FormData = {
   clientId: "",
   note: "",
 };
+
+function InlineScopeEdit({
+  stock,
+  onSaved,
+}: {
+  stock: VideoStock;
+  clients: DeliveryClient[];
+  onSaved: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [scope, setScope] = useState<string>(stock.deliveryScope || "");
+  const [saving, setSaving] = useState(false);
+
+  if (!editing) {
+    return (
+      <div className="flex items-center gap-1.5">
+        {stock.deliveryScope === "ALL_STORES" ? (
+          <span className="inline-block rounded px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700">
+            全店舗用
+          </span>
+        ) : stock.deliveryScope === "SELECTED_STORES" ? (
+          <span className="inline-block rounded px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700">
+            店舗選択
+          </span>
+        ) : (
+          <span className="text-gray-300 text-xs">未設定</span>
+        )}
+        <button onClick={() => setEditing(true)} className="text-gray-400 hover:text-gray-600">
+          <Pencil className="h-3 w-3" />
+        </button>
+      </div>
+    );
+  }
+
+  async function save() {
+    if (!scope) return;
+    setSaving(true);
+    await fetch(`/api/delivery/stocks/${stock.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deliveryScope: scope }),
+    });
+    setSaving(false);
+    setEditing(false);
+    onSaved();
+  }
+
+  return (
+    <div className="space-y-1">
+      <div className="flex gap-1">
+        <button
+          type="button"
+          onClick={() => setScope("ALL_STORES")}
+          className={`rounded border px-2 py-0.5 text-xs font-medium ${scope === "ALL_STORES" ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-500 hover:bg-gray-50"}`}
+        >
+          全店舗
+        </button>
+        <button
+          type="button"
+          onClick={() => setScope("SELECTED_STORES")}
+          className={`rounded border px-2 py-0.5 text-xs font-medium ${scope === "SELECTED_STORES" ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-500 hover:bg-gray-50"}`}
+        >
+          店舗選択
+        </button>
+      </div>
+      <div className="flex gap-1">
+        <button onClick={save} disabled={saving || !scope} className="inline-flex items-center rounded bg-blue-600 px-1.5 py-0.5 text-xs text-white hover:bg-blue-700 disabled:opacity-50">
+          <Check className="h-3 w-3" />
+        </button>
+        <button onClick={() => { setEditing(false); setScope(stock.deliveryScope || ""); }} className="inline-flex items-center rounded border border-gray-200 px-1.5 py-0.5 text-xs text-gray-500 hover:bg-gray-50">
+          <X className="h-3 w-3" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function InlineClientEdit({
+  stock,
+  clients,
+  onSaved,
+}: {
+  stock: VideoStock;
+  clients: DeliveryClient[];
+  onSaved: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [clientId, setClientId] = useState<string>(stock.clientId || "");
+  const [saving, setSaving] = useState(false);
+
+  if (!editing) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className={stock.client ? "text-gray-700" : "text-gray-300"}>
+          {stock.client?.name || "-"}
+        </span>
+        <button onClick={() => setEditing(true)} className="text-gray-400 hover:text-gray-600">
+          <Pencil className="h-3 w-3" />
+        </button>
+      </div>
+    );
+  }
+
+  async function save() {
+    setSaving(true);
+    await fetch(`/api/delivery/stocks/${stock.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientId: clientId || null }),
+    });
+    setSaving(false);
+    setEditing(false);
+    onSaved();
+  }
+
+  return (
+    <div className="space-y-1">
+      <select
+        className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
+        value={clientId}
+        onChange={(e) => setClientId(e.target.value)}
+      >
+        <option value="">未割当</option>
+        {clients.map((c) => (
+          <option key={c.id} value={c.id}>{c.name}</option>
+        ))}
+      </select>
+      <div className="flex gap-1">
+        <button onClick={save} disabled={saving} className="inline-flex items-center rounded bg-blue-600 px-1.5 py-0.5 text-xs text-white hover:bg-blue-700 disabled:opacity-50">
+          <Check className="h-3 w-3" />
+        </button>
+        <button onClick={() => { setEditing(false); setClientId(stock.clientId || ""); }} className="inline-flex items-center rounded border border-gray-200 px-1.5 py-0.5 text-xs text-gray-500 hover:bg-gray-50">
+          <X className="h-3 w-3" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export function StocksClient() {
   const [stocks, setStocks] = useState<VideoStock[]>([]);
@@ -300,17 +438,7 @@ export function StocksClient() {
                     {stock.fileName}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {stock.deliveryScope === "ALL_STORES" ? (
-                      <span className="inline-block rounded px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700">
-                        全店舗用
-                      </span>
-                    ) : stock.deliveryScope === "SELECTED_STORES" ? (
-                      <span className="inline-block rounded px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700">
-                        店舗選択
-                      </span>
-                    ) : (
-                      <span className="text-gray-300">-</span>
-                    )}
+                    <InlineScopeEdit stock={stock} clients={clients} onSaved={fetchAll} />
                   </td>
                   <td className="px-4 py-3 text-sm">
                     {stock.sourceVideo ? (
@@ -321,8 +449,8 @@ export function StocksClient() {
                       <span className="text-gray-400 text-xs">手動登録</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">
-                    {stock.client?.name || "-"}
+                  <td className="px-4 py-3 text-sm">
+                    <InlineClientEdit stock={stock} clients={clients} onSaved={fetchAll} />
                   </td>
                   <td className="px-4 py-3">
                     <Badge className={stock.isUsed ? "bg-gray-100 text-gray-600" : "bg-green-100 text-green-800"}>
