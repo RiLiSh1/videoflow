@@ -79,6 +79,30 @@ enum InvoiceActionType {
 }
 
 // ============================================================
+// LM動画納品システム Enums
+// ============================================================
+
+enum DeliveryScheduleStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  SENT
+  FAILED
+
+  @@map("delivery_schedule_status")
+}
+
+enum DeliveryChangeAction {
+  CREATE
+  UPDATE
+  DELETE
+  APPROVE
+  SEND
+
+  @@map("delivery_change_action")
+}
+
+// ============================================================
 // Models
 // ============================================================
 
@@ -112,6 +136,10 @@ model User {
   uploadedInvoices   CreatorInvoice[] @relation("InvoiceUploader")
   approvedInvoices   CreatorInvoice[] @relation("InvoiceApprover")
   invoiceHistoryActions InvoiceHistory[] @relation("InvoiceHistoryActor")
+
+  // LM動画納品システム Relations
+  deliveryApprovals  DeliveryApproval[]
+  deliveryChangeLogs DeliveryChangeLog[]
 
   @@map("users")
 }
@@ -413,4 +441,109 @@ model InvoiceHistory {
 
   @@index([paymentNotificationId, createdAt])
   @@map("invoice_history")
+}
+
+// ============================================================
+// LM動画納品システム Models
+// ============================================================
+
+model DeliveryClient {
+  id              String   @id @default(cuid())
+  name            String
+  lineGroupId     String?  @map("line_group_id")
+  googleDriveFolderId String? @map("google_drive_folder_id")
+  contactName     String?  @map("contact_name")
+  contactEmail    String?  @map("contact_email")
+  note            String?  @db.Text
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  videoStocks       VideoStock[]
+  deliverySchedules DeliverySchedule[]
+
+  @@map("delivery_clients")
+}
+
+model VideoStock {
+  id                String    @id @default(cuid())
+  title             String
+  fileName          String    @map("file_name")
+  googleDriveFileId String?   @map("google_drive_file_id")
+  googleDriveUrl    String?   @map("google_drive_url")
+  blobUrl           String?   @map("blob_url") @db.Text
+  clientId          String?   @map("client_id")
+  isUsed            Boolean   @default(false) @map("is_used")
+  usedAt            DateTime? @map("used_at")
+  note              String?   @db.Text
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  client            DeliveryClient?    @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  deliverySchedules DeliverySchedule[]
+
+  @@index([clientId])
+  @@index([isUsed])
+  @@map("video_stocks")
+}
+
+model DeliverySchedule {
+  id              String                 @id @default(cuid())
+  clientId        String                 @map("client_id")
+  videoStockId    String                 @unique @map("video_stock_id")
+  weekStart       DateTime               @map("week_start")
+  scheduledSendAt DateTime?              @map("scheduled_send_at")
+  actualSentAt    DateTime?              @map("actual_sent_at")
+  status          DeliveryScheduleStatus @default(DRAFT)
+  sendError       String?                @map("send_error") @db.Text
+  calendarEventId String?                @map("calendar_event_id")
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+
+  // Relations
+  client     DeliveryClient     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  videoStock VideoStock          @relation(fields: [videoStockId], references: [id], onDelete: Cascade)
+  approvals  DeliveryApproval[]
+  changeLogs DeliveryChangeLog[]
+
+  @@index([clientId])
+  @@index([weekStart])
+  @@index([status])
+  @@index([weekStart, status])
+  @@map("delivery_schedules")
+}
+
+model DeliveryApproval {
+  id         String   @id @default(cuid())
+  scheduleId String   @map("schedule_id")
+  approvedBy String   @map("approved_by")
+  approvedAt DateTime @default(now()) @map("approved_at")
+
+  // Relations
+  schedule DeliverySchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  approver User             @relation(fields: [approvedBy], references: [id])
+
+  @@unique([scheduleId, approvedBy])
+  @@index([scheduleId])
+  @@map("delivery_approvals")
+}
+
+model DeliveryChangeLog {
+  id         String               @id @default(cuid())
+  scheduleId String?              @map("schedule_id")
+  action     DeliveryChangeAction
+  actorId    String               @map("actor_id")
+  detail     Json?
+  createdAt  DateTime             @default(now()) @map("created_at")
+
+  // Relations
+  schedule DeliverySchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  actor    User              @relation(fields: [actorId], references: [id])
+
+  @@index([scheduleId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("delivery_change_logs")
 }
