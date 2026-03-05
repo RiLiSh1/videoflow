@@ -43,12 +43,18 @@ interface SerializedVersion {
   createdAt: string;
 }
 
+interface DeliveryClientOption {
+  id: string;
+  name: string;
+}
+
 interface AdminReviewClientProps {
   videoId: string;
   currentStatus: VideoStatus;
   latestVersion: VersionInfo | null;
   feedbacks: FeedbackItem[];
   versions: SerializedVersion[];
+  deliveryClients: DeliveryClientOption[];
 }
 
 function formatTimestamp(seconds: number): string {
@@ -62,6 +68,7 @@ export function AdminReviewClient({
   currentStatus,
   latestVersion,
   feedbacks,
+  deliveryClients,
 }: AdminReviewClientProps) {
   const router = useRouter();
   const [comment, setComment] = useState("");
@@ -71,6 +78,8 @@ export function AdminReviewClient({
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showAllFeedbacks, setShowAllFeedbacks] = useState(false);
+  const [deliveryScope, setDeliveryScope] = useState<string>("");
+  const [deliveryClientId, setDeliveryClientId] = useState<string>("");
 
   // Listen for timestamp events from video player
   const handleTimestampEvent = useCallback((e: Event) => {
@@ -142,6 +151,18 @@ export function AdminReviewClient({
     targetStatus: VideoStatus,
     label: string
   ) => {
+    // COMPLETED時はdeliveryScope必須チェック
+    if (targetStatus === "COMPLETED") {
+      if (!deliveryScope) {
+        setError("納品区分を選択してください");
+        return;
+      }
+      if (deliveryScope === "SELECTED_STORES" && !deliveryClientId) {
+        setError("店舗を選択してください");
+        return;
+      }
+    }
+
     setStatusLoading(targetStatus);
     setError(null);
     setSuccessMessage(null);
@@ -161,10 +182,18 @@ export function AdminReviewClient({
         }
       }
 
+      const payload: Record<string, unknown> = { status: targetStatus };
+      if (targetStatus === "COMPLETED") {
+        payload.deliveryScope = deliveryScope;
+        if (deliveryScope === "SELECTED_STORES") {
+          payload.deliveryClientId = deliveryClientId;
+        }
+      }
+
       const res = await fetch(`/api/videos/${videoId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: targetStatus }),
+        body: JSON.stringify(payload),
       });
       const result = await res.json();
 
@@ -309,6 +338,64 @@ export function AdminReviewClient({
                   <p className="text-sm font-medium text-gray-700">
                     最終確認を行ってください
                   </p>
+
+                  {/* 納品区分の選択（必須） */}
+                  <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <p className="text-xs font-semibold text-gray-600">
+                      納品区分 <span className="text-red-500">*</span>
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeliveryScope("ALL_STORES");
+                          setDeliveryClientId("");
+                          setError(null);
+                        }}
+                        className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                          deliveryScope === "ALL_STORES"
+                            ? "border-blue-500 bg-blue-50 text-blue-700"
+                            : "border-gray-200 bg-white text-gray-600 hover:bg-gray-100"
+                        }`}
+                      >
+                        全店舗用
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeliveryScope("SELECTED_STORES");
+                          setError(null);
+                        }}
+                        className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                          deliveryScope === "SELECTED_STORES"
+                            ? "border-blue-500 bg-blue-50 text-blue-700"
+                            : "border-gray-200 bg-white text-gray-600 hover:bg-gray-100"
+                        }`}
+                      >
+                        店舗選択
+                      </button>
+                    </div>
+                    {deliveryScope === "SELECTED_STORES" && (
+                      <div>
+                        <select
+                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          value={deliveryClientId}
+                          onChange={(e) => {
+                            setDeliveryClientId(e.target.value);
+                            setError(null);
+                          }}
+                        >
+                          <option value="">-- 店舗を選択 --</option>
+                          {deliveryClients.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-2 gap-3">
                     <Button
                       variant="danger"

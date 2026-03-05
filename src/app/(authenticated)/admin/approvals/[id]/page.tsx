@@ -78,6 +78,15 @@ export default async function AdminApprovalDetailPage({
         })()
       : null);
 
+  // 納品先クライアント一覧（最終承認時の店舗選択用）
+  const deliveryClients = video.status === "FINAL_REVIEW"
+    ? await prisma.deliveryClient.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      })
+    : [];
+
   const serializedVersions = video.versions.map((v) => ({
     id: v.id,
     versionNumber: v.versionNumber,
@@ -267,6 +276,7 @@ export default async function AdminApprovalDetailPage({
             }
             feedbacks={serializedFeedbacks}
             versions={serializedVersions}
+            deliveryClients={deliveryClients}
           />
         </div>
       </div>

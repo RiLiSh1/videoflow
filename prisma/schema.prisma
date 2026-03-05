@@ -82,6 +82,13 @@ enum InvoiceActionType {
 // LM動画納品システム Enums
 // ============================================================
 
+enum DeliveryScope {
+  ALL_STORES
+  SELECTED_STORES
+
+  @@map("delivery_scope")
+}
+
 enum DeliveryScheduleStatus {
   DRAFT
   PENDING_APPROVAL
@@ -190,18 +197,21 @@ model Video {
   videoTypeOther      String?     @map("video_type_other")
   googleDriveFolderId String?     @map("google_drive_folder_id")
   deadline            DateTime?
+  deliveryScope       DeliveryScope? @map("delivery_scope")
+  deliveryClientId    String?        @map("delivery_client_id")
   createdAt           DateTime    @default(now()) @map("created_at")
   updatedAt           DateTime    @updatedAt @map("updated_at")
 
   // Relations
-  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  creator       User           @relation("VideoCreator", fields: [creatorId], references: [id])
-  director      User?          @relation("VideoDirector", fields: [directorId], references: [id])
-  referenceUrls ReferenceUrl[]
-  versions      Version[]
-  feedbacks     Feedback[]
-  notifications Notification[]
-  videoStock    VideoStock?
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator        User            @relation("VideoCreator", fields: [creatorId], references: [id])
+  director       User?           @relation("VideoDirector", fields: [directorId], references: [id])
+  deliveryClient DeliveryClient? @relation(fields: [deliveryClientId], references: [id], onDelete: SetNull)
+  referenceUrls  ReferenceUrl[]
+  versions       Version[]
+  feedbacks      Feedback[]
+  notifications  Notification[]
+  videoStock     VideoStock?
 
   @@index([status])
   @@index([creatorId])
@@ -480,6 +490,7 @@ model DeliveryClient {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   // Relations
+  videos            Video[]
   videoStocks       VideoStock[]
   deliverySchedules DeliverySchedule[]
 
@@ -499,6 +510,7 @@ model VideoStock {
   isUsed            Boolean   @default(false) @map("is_used")
   usedAt            DateTime? @map("used_at")
   note              String?   @db.Text
+  deliveryScope     DeliveryScope? @map("delivery_scope")
   sourceVideoId     String?   @unique @map("source_video_id") // 動画システムからの連携元
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")

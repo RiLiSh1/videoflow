@@ -31,7 +31,11 @@ export async function PATCH(
 
   try {
     const body = await request.json();
-    const { status } = body as { status: VideoStatus };
+    const { status, deliveryScope, deliveryClientId } = body as {
+      status: VideoStatus;
+      deliveryScope?: string;
+      deliveryClientId?: string;
+    };
 
     const video = await prisma.video.findUnique({
       where: { id },
@@ -136,14 +140,34 @@ export async function PATCH(
       }
     }
 
+    // COMPLETED時は deliveryScope 必須
+    if (status === "COMPLETED") {
+      if (!deliveryScope || !["ALL_STORES", "SELECTED_STORES"].includes(deliveryScope)) {
+        return NextResponse.json(
+          { success: false, error: "納品区分（全店舗用 / 店舗選択）を選択してください" },
+          { status: 400 }
+        );
+      }
+      if (deliveryScope === "SELECTED_STORES" && !deliveryClientId) {
+        return NextResponse.json(
+          { success: false, error: "店舗を選択してください" },
+          { status: 400 }
+        );
+      }
+    }
+
     // Auto-assign director when moving to IN_REVIEW
-    const updateData: { status: typeof status; directorId?: string } = { status };
+    const updateData: Record<string, unknown> = { status };
     if (
       status === "IN_REVIEW" &&
       auth.role === "DIRECTOR" &&
       !video.directorId
     ) {
       updateData.directorId = auth.id;
+    }
+    if (status === "COMPLETED" && deliveryScope) {
+      updateData.deliveryScope = deliveryScope;
+      updateData.deliveryClientId = deliveryScope === "SELECTED_STORES" ? deliveryClientId : null;
     }
 
     const updated = await prisma.video.update({
@@ -286,6 +310,8 @@ export async function PATCH(
                 googleDriveUrl: latestVersion.googleDriveUrl,
                 blobUrl: latestVersion.blobUrl,
                 sourceVideoId: id,
+                deliveryScope: deliveryScope as "ALL_STORES" | "SELECTED_STORES" | undefined,
+                clientId: deliveryScope === "SELECTED_STORES" ? deliveryClientId : null,
                 note: `動画システムから自動連携（${updated.project.projectCode}）`,
               },
             });

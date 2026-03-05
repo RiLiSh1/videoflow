@@ -19,6 +19,7 @@ type VideoStock = {
   usedAt: string | null;
   note: string | null;
   sourceVideoId: string | null;
+  deliveryScope: "ALL_STORES" | "SELECTED_STORES" | null;
   createdAt: string;
   client: { id: string; name: string } | null;
   sourceVideo: { id: string; videoCode: string; project: { projectCode: string } } | null;
@@ -273,6 +274,9 @@ export function StocksClient() {
                   ファイル名
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  納品区分
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   連携元
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -294,6 +298,19 @@ export function StocksClient() {
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-500">
                     {stock.fileName}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {stock.deliveryScope === "ALL_STORES" ? (
+                      <span className="inline-block rounded px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700">
+                        全店舗用
+                      </span>
+                    ) : stock.deliveryScope === "SELECTED_STORES" ? (
+                      <span className="inline-block rounded px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700">
+                        店舗選択
+                      </span>
+                    ) : (
+                      <span className="text-gray-300">-</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-sm">
                     {stock.sourceVideo ? (
