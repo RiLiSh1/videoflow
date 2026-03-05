@@ -1,7 +1,10 @@
 import { google } from "googleapis";
 import { prisma } from "@/lib/db";
 
-const SCOPES = ["https://www.googleapis.com/auth/drive"];
+const SCOPES = [
+  "https://www.googleapis.com/auth/drive",
+  "https://www.googleapis.com/auth/calendar",
+];
 
 // --------------- In-memory caches ---------------
 
@@ -37,7 +40,7 @@ let authCache: { auth: InstanceType<typeof google.auth.GoogleAuth>; keyHash: str
  * Build GoogleAuth — DB serviceAccountKey preferred, env fallback.
  * Caches the GoogleAuth instance to avoid re-parsing JSON and re-creating on every call.
  */
-async function getAuth() {
+export async function getAuth() {
   const setting = await getActiveDriveSetting();
   const key = setting?.serviceAccountKey || process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
   if (!key) {

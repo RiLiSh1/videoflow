@@ -5,6 +5,25 @@
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
+
+  /* 動画システム (default) */
+  --sidebar-bg: #0f172a;
+  --sidebar-hover: #1e293b;
+  --sidebar-active: #334155;
+  --sidebar-text: #cbd5e1;
+  --sidebar-text-active: #ffffff;
+  --sidebar-accent: #3b82f6;
+  --page-accent: #2563eb;
+}
+
+[data-system="delivery"] {
+  --sidebar-bg: #1c1917;
+  --sidebar-hover: #292524;
+  --sidebar-active: #44403c;
+  --sidebar-text: #d6d3d1;
+  --sidebar-text-active: #fef08a;
+  --sidebar-accent: #facc15;
+  --page-accent: #eab308;
 }
 
 body {

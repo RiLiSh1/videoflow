@@ -17,7 +17,7 @@ const ROLE_DEFAULT_PATHS: Record<string, string> = {
 };
 
 const ROLE_PATH_PREFIXES: Record<string, string[]> = {
-  ADMIN: ["/admin", "/director", "/creator"],
+  ADMIN: ["/admin", "/director", "/creator", "/delivery"],
   DIRECTOR: ["/director"],
   CREATOR: ["/creator"],
 };

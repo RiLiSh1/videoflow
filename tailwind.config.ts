@@ -25,11 +25,12 @@ const config: Config = {
           950: "#172554",
         },
         sidebar: {
-          bg: "#0f172a",
-          hover: "#1e293b",
-          active: "#334155",
-          text: "#cbd5e1",
-          "text-active": "#ffffff",
+          bg: "var(--sidebar-bg)",
+          hover: "var(--sidebar-hover)",
+          active: "var(--sidebar-active)",
+          text: "var(--sidebar-text)",
+          "text-active": "var(--sidebar-text-active)",
+          accent: "var(--sidebar-accent)",
         },
         status: {
           draft: "#6b7280",

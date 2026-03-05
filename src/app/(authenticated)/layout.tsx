@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+import { SystemThemeProvider } from "@/components/layout/system-theme-provider";
 
 export default async function AuthenticatedLayout({
   children,
@@ -15,12 +16,14 @@ export default async function AuthenticatedLayout({
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar role={user.role} />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Header user={user} />
-        <main className="flex-1 overflow-y-auto bg-gray-50">{children}</main>
+    <SystemThemeProvider>
+      <div className="flex h-screen overflow-hidden">
+        <Sidebar role={user.role} />
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <Header user={user} />
+          <main className="flex-1 overflow-y-auto bg-gray-50">{children}</main>
+        </div>
       </div>
-    </div>
+    </SystemThemeProvider>
   );
 }
