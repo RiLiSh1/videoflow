@@ -36,6 +36,18 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
   ],
 };
 
+// LM動画納品システム ナビゲーション（ADMINのみ）
+export const DELIVERY_NAV_ITEMS: NavItem[] = [
+  { label: "ダッシュボード", href: "/delivery/dashboard", icon: "LayoutDashboard" },
+  { label: "月次配分", href: "/delivery/distribution", icon: "BarChart3" },
+  { label: "クライアント管理", href: "/delivery/clients", icon: "Building2" },
+  { label: "動画ストック", href: "/delivery/stocks", icon: "Video" },
+  { label: "配信スケジュール", href: "/delivery/schedules", icon: "CalendarDays" },
+  { label: "変更ログ", href: "/delivery/logs", icon: "FileText" },
+];
+
+export type SystemType = "video" | "delivery";
+
 export const PUBLIC_PATHS = ["/login"];
 
 export const ROLE_PATH_PREFIXES: Record<Role, string[]> = {

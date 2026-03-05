@@ -18,10 +18,13 @@ import {
   MessageSquare,
   CircleCheckBig,
   Landmark,
+  CalendarDays,
+  Send,
 } from "lucide-react";
 import type { Role } from "@prisma/client";
-import { NAV_ITEMS } from "@/lib/constants/routes";
+import { NAV_ITEMS, DELIVERY_NAV_ITEMS } from "@/lib/constants/routes";
 import { cn } from "@/lib/utils/cn";
+import { SystemSwitcher } from "./system-switcher";
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Video,
@@ -39,6 +42,8 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   MessageSquare,
   CircleCheckBig,
   Landmark,
+  CalendarDays,
+  Send,
 };
 
 interface SidebarProps {
@@ -47,16 +52,20 @@ interface SidebarProps {
 
 export function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
-  const items = NAV_ITEMS[role] || [];
+  const isDeliverySystem = pathname.startsWith("/delivery");
+  const items = isDeliverySystem ? DELIVERY_NAV_ITEMS : (NAV_ITEMS[role] || []);
+  const systemTitle = isDeliverySystem ? "LM-納品システム" : "LM-動画システム";
+  const TitleIcon = isDeliverySystem ? Send : Video;
 
   return (
     <aside className="flex h-screen w-60 flex-col bg-sidebar-bg text-sidebar-text">
-      <div className="flex h-16 items-center px-6 border-b border-slate-700">
+      <div className="flex h-16 items-center px-6 border-b border-white/10">
         <Link href="/" className="flex items-center gap-2">
-          <Video className="h-6 w-6 text-primary-400" />
-          <span className="text-lg font-bold text-white">LM-動画システム</span>
+          <TitleIcon className="h-6 w-6 text-sidebar-accent" />
+          <span className="text-lg font-bold text-white">{systemTitle}</span>
         </Link>
       </div>
+      {role === "ADMIN" && <SystemSwitcher />}
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
           {items.map((item, index) => {
@@ -68,7 +77,7 @@ export function Sidebar({ role }: SidebarProps) {
             return (
               <li key={item.href}>
                 {showGroupHeader && (
-                  <div className="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  <div className="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-sidebar-text/60">
                     {item.group}
                   </div>
                 )}
