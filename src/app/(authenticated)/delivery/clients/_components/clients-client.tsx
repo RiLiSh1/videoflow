@@ -13,6 +13,8 @@ import {
   ChevronDown,
   ChevronUp,
   AlertTriangle,
+  LayoutGrid,
+  LayoutList,
 } from "lucide-react";
 
 type DeliveryClient = {
@@ -44,6 +46,8 @@ type ContractStatusType =
   | "PENDING_RENEWAL"
   | "RENEWED"
   | "CANCELLED";
+
+type ViewMode = "list" | "card";
 
 type FormData = {
   name: string;
@@ -119,6 +123,27 @@ function calcEndDate(startDate: string, months: string): string {
   return d.toISOString().split("T")[0];
 }
 
+function ExpiryBadge({ days }: { days: number | null }) {
+  if (days === null) return <span className="text-gray-400">-</span>;
+  if (days <= 0) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-50 px-2 py-0.5 rounded-full">
+        {Math.abs(days)}日超過
+      </span>
+    );
+  }
+  if (days <= 30) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
+        残{days}日
+      </span>
+    );
+  }
+  return (
+    <span className="text-xs text-gray-500">残{days}日</span>
+  );
+}
+
 export function ClientsClient() {
   const [clients, setClients] = useState<DeliveryClient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,6 +158,7 @@ export function ClientsClient() {
     renewalNote: "",
   });
   const [filterStatus, setFilterStatus] = useState<string>("");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   const fetchClients = useCallback(async () => {
     setLoading(true);
@@ -266,7 +292,6 @@ export function ClientsClient() {
     fetchClients();
   }
 
-  // 契約満了間近・満了済みのクライアント数
   const expiringCount = clients.filter((c) => {
     const days = getDaysUntilExpiry(c.contractEndDate);
     return days !== null && days <= 30 && days > 0;
@@ -296,19 +321,39 @@ export function ClientsClient() {
         </div>
       )}
 
+      {/* ツールバー */}
       <div className="mb-4 flex items-center justify-between">
-        <select
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-        >
-          <option value="">すべての契約状態</option>
-          {Object.entries(CONTRACT_STATUS_LABELS).map(([key, { label }]) => (
-            <option key={key} value={key}>
-              {label}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-3">
+          <select
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+          >
+            <option value="">すべての契約状態</option>
+            {Object.entries(CONTRACT_STATUS_LABELS).map(([key, { label }]) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
+          {/* ビュー切替 */}
+          <div className="flex rounded-md border border-gray-300 overflow-hidden">
+            <button
+              className={`px-2.5 py-2 ${viewMode === "list" ? "bg-gray-100 text-gray-900" : "bg-white text-gray-400 hover:text-gray-600"}`}
+              onClick={() => setViewMode("list")}
+              title="リスト表示"
+            >
+              <LayoutList className="h-4 w-4" />
+            </button>
+            <button
+              className={`px-2.5 py-2 border-l border-gray-300 ${viewMode === "card" ? "bg-gray-100 text-gray-900" : "bg-white text-gray-400 hover:text-gray-600"}`}
+              onClick={() => setViewMode("card")}
+              title="カード表示"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
         <Button onClick={openCreate}>
           <Plus className="h-4 w-4 mr-1" />
           新規クライアント
@@ -323,192 +368,77 @@ export function ClientsClient() {
               <h3 className="text-lg font-semibold">
                 {editingId ? "クライアント編集" : "新規クライアント"}
               </h3>
-
-              {/* 基本情報 */}
               <div>
-                <p className="text-sm font-medium text-gray-500 mb-2">
-                  基本情報
-                </p>
+                <p className="text-sm font-medium text-gray-500 mb-2">基本情報</p>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      クライアント名 *
-                    </label>
-                    <Input
-                      value={form.name}
-                      onChange={(e) =>
-                        setForm({ ...form, name: e.target.value })
-                      }
-                      required
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">クライアント名 *</label>
+                    <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      担当者名
-                    </label>
-                    <Input
-                      value={form.contactName}
-                      onChange={(e) =>
-                        setForm({ ...form, contactName: e.target.value })
-                      }
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">担当者名</label>
+                    <Input value={form.contactName} onChange={(e) => setForm({ ...form, contactName: e.target.value })} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      担当者メール
-                    </label>
-                    <Input
-                      type="email"
-                      value={form.contactEmail}
-                      onChange={(e) =>
-                        setForm({ ...form, contactEmail: e.target.value })
-                      }
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">担当者メール</label>
+                    <Input type="email" value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      備考
-                    </label>
-                    <Input
-                      value={form.note}
-                      onChange={(e) =>
-                        setForm({ ...form, note: e.target.value })
-                      }
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">備考</label>
+                    <Input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
                   </div>
                 </div>
               </div>
-
-              {/* 契約情報 */}
               <div>
-                <p className="text-sm font-medium text-gray-500 mb-2">
-                  契約情報
-                </p>
+                <p className="text-sm font-medium text-gray-500 mb-2">契約情報</p>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      契約開始日
-                    </label>
-                    <input
-                      type="date"
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                      value={form.contractStartDate}
-                      onChange={(e) => handleStartDateChange(e.target.value)}
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">契約開始日</label>
+                    <input type="date" className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm" value={form.contractStartDate} onChange={(e) => handleStartDateChange(e.target.value)} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      契約期間
-                    </label>
-                    <select
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                      value={form.contractMonths}
-                      onChange={(e) => handleMonthsChange(e.target.value)}
-                    >
+                    <label className="block text-sm font-medium text-gray-700 mb-1">契約期間</label>
+                    <select className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm" value={form.contractMonths} onChange={(e) => handleMonthsChange(e.target.value)}>
                       <option value="">未設定</option>
                       {CONTRACT_MONTHS_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      契約終了日
-                    </label>
-                    <input
-                      type="date"
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                      value={form.contractEndDate}
-                      onChange={(e) =>
-                        setForm({ ...form, contractEndDate: e.target.value })
-                      }
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">契約終了日</label>
+                    <input type="date" className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm" value={form.contractEndDate} onChange={(e) => setForm({ ...form, contractEndDate: e.target.value })} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      契約ステータス
-                    </label>
-                    <select
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                      value={form.contractStatus}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          contractStatus: e.target.value as ContractStatusType,
-                        })
-                      }
-                    >
-                      {Object.entries(CONTRACT_STATUS_LABELS).map(
-                        ([key, { label }]) => (
-                          <option key={key} value={key}>
-                            {label}
-                          </option>
-                        )
-                      )}
+                    <label className="block text-sm font-medium text-gray-700 mb-1">契約ステータス</label>
+                    <select className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm" value={form.contractStatus} onChange={(e) => setForm({ ...form, contractStatus: e.target.value as ContractStatusType })}>
+                      {Object.entries(CONTRACT_STATUS_LABELS).map(([key, { label }]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
                 <div className="mt-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    更新メモ
-                  </label>
-                  <Input
-                    value={form.renewalNote}
-                    onChange={(e) =>
-                      setForm({ ...form, renewalNote: e.target.value })
-                    }
-                    placeholder="契約更新に関するメモ"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">更新メモ</label>
+                  <Input value={form.renewalNote} onChange={(e) => setForm({ ...form, renewalNote: e.target.value })} placeholder="契約更新に関するメモ" />
                 </div>
               </div>
-
-              {/* 連携設定 */}
               <div>
-                <p className="text-sm font-medium text-gray-500 mb-2">
-                  連携設定
-                </p>
+                <p className="text-sm font-medium text-gray-500 mb-2">連携設定</p>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      LINEグループID
-                    </label>
-                    <Input
-                      value={form.lineGroupId}
-                      onChange={(e) =>
-                        setForm({ ...form, lineGroupId: e.target.value })
-                      }
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">LINEグループID</label>
+                    <Input value={form.lineGroupId} onChange={(e) => setForm({ ...form, lineGroupId: e.target.value })} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Google DriveフォルダID
-                    </label>
-                    <Input
-                      value={form.googleDriveFolderId}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          googleDriveFolderId: e.target.value,
-                        })
-                      }
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Google DriveフォルダID</label>
+                    <Input value={form.googleDriveFolderId} onChange={(e) => setForm({ ...form, googleDriveFolderId: e.target.value })} />
                   </div>
                 </div>
               </div>
-
               <div className="flex gap-2 justify-end">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setShowForm(false)}
-                >
-                  キャンセル
-                </Button>
-                <Button type="submit">
-                  {editingId ? "更新" : "作成"}
-                </Button>
+                <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>キャンセル</Button>
+                <Button type="submit">{editingId ? "更新" : "作成"}</Button>
               </div>
             </form>
           </CardContent>
@@ -529,66 +459,24 @@ export function ClientsClient() {
               </p>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    更新期間
-                  </label>
-                  <select
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                    value={renewForm.contractMonths}
-                    onChange={(e) =>
-                      setRenewForm({
-                        ...renewForm,
-                        contractMonths: e.target.value,
-                      })
-                    }
-                  >
+                  <label className="block text-sm font-medium text-gray-700 mb-1">更新期間</label>
+                  <select className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm" value={renewForm.contractMonths} onChange={(e) => setRenewForm({ ...renewForm, contractMonths: e.target.value })}>
                     {CONTRACT_MONTHS_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    終了日（直接指定）
-                  </label>
-                  <input
-                    type="date"
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                    value={renewForm.contractEndDate}
-                    onChange={(e) =>
-                      setRenewForm({
-                        ...renewForm,
-                        contractEndDate: e.target.value,
-                      })
-                    }
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">終了日（直接指定）</label>
+                  <input type="date" className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm" value={renewForm.contractEndDate} onChange={(e) => setRenewForm({ ...renewForm, contractEndDate: e.target.value })} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    更新メモ
-                  </label>
-                  <Input
-                    value={renewForm.renewalNote}
-                    onChange={(e) =>
-                      setRenewForm({
-                        ...renewForm,
-                        renewalNote: e.target.value,
-                      })
-                    }
-                    placeholder="更新理由など"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">更新メモ</label>
+                  <Input value={renewForm.renewalNote} onChange={(e) => setRenewForm({ ...renewForm, renewalNote: e.target.value })} placeholder="更新理由など" />
                 </div>
               </div>
               <div className="flex gap-2 justify-end">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setRenewingId(null)}
-                >
-                  キャンセル
-                </Button>
+                <Button type="button" variant="secondary" onClick={() => setRenewingId(null)}>キャンセル</Button>
                 <Button type="submit">契約を更新する</Button>
               </div>
             </form>
@@ -596,7 +484,7 @@ export function ClientsClient() {
         </Card>
       )}
 
-      {/* テーブル */}
+      {/* メインコンテンツ */}
       {loading ? (
         <p className="text-gray-500">読み込み中...</p>
       ) : clients.length === 0 ? (
@@ -607,34 +495,150 @@ export function ClientsClient() {
             </p>
           </CardContent>
         </Card>
+      ) : viewMode === "list" ? (
+        /* ========== リスト表示 ========== */
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 bg-white rounded-lg shadow">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  クライアント名
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  担当者
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  契約状態
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  契約期間
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  契約終了日
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  残日数
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+                  ストック
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+                  配信数
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+                  連携
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+                  有効
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                  操作
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {clients.map((client) => {
+                const statusInfo = CONTRACT_STATUS_LABELS[client.contractStatus] || CONTRACT_STATUS_LABELS.ACTIVE;
+                const daysUntilExpiry = getDaysUntilExpiry(client.contractEndDate);
+                const isExpired = daysUntilExpiry !== null && daysUntilExpiry <= 0;
+                const isExpiring = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+
+                return (
+                  <tr
+                    key={client.id}
+                    className={`hover:bg-gray-50 ${isExpired ? "bg-red-50/40" : isExpiring ? "bg-amber-50/40" : ""}`}
+                  >
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">
+                      {client.name}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                      {client.contactName || "-"}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <Badge className={statusInfo.className}>
+                        {statusInfo.label}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                      {client.contractMonths ? `${client.contractMonths}ヶ月` : "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                      {formatDate(client.contractEndDate)}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <ExpiryBadge days={daysUntilExpiry} />
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500 text-center">
+                      {client._count.videoStocks}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500 text-center">
+                      {client._count.deliverySchedules}
+                    </td>
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-1">
+                        {client.lineGroupId && (
+                          <span className="inline-block w-2 h-2 rounded-full bg-green-500" title="LINE連携済み" />
+                        )}
+                        {client.googleDriveFolderId && (
+                          <span className="inline-block w-2 h-2 rounded-full bg-blue-500" title="Drive連携済み" />
+                        )}
+                        {!client.lineGroupId && !client.googleDriveFolderId && (
+                          <span className="text-gray-300">-</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <button onClick={() => toggleActive(client)}>
+                        <Badge className={client.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>
+                          {client.isActive ? "有効" : "無効"}
+                        </Badge>
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <div className="flex justify-end gap-1">
+                        {(isExpiring || isExpired) &&
+                          client.contractStatus !== "RENEWED" &&
+                          client.contractStatus !== "CANCELLED" && (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => openRenew(client)}
+                            >
+                              <RefreshCw className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(client)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(client.id)}>
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       ) : (
+        /* ========== カード表示 ========== */
         <div className="space-y-2">
           {clients.map((client) => {
-            const statusInfo =
-              CONTRACT_STATUS_LABELS[client.contractStatus] ||
-              CONTRACT_STATUS_LABELS.ACTIVE;
+            const statusInfo = CONTRACT_STATUS_LABELS[client.contractStatus] || CONTRACT_STATUS_LABELS.ACTIVE;
             const daysUntilExpiry = getDaysUntilExpiry(client.contractEndDate);
             const isExpanded = expandedId === client.id;
-            const isExpiring =
-              daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+            const isExpiring = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry > 0;
             const isExpired = daysUntilExpiry !== null && daysUntilExpiry <= 0;
 
             return (
               <Card
                 key={client.id}
-                className={
-                  isExpired
-                    ? "border-red-200"
-                    : isExpiring
-                      ? "border-amber-200"
-                      : ""
-                }
+                className={isExpired ? "border-red-200" : isExpiring ? "border-amber-200" : ""}
               >
                 <div
                   className="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-gray-50"
-                  onClick={() =>
-                    setExpandedId(isExpanded ? null : client.id)
-                  }
+                  onClick={() => setExpandedId(isExpanded ? null : client.id)}
                 >
                   <div className="flex items-center gap-4 min-w-0">
                     <div className="min-w-0">
@@ -646,69 +650,42 @@ export function ClientsClient() {
                           {statusInfo.label}
                         </Badge>
                         {!client.isActive && (
-                          <Badge className="bg-gray-100 text-gray-500">
-                            無効
-                          </Badge>
+                          <Badge className="bg-gray-100 text-gray-500">無効</Badge>
+                        )}
+                        {daysUntilExpiry !== null && (
+                          <ExpiryBadge days={daysUntilExpiry} />
                         )}
                       </div>
                       <div className="flex items-center gap-4 mt-0.5 text-xs text-gray-500">
                         <span>担当: {client.contactName || "-"}</span>
-                        <span>ストック: {client._count.videoStocks}</span>
-                        <span>スケジュール: {client._count.deliverySchedules}</span>
-                        {client.contractEndDate && (
-                          <span
-                            className={
-                              isExpired
-                                ? "text-red-600 font-medium"
-                                : isExpiring
-                                  ? "text-amber-600 font-medium"
-                                  : ""
-                            }
-                          >
-                            契約終了: {formatDate(client.contractEndDate)}
-                            {daysUntilExpiry !== null &&
-                              (isExpired
-                                ? ` (${Math.abs(daysUntilExpiry)}日超過)`
-                                : ` (残${daysUntilExpiry}日)`)}
-                          </span>
+                        {client.contractMonths && (
+                          <span>契約: {client.contractMonths}ヶ月</span>
                         )}
+                        {client.contractEndDate && (
+                          <span>終了: {formatDate(client.contractEndDate)}</span>
+                        )}
+                        <span>ストック: {client._count.videoStocks}</span>
+                        <span>配信: {client._count.deliverySchedules}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     {(isExpiring || isExpired) &&
                       client.contractStatus !== "RENEWED" &&
                       client.contractStatus !== "CANCELLED" && (
                         <Button
                           variant="primary"
                           size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openRenew(client);
-                          }}
+                          onClick={(e) => { e.stopPropagation(); openRenew(client); }}
                         >
                           <RefreshCw className="h-3.5 w-3.5 mr-1" />
                           更新
                         </Button>
                       )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openEdit(client);
-                      }}
-                    >
+                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openEdit(client); }}>
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(client.id);
-                      }}
-                    >
+                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleDelete(client.id); }}>
                       <Trash2 className="h-4 w-4 text-red-500" />
                     </Button>
                     {isExpanded ? (
@@ -719,64 +696,41 @@ export function ClientsClient() {
                   </div>
                 </div>
 
-                {/* 展開時の詳細 */}
                 {isExpanded && (
                   <div className="border-t border-gray-100 px-5 py-4">
                     <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm md:grid-cols-4">
                       <div>
                         <p className="text-gray-500">契約開始日</p>
-                        <p className="font-medium">
-                          {formatDate(client.contractStartDate)}
-                        </p>
+                        <p className="font-medium">{formatDate(client.contractStartDate)}</p>
                       </div>
                       <div>
                         <p className="text-gray-500">契約終了日</p>
-                        <p className="font-medium">
-                          {formatDate(client.contractEndDate)}
-                        </p>
+                        <p className="font-medium">{formatDate(client.contractEndDate)}</p>
                       </div>
                       <div>
                         <p className="text-gray-500">契約期間</p>
-                        <p className="font-medium">
-                          {client.contractMonths
-                            ? `${client.contractMonths}ヶ月`
-                            : "-"}
-                        </p>
+                        <p className="font-medium">{client.contractMonths ? `${client.contractMonths}ヶ月` : "-"}</p>
                       </div>
                       <div>
                         <p className="text-gray-500">最終更新日</p>
-                        <p className="font-medium">
-                          {formatDate(client.lastRenewedAt)}
-                        </p>
+                        <p className="font-medium">{formatDate(client.lastRenewedAt)}</p>
                       </div>
                       <div>
                         <p className="text-gray-500">メール</p>
-                        <p className="font-medium">
-                          {client.contactEmail || "-"}
-                        </p>
+                        <p className="font-medium">{client.contactEmail || "-"}</p>
                       </div>
                       <div>
                         <p className="text-gray-500">LINE連携</p>
-                        <p className="font-medium">
-                          {client.lineGroupId ? "設定済み" : "未設定"}
-                        </p>
+                        <p className="font-medium">{client.lineGroupId ? "設定済み" : "未設定"}</p>
                       </div>
                       <div>
                         <p className="text-gray-500">Drive連携</p>
-                        <p className="font-medium">
-                          {client.googleDriveFolderId ? "設定済み" : "未設定"}
-                        </p>
+                        <p className="font-medium">{client.googleDriveFolderId ? "設定済み" : "未設定"}</p>
                       </div>
                       <div>
                         <p className="text-gray-500">有効/無効</p>
                         <button onClick={() => toggleActive(client)}>
-                          <Badge
-                            className={
-                              client.isActive
-                                ? "bg-green-100 text-green-800"
-                                : "bg-gray-100 text-gray-600"
-                            }
-                          >
+                          <Badge className={client.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>
                             {client.isActive ? "有効" : "無効"}
                           </Badge>
                         </button>
@@ -794,14 +748,9 @@ export function ClientsClient() {
                         </div>
                       )}
                     </div>
-                    {/* 展開時にも更新ボタン */}
                     {client.contractStatus !== "CANCELLED" && (
                       <div className="mt-4 pt-3 border-t border-gray-100 flex gap-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => openRenew(client)}
-                        >
+                        <Button variant="secondary" size="sm" onClick={() => openRenew(client)}>
                           <RefreshCw className="h-3.5 w-3.5 mr-1" />
                           契約更新
                         </Button>
