@@ -44,6 +44,7 @@ export const DELIVERY_NAV_ITEMS: NavItem[] = [
   { label: "動画ストック", href: "/delivery/stocks", icon: "Video" },
   { label: "配信スケジュール", href: "/delivery/schedules", icon: "CalendarDays" },
   { label: "変更ログ", href: "/delivery/logs", icon: "FileText" },
+  { label: "操作マニュアル", href: "/delivery/manual", icon: "BookOpen", group: "ヘルプ" },
 ];
 
 export type SystemType = "video" | "delivery";
