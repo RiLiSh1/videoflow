@@ -21,6 +21,7 @@ import {
   CalendarDays,
   Send,
   BookOpen,
+  Megaphone,
 } from "lucide-react";
 import type { Role } from "@prisma/client";
 import { NAV_ITEMS, DELIVERY_NAV_ITEMS } from "@/lib/constants/routes";
@@ -46,6 +47,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   CalendarDays,
   Send,
   BookOpen,
+  Megaphone,
 };
 
 interface SidebarProps {

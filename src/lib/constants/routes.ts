@@ -14,11 +14,13 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
     { label: "支払通知書", href: "/creator/payment-notifications", icon: "FileText", group: "請求関連" },
     { label: "請求元情報", href: "/creator/profile", icon: "Users", group: "請求関連" },
     { label: "銀行口座設定", href: "/creator/bank-account", icon: "Landmark", group: "請求関連" },
+    { label: "お知らせ", href: "/creator/announcements", icon: "Megaphone", group: "その他" },
   ],
   DIRECTOR: [
     { label: "ダッシュボード", href: "/director/dashboard", icon: "LayoutDashboard" },
     { label: "進捗管理", href: "/director/progress", icon: "BarChart3" },
     { label: "レビュー一覧", href: "/director/reviews", icon: "CheckSquare" },
+    { label: "お知らせ", href: "/director/announcements", icon: "Megaphone", group: "その他" },
   ],
   ADMIN: [
     { label: "ダッシュボード", href: "/admin/dashboard", icon: "LayoutDashboard" },
@@ -33,6 +35,7 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
     { label: "会社設定", href: "/admin/settings/company", icon: "Building2", group: "請求関連" },
     { label: "Drive設定", href: "/admin/settings/drive", icon: "HardDrive" },
     { label: "通知設定", href: "/admin/settings/notifications", icon: "MessageSquare" },
+    { label: "お知らせ管理", href: "/admin/announcements", icon: "Megaphone", group: "その他" },
   ],
 };
 

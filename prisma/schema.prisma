@@ -158,6 +158,9 @@ model User {
   deliveryApprovals  DeliveryApproval[]
   deliveryChangeLogs DeliveryChangeLog[]
 
+  // お知らせ
+  announcements Announcement[] @relation("AnnouncementAuthor")
+
   @@map("users")
 }
 
@@ -599,4 +602,36 @@ model DeliveryChangeLog {
   @@index([createdAt])
   @@index([scheduleId, createdAt])
   @@map("delivery_change_logs")
+}
+
+// ============================================================
+// お知らせ
+// ============================================================
+
+enum AnnouncementTarget {
+  ALL
+  CREATOR
+  DIRECTOR
+  ADMIN
+
+  @@map("announcement_target")
+}
+
+model Announcement {
+  id          String             @id @default(cuid())
+  title       String
+  content     String             @db.Text
+  target      AnnouncementTarget @default(ALL)
+  isPinned    Boolean            @default(false) @map("is_pinned")
+  isPublished Boolean            @default(true) @map("is_published")
+  createdBy   String             @map("created_by")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  author User @relation("AnnouncementAuthor", fields: [createdBy], references: [id])
+
+  @@index([target, isPublished])
+  @@index([createdAt])
+  @@map("announcements")
 }
